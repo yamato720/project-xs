@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import math
 from pathlib import Path
 
@@ -124,10 +123,6 @@ def csr_spmv(size: int, row_ptr: list[int], col_idx: list[int], values: list[flo
     return result
 
 
-def vector_norm(values: list[float]) -> float:
-    return math.sqrt(sum(value * value for value in values))
-
-
 def write_int_array(path: Path, values: list[int]) -> None:
     path.write_text(" ".join(str(value) for value in values) + "\n", encoding="utf-8")
 
@@ -136,46 +131,26 @@ def write_float_array(path: Path, values: list[float]) -> None:
     path.write_text(" ".join(f"{value:.17g}" for value in values) + "\n", encoding="utf-8")
 
 
-def generate_dataset(size: int, output_dir: Path, aspect_ratio: float, tau: float, max_iters: int | None) -> None:
+def generate_dataset(size: int, output_dir: Path, aspect_ratio: float) -> None:
     mesh_rows, mesh_cols, row_ptr, col_idx, values, diag = build_sparse_spd_matrix(size, aspect_ratio)
     x_ref = build_reference_solution(size, mesh_cols)
     x0 = build_initial_guess(size, mesh_cols)
     b = csr_spmv(size, row_ptr, col_idx, values, x_ref)
     nnz = len(col_idx)
-    max_iters_value = max_iters if max_iters is not None else max(4 * size, 2000)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    metadata = {
-        "matrix_format": "csr",
-        "problem_family": "heterogeneous_diffusion_with_contact_links",
-        "n": size,
-        "nnz": nnz,
-        "mesh_rows": mesh_rows,
-        "mesh_cols": mesh_cols,
-        "aspect_ratio": aspect_ratio,
-        "tau": tau,
-        "max_iters": max_iters_value,
-        "rhs_norm_l2": vector_norm(b),
-        "x0_norm_l2": vector_norm(x0),
-        "diag_min": min(diag),
-        "diag_max": max(diag),
-    }
-
-    (output_dir / "meta.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     write_int_array(output_dir / "row_ptr.txt", row_ptr)
     write_int_array(output_dir / "col_idx.txt", col_idx)
     write_float_array(output_dir / "values.txt", values)
-    write_float_array(output_dir / "diag.txt", diag)
     write_float_array(output_dir / "b.txt", b)
     write_float_array(output_dir / "x0.txt", x0)
-    write_float_array(output_dir / "x_ref.txt", x_ref)
 
     print(
         "generated cg dataset "
-        f"n={size} nnz={nnz} mesh={mesh_rows}x{mesh_cols} "
-        f"tau={tau:.3e} max_iters={max_iters_value} -> {output_dir}"
+        f"n={size} nnz={nnz} mesh={mesh_rows}x{mesh_cols} -> {output_dir}"
     )
+    print("files: row_ptr.txt col_idx.txt values.txt b.txt x0.txt")
 
 
 def parse_args() -> argparse.Namespace:
@@ -196,18 +171,6 @@ def parse_args() -> argparse.Namespace:
         default=1.6,
         help="approximate mesh width/height ratio, default: 1.6",
     )
-    parser.add_argument(
-        "--tau",
-        type=float,
-        default=1.0e-10,
-        help="recommended CG convergence threshold, default: 1e-10",
-    )
-    parser.add_argument(
-        "--max-iters",
-        type=int,
-        default=None,
-        help="recommended CG iteration limit, default: max(4 * size, 2000)",
-    )
     return parser.parse_args()
 
 
@@ -218,10 +181,6 @@ def main() -> None:
         raise SystemExit("--size must be positive")
     if args.aspect_ratio <= 0.0:
         raise SystemExit("--aspect-ratio must be positive")
-    if args.tau <= 0.0:
-        raise SystemExit("--tau must be positive")
-    if args.max_iters is not None and args.max_iters <= 0:
-        raise SystemExit("--max-iters must be positive")
 
     default_output_dir = Path(__file__).resolve().parent.parent / "data" / "generated" / "cgsolver" / f"n{args.size}"
     output_dir = args.output_dir
@@ -232,8 +191,6 @@ def main() -> None:
         size=args.size,
         output_dir=output_dir,
         aspect_ratio=args.aspect_ratio,
-        tau=args.tau,
-        max_iters=args.max_iters,
     )
 
 

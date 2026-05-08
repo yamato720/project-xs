@@ -24,16 +24,15 @@ heterogeneous diffusion-like graph:
 - deterministic long-range contact links to mimic irregular couplings
 - a positive diagonal mass term to keep the system well-conditioned for CG
 
-The output is written in CSR form plus solver vectors:
+The dataset format in this repository is intentionally kept to:
+
+`A` is written in CSR form:
 
 - `row_ptr.txt`
 - `col_idx.txt`
 - `values.txt`
-- `diag.txt`
 - `b.txt`
 - `x0.txt`
-- `x_ref.txt`
-- `meta.json`
 
 ## Usage
 
