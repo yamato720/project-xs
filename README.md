@@ -24,15 +24,16 @@ heterogeneous diffusion-like graph:
 - deterministic long-range contact links to mimic irregular couplings
 - a positive diagonal mass term to keep the system well-conditioned for CG
 
-The dataset format in this repository is intentionally kept to:
+The dataset format in this repository is intentionally kept to exactly three
+files:
 
-`A` is written in CSR form:
-
-- `row_ptr.txt`
-- `col_idx.txt`
-- `values.txt`
+- `A.mtx`
 - `b.txt`
 - `x0.txt`
+
+`A.mtx` uses the Matrix Market coordinate format, which keeps the sparse matrix
+in a single text file and avoids mirroring the root repository's split CSR
+layout.
 
 ## Usage
 
