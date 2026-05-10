@@ -10,6 +10,7 @@ INCLUDE_DIR := $(SRC_DIR)/include
 BASE_SRC_DIR := $(SRC_DIR)/base
 BASE_INCLUDE_DIR := $(INCLUDE_DIR)/base
 SCRIPT := $(ROOT_DIR)/script/generate_cg_dataset.py
+XPLUS_HLS_EXAMPLE_SCRIPT := $(ROOT_DIR)/script/render_xplus_hls_example.py
 MAIN_SRC := $(ROOT_DIR)/main.cpp
 ABC_TEST_DIR := $(ROOT_DIR)/test/abctest
 TEST_ROOT_DIR := $(ROOT_DIR)/test
@@ -36,7 +37,7 @@ $(foreach goal,$(TEST_GOALS),$(eval .PHONY: $(goal)))
 $(foreach goal,$(TEST_GOALS),$(eval $(goal): ; @:))
 endif
 
-.PHONY: all build generate run run-cycle-sim test clean
+.PHONY: all build generate run run-cycle-sim render-xplus-hls-example test clean
 
 all: run
 
@@ -77,6 +78,9 @@ test:
 
 run-cycle-sim:
 	@$(MAKE) test abctest
+
+render-xplus-hls-example:
+	$(PYTHON) $(XPLUS_HLS_EXAMPLE_SCRIPT)
 
 clean:
 	rm -rf $(BUILD_DIR)
