@@ -1,23 +1,115 @@
 # Project-XS
 
-`Project-XS` 用来放稀疏线性代数相关的辅助脚本、测试数据和 golden 参考实现。
+`Project-XS` 现在已经不是最初那个只放辅助脚本和 golden 的小仓库了。它目前承担的是一个更偏“实验支撑层”的角色，主要覆盖三类内容：
 
-## 目录说明
+1. `Jacobi-PCG` 的 CPU golden 参考实现
+2. 面向 HLS/kernel 拆分验证的周期级仿真基础设施
+3. 从 `Project-XPlus` 侧抽取出来的 HLS kernel 示例与可视化素材
 
-- `script/generate_cg_dataset.py`
-  生成用于 CG solver 验证的稀疏 SPD 数据集。
-- `src/CgSolverGolden.hpp`
-  只保留 Jacobi 预条件 CG 的 golden 求解逻辑。
-- `src/CsrDataset.hpp`
-  独立的数据集单元，负责读取、校验、SpMV 和提取 Jacobi 对角线，便于后续复用。
+默认开发分支是 `main`。
+
+## 当前仓库结构
+
 - `main.cpp`
-  示例入口。当前先在进程内计算 golden 解，后续你可以在这里接入其他实现并直接对比。
+  `CG solver` 的本地参考入口。读取数据集后运行 `Jacobi-PCG golden`，输出收敛信息与残差。
+- `src/CgSolverGolden.hpp`
+  `Jacobi-PCG` 求解流程、收敛判定和残差计算。
+- `src/CsrDataset.hpp`
+  CSR 数据集加载、合法性校验、`SpMV` 和 `Jacobi` 对角提取。
+- `src/base/` 与 `src/include/base/`
+  周期级仿真基础设施，包括 `CycleSimulator`、`Kernel`、`KernelComponent`、`Port`、`PortGroup` 和 `Axi` 抽象。
+- `test/abctest/`
+  一个最小周期仿真 demo，用来验证 wire/reg 端口时序行为与组件编排方式。
+- `script/generate_cg_dataset.py`
+  生成 `CG` 验证数据集，同时输出矩阵可视化文件。
+- `script/render_xplus_hls_example.py`
+  读取 `example/project_xplus_hls/project_xplus_hls_spec.json` 和示例 `xo`，生成静态报告页面。
+- `example/project_xplus_hls/`
+  从 `Project-XPlus` 抽取的 5 个 HLS kernel 示例、说明文件、`xo` 样本和预生成报告。
+- `docs/`
+  记录 HLS kernel 拆分、周期仿真器设计等过程文档。
 - `data/generated/`
-  默认的数据生成目录，不纳入版本控制。
+  默认数据生成目录，不纳入版本控制。
 
-## 数据格式
+## 这个仓库现在能做什么
 
-当前数据集保持为拆分的 CSR 形式，并且只输出求解所需的最小输入：
+### 1. 运行 CG golden
+
+默认命令：
+
+```bash
+make
+```
+
+这会：
+
+1. 生成默认数据集 `data/generated/cgsolver/n512`
+2. 编译 `build/cgsolver_golden`
+3. 运行 `Jacobi-PCG golden`
+
+如需指定规模或求解参数：
+
+```bash
+make run SIZE=4096 TAU=1e-10 MAX_ITERS=20000
+```
+
+如果只想生成数据：
+
+```bash
+make generate SIZE=8192
+```
+
+也可以直接运行脚本：
+
+```bash
+python3 script/generate_cg_dataset.py \
+  --size 8192 \
+  --aspect-ratio 1.6 \
+  --output-dir data/generated/cgsolver/n8192
+```
+
+### 2. 运行周期仿真 demo
+
+```bash
+make test abctest
+```
+
+或：
+
+```bash
+make run-cycle-sim
+```
+
+这个 demo 目前不是求解器仿真，而是一个最小三组件例子，用来验证：
+
+1. kernel/component 调度关系
+2. wire 输出和寄存器输出的周期差异
+3. `CycleSimulator` 的 reset、初始化和逐周期推进机制
+
+### 3. 生成 Project-XPlus HLS 示例报告
+
+```bash
+make render-xplus-hls-example
+```
+
+或：
+
+```bash
+python3 script/render_xplus_hls_example.py
+```
+
+默认会更新：
+
+```text
+example/project_xplus_hls/reports/project_xplus_hls_example.json
+example/project_xplus_hls/reports/project_xplus_hls_example.html
+```
+
+这个报告站在 `XS` 的角度，把示例 kernel 的职责、顶层接口、参数端口、HBM 映射和组件关系整理成静态页面，方便做结构核对。
+
+## CG 数据格式
+
+当前 `CG` 数据集保持为拆分的 CSR 形式，最小输入包括：
 
 - `row_ptr.txt`
 - `col_idx.txt`
@@ -27,56 +119,41 @@
 
 其中：
 
-- `A` 由 `row_ptr / col_idx / values` 三个文件共同表示
-- `b.txt` 是右端项向量
-- `x0.txt` 是默认初始解向量
+1. `A` 由 `row_ptr / col_idx / values` 三个文件共同表示
+2. `b.txt` 是右端项向量
+3. `x0.txt` 是默认初始解向量
 
-`Jacobi` 预条件器 `M` 不单独落盘，而是在 C++ golden 入口里由 `diag(A)` 直接构造。
+`Jacobi` 预条件器 `M` 不单独落盘，而是在 C++ 参考实现里由 `diag(A)` 直接构造。
+
+数据生成脚本现在还会额外输出：
+
+- `matrix.svg`
+- `matrix.html`
+
+用于快速查看稀疏矩阵的分布形态。
 
 ## 数据生成模型
 
 生成器构造的是一个更接近工程场景的稀疏对称正定系统：
 
-- 基础拓扑是二维近矩形网格
-- 横向和纵向耦合系数各自带有确定性扰动
-- 局部加入少量长程 contact link，模拟不规则耦合
-- 对角线上再叠加正质量项，保证 CG 可用
+1. 基础拓扑是二维近矩形网格
+2. 横向和纵向耦合系数带有确定性扰动
+3. 局部加入少量长程 contact link，模拟不规则耦合
+4. 对角线上叠加正质量项，保证系统保持 `SPD`
 
-## 用法
-
-默认生成 512 维数据集：
-
-```bash
-python3 script/generate_cg_dataset.py
-```
-
-指定输出目录：
-
-```bash
-python3 script/generate_cg_dataset.py \
-  --size 8192 \
-  --output-dir data/generated/cgsolver/n8192
-```
-
-一键编译并运行：
-
-```bash
-make
-```
-
-如需指定规模或迭代参数：
-
-```bash
-make run SIZE=4096 TAU=1e-10 MAX_ITERS=20000
-```
-
-## 当前行为
+## main.cpp 当前行为
 
 `main.cpp` 当前会：
 
-1. 读取 CSR 矩阵 `A`、向量 `b` 和初值 `x0`
-2. 在内存里构造 Jacobi 对角预条件器 `M`
-3. 按 Jacobi-PCG 伪代码求解得到 `golden_solution`
-4. 将 golden 结果保留在当前进程内存中，等待你后续把其他实现接进来做对比
+1. 从数据目录读取 CSR 矩阵 `A`、向量 `b` 和初值 `x0`
+2. 在内存中构造 `Jacobi` 对角预条件器
+3. 运行 `Jacobi-PCG golden`
+4. 输出 `n / nnz / iterations / final_rr / residual_l2`
 
-当前不会把 golden 解额外写回文件。
+当前不会把 `golden solution` 额外写回文件，它主要作为主机侧参考实现存在，方便后续和别的实现做结果比对。
+
+## 当前定位
+
+如果一句话概括现在的 `Project-XS`，更准确的说法是：
+
+`Project-XS` 是 `Project-X / Project-XPlus` 周边的算法参考、仿真验证和 HLS 结构观察仓库，而不再只是一个“稀疏线代辅助脚本仓库”。
