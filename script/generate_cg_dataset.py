@@ -127,22 +127,29 @@ def write_float_array(path: Path, values: list[float]) -> None:
     path.write_text(" ".join(f"{value:.17g}" for value in values) + "\n", encoding="utf-8")
 
 
-def write_matrix_market(path: Path, size: int, row_ptr: list[int], col_idx: list[int], values: list[float]) -> None:
-    upper_triangle_nnz = sum(
-        1
-        for row in range(size)
-        for offset in range(row_ptr[row], row_ptr[row + 1])
-        if col_idx[offset] >= row
-    )
-    lines = ["%%MatrixMarket matrix coordinate real symmetric"]
-    lines.append(f"{size} {size} {upper_triangle_nnz}")
-    for row in range(size):
-        for offset in range(row_ptr[row], row_ptr[row + 1]):
-            col = col_idx[offset]
-            if col < row:
-                continue
-            lines.append(f"{row + 1} {col + 1} {values[offset]:.17g}")
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+def write_int_array(path: Path, values: list[int]) -> None:
+    path.write_text(" ".join(str(value) for value in values) + "\n", encoding="utf-8")
+
+
+def cleanup_output_dir(output_dir: Path) -> None:
+    for file_name in [
+        "A.mtx",
+        "meta.json",
+        "meta.txt",
+        "diag.txt",
+        "jacobi_diag.txt",
+        "rhs.txt",
+        "x_ref.txt",
+        "x_expected.txt",
+        "row_ptr.txt",
+        "col_idx.txt",
+        "values.txt",
+        "b.txt",
+        "x0.txt",
+    ]:
+        path = output_dir / file_name
+        if path.exists():
+            path.unlink()
 
 
 def generate_dataset(size: int, output_dir: Path, aspect_ratio: float) -> None:
@@ -150,19 +157,22 @@ def generate_dataset(size: int, output_dir: Path, aspect_ratio: float) -> None:
     x_ref = build_reference_solution(size, mesh_cols)
     x0 = build_initial_guess(size, mesh_cols)
     b = csr_spmv(size, row_ptr, col_idx, values, x_ref)
-    upper_triangle_nnz = sum(1 for row in range(size) for offset in range(row_ptr[row], row_ptr[row + 1]) if col_idx[offset] >= row)
+    nnz = len(col_idx)
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    cleanup_output_dir(output_dir)
 
-    write_matrix_market(output_dir / "A.mtx", size, row_ptr, col_idx, values)
+    write_int_array(output_dir / "row_ptr.txt", row_ptr)
+    write_int_array(output_dir / "col_idx.txt", col_idx)
+    write_float_array(output_dir / "values.txt", values)
     write_float_array(output_dir / "b.txt", b)
     write_float_array(output_dir / "x0.txt", x0)
 
     print(
         "generated cg dataset "
-        f"n={size} nnz={upper_triangle_nnz} mesh={mesh_rows}x{mesh_cols} -> {output_dir}"
+        f"n={size} nnz={nnz} mesh={mesh_rows}x{mesh_cols} -> {output_dir}"
     )
-    print("files: A.mtx b.txt x0.txt")
+    print("files: row_ptr.txt col_idx.txt values.txt b.txt x0.txt")
 
 
 def parse_args() -> argparse.Namespace:
@@ -170,11 +180,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate a deterministic sparse SPD dataset for CG solver validation."
     )
-    parser.add_argument("--size", type=int, default=1024, help="number of unknowns, default: 1024")
+    parser.add_argument("--size", type=int, default=512, help="number of unknowns, default: 512")
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=script_dir.parent / "data" / "generated" / "cgsolver" / "n1024",
+        default=script_dir.parent / "data" / "generated" / "cgsolver" / "n512",
         help="output directory for generated files",
     )
     parser.add_argument(
@@ -196,7 +206,7 @@ def main() -> None:
 
     default_output_dir = Path(__file__).resolve().parent.parent / "data" / "generated" / "cgsolver" / f"n{args.size}"
     output_dir = args.output_dir
-    if output_dir.name == "n1024" and args.size != 1024:
+    if output_dir.name == "n512" and args.size != 512:
         output_dir = default_output_dir
 
     generate_dataset(

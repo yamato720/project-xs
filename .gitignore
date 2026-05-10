@@ -1,3 +1,9 @@
-data/generated/
+data/generated/*
+!data/generated/cgsolver/
+data/generated/cgsolver/*
+!data/generated/cgsolver/n512/
+!data/generated/cgsolver/n512/**
 __pycache__/
 *.pyc
+build/
+*.o
