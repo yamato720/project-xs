@@ -20,6 +20,16 @@ enum class PortDirection {
     Output,
 };
 
+// 端口值输出格式。
+// - Decimal: 按数值十进制输出
+// - Binary / Octal / Hexadecimal: 按端口位宽输出位模式
+enum class PortValueBase {
+    Decimal,
+    Binary,
+    Octal,
+    Hexadecimal,
+};
+
 // 端口抽象基类。
 // 这层只保留“单向端口 + 固定类型 + 固定宽度 + 绑定变量”的共同语义。
 // 真正的时序行为交给两个派生类：
@@ -99,6 +109,22 @@ class Port {
     // 主要供输入端口在同步上游值时使用。
     const std::vector<std::byte>& visible_storage() const { return visible_storage_; }
     bool visible_valid() const { return valid_; }
+
+    // 返回当前端口可见值的字符串表示。
+    // 无有效值时返回 "z"。
+    // Decimal 下尽量按标量类型输出；
+    // 其他进制按端口位宽输出位模式。
+    std::string value_string(PortValueBase base = PortValueBase::Decimal) const;
+
+    // 返回当前端口绑定类型的可读字符串。
+    std::string type_string() const;
+
+    // 返回端口信息字符串，包含名字、内容、类型。
+    std::string info(PortValueBase base = PortValueBase::Decimal) const;
+
+    // 复制另一个端口的运行时状态。
+    // 要求双方方向、类型、位宽和字节数一致。
+    void copy_runtime_from(const Port& other);
 
   protected:
     // 校验方向。

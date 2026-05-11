@@ -2,12 +2,13 @@
 #define PROJECT_XS_BASE_KERNEL_H
 
 #include "base/KernelComponent.h"
-#include "base/Port.h"
 #include "base/PortGroup.h"
 
 #include <cstdint>
+#include <iosfwd>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace project_xs::sim {
@@ -36,42 +37,51 @@ class Kernel {
     // 返回 kernel 自身的周期窗口长度。
     std::uint64_t latency() const { return latency_; }
 
-    // 绑定一个输入端口。
-    // 当前约束是“最多一个输入端口”。
-    void bind_input(const std::shared_ptr<Port>& input);
-
-    // 绑定一个输出端口。
-    // 当前约束是“最多一个输出端口”。
-    void bind_output(const std::shared_ptr<Port>& output);
-
-    // 返回当前绑定的输入/输出端口。
-    const std::shared_ptr<Port>& input_port() const { return input_; }
-    const std::shared_ptr<Port>& output_port() const { return output_; }
-
     // 返回 kernel 自带的默认普通端口组。
     // 这个端口组只承载无协议端口，适合作为统一的多输入/多输出插槽。
     PortGroup& ports() { return ports_; }
     const PortGroup& ports() const { return ports_; }
 
+    // 创建并持有一个附加端口组，同时自动注册到统一调度列表。
+    PortGroup& create_port_group(std::string name);
+
+    // 注册一个附加端口组。
+    // 默认 portgroup 永远具有最高优先级；附加组会按注册顺序在其后处理。
+    void add_port_group(PortGroup* group);
+
     // 向当前 kernel 内注册一个子组件。
-    // 默认 run_single() 会按注册顺序依次推动这些组件。
+    // 在默认实现里，这些组件会按 vector 注册顺序逐个调用它们自己的 run()。
     void add_component(const std::shared_ptr<KernelComponent>& component);
 
     // 复位 kernel 自身和所有内部组件。
-    virtual void reset();
+    void reset();
 
     // 将 kernel 自身及其内部组件的端口初始化为 0。
-    virtual void initialize_zero();
+    void initialize_zero();
 
     // 推进 kernel 一个周期。
     // 执行顺序固定为：
-    // 1. 如果有输入端口，先同步输入
+    // 1. 同步默认端口组里的所有输入
     // 2. 执行 run_single()
-    // 3. 处理 kernel 自身的周期事件
+    //    默认实现会按 vector 顺序逐个推动内部组件
+    // 3. 自动发射 kernel 自身全部输出端口
+    // 4. 执行输出发射后的钩子
+    // 5. 处理 kernel 自身的周期事件
     void run(std::uint64_t cycle);
 
     // 拍末提交 kernel 自身以及其内部所有组件的端口状态。
-    virtual void end_cycle();
+    void end_cycle();
+
+    // 深复制当前 kernel。
+    virtual std::shared_ptr<Kernel> clone() const = 0;
+
+    // 删除一个子组件。
+    // 删除成功返回 true，否则返回 false。
+    bool remove_component(std::string_view name);
+
+    // 当 kernel 被挂到某个 CycleSimulator 上时调用。
+    // 派生类可在这里把自己的输入端口连接到 simulator 的默认 portgroup。
+    virtual void on_attached_to_simulator(CycleSimulator& simulator);
 
     // 返回该 kernel 是否请求终止整个周期模拟器。
     bool terminate_requested() const { return terminate_requested_; }
@@ -86,16 +96,35 @@ class Kernel {
     // kernel 自身到达 latency 时的默认钩子。
     virtual void on_latency_reached(std::uint64_t cycle);
 
+    // 所有输出发射完之后的钩子。
+    virtual void after_outputs_emitted(std::uint64_t cycle);
+
+    // 返回当前拍的调试输出文本；默认返回空串。
+    // 派生类可覆写来自定义逐拍输出。
+    virtual std::string debug_info(std::uint64_t cycle) const;
+
+    // 返回 latency 事件文本；默认返回一条简单提示。
+    virtual std::string latency_info(std::uint64_t cycle) const;
+
     // 从 kernel 内部请求终止整个模拟器。
     void terminate() { terminate_requested_ = true; }
 
     // 返回 kernel 自身已经累计推进的拍数。
     std::uint64_t elapsed_cycles() const { return elapsed_cycles_; }
 
-    // 把当前绑定变量经输出端口发射出去。
-    void emit_output();
+    // 复制基类层的运行时状态，供派生类 clone() 使用。
+    void copy_kernel_runtime_from(const Kernel& other);
+
+    // 非端口组类的额外状态钩子。
+    virtual void reset_extra();
+    virtual void initialize_zero_extra();
+    virtual void end_cycle_extra();
 
   private:
+    void write_text(std::ostream& os, const std::string& text) const;
+    void write_debug(std::ostream& os, std::uint64_t cycle) const;
+    void emit_outputs();
+
     // 推进 kernel 自身的周期事件。
     void handle_latency_event(std::uint64_t cycle);
 
@@ -114,12 +143,14 @@ class Kernel {
     // 是否请求终止整个模拟器。
     bool terminate_requested_ = false;
 
-    // 当前绑定的输入/输出端口。
-    std::shared_ptr<Port> input_;
-    std::shared_ptr<Port> output_;
-
     // 默认普通端口组。
     PortGroup ports_;
+
+    // 由 kernel 自身拥有的附加端口组。
+    std::vector<std::unique_ptr<PortGroup>> owned_extra_port_groups_;
+
+    // 默认组之外的附加端口组。
+    std::vector<PortGroup*> extra_port_groups_;
 };
 
 }  // namespace project_xs::sim

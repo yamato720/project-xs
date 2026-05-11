@@ -83,6 +83,12 @@ void PortGroup::sync_inputs() {
     }
 }
 
+void PortGroup::emit_outputs() {
+    for (const auto& output : outputs_) {
+        output->emit_bound_value();
+    }
+}
+
 void PortGroup::end_cycle() {
     for (const auto& input : inputs_) {
         input->end_cycle();
@@ -108,6 +114,43 @@ void PortGroup::initialize_zero() {
     for (const auto& output : outputs_) {
         output->initialize_zero();
     }
+}
+
+std::string PortGroup::info_inputs(PortValueBase base) const {
+    return info_ports(inputs_, base);
+}
+
+std::string PortGroup::info_outputs(PortValueBase base) const {
+    return info_ports(outputs_, base);
+}
+
+void PortGroup::copy_runtime_from(const PortGroup& other) {
+    if (inputs_.size() != other.inputs_.size() || outputs_.size() != other.outputs_.size()) {
+        throw std::runtime_error("PortGroup runtime copy size mismatch: " + name_);
+    }
+
+    for (std::size_t index = 0; index < inputs_.size(); ++index) {
+        inputs_[index]->copy_runtime_from(*other.inputs_[index]);
+    }
+    for (std::size_t index = 0; index < outputs_.size(); ++index) {
+        outputs_[index]->copy_runtime_from(*other.outputs_[index]);
+    }
+}
+
+std::string PortGroup::info_ports(const std::vector<std::shared_ptr<Port>>& ports,
+                                  PortValueBase base) {
+    if (ports.empty()) {
+        return "(empty)";
+    }
+
+    std::string text;
+    for (std::size_t index = 0; index < ports.size(); ++index) {
+        if (index != 0) {
+            text += " | ";
+        }
+        text += ports[index]->info(base);
+    }
+    return text;
 }
 
 }  // namespace project_xs::sim

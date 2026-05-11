@@ -1,11 +1,145 @@
 #include "base/Port.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
 namespace project_xs::sim {
+
+namespace {
+
+constexpr char kDigits[] = "0123456789abcdef";
+
+template <typename T>
+T read_storage_as(const std::vector<std::byte>& storage) {
+    T value{};
+    std::memcpy(static_cast<void*>(&value), storage.data(), sizeof(T));
+    return value;
+}
+
+std::string format_hex_bytes(const std::vector<std::byte>& storage) {
+    std::ostringstream oss;
+    oss << "0x" << std::hex << std::setfill('0');
+    for (auto it = storage.rbegin(); it != storage.rend(); ++it) {
+        oss << std::setw(2) << std::to_integer<unsigned int>(*it);
+    }
+    return oss.str();
+}
+
+template <typename T>
+std::string format_scalar_value(T value) {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}
+
+template <>
+std::string format_scalar_value<bool>(bool value) {
+    return value ? "1" : "0";
+}
+
+template <>
+std::string format_scalar_value<std::int8_t>(std::int8_t value) {
+    return std::to_string(static_cast<int>(value));
+}
+
+template <>
+std::string format_scalar_value<std::uint8_t>(std::uint8_t value) {
+    return std::to_string(static_cast<unsigned int>(value));
+}
+
+std::string demangle_type_name(const std::type_index& type_index) {
+    if (type_index == typeid(bool)) {
+        return "bool";
+    }
+    if (type_index == typeid(std::int8_t)) {
+        return "int8_t";
+    }
+    if (type_index == typeid(std::uint8_t)) {
+        return "uint8_t";
+    }
+    if (type_index == typeid(std::int16_t)) {
+        return "int16_t";
+    }
+    if (type_index == typeid(std::uint16_t)) {
+        return "uint16_t";
+    }
+    if (type_index == typeid(std::int32_t)) {
+        return "int32_t";
+    }
+    if (type_index == typeid(std::uint32_t)) {
+        return "uint32_t";
+    }
+    if (type_index == typeid(std::int64_t)) {
+        return "int64_t";
+    }
+    if (type_index == typeid(std::uint64_t)) {
+        return "uint64_t";
+    }
+    if (type_index == typeid(float)) {
+        return "float";
+    }
+    if (type_index == typeid(double)) {
+        return "double";
+    }
+    return type_index.name();
+}
+
+std::string trim_leading_zero_digits(const std::string& digits) {
+    const std::size_t first_non_zero = digits.find_first_not_of('0');
+    if (first_non_zero == std::string::npos) {
+        return "0";
+    }
+    return digits.substr(first_non_zero);
+}
+
+std::string storage_bits_string(const std::vector<std::byte>& storage, std::size_t width_bits) {
+    std::string bits;
+    bits.reserve(width_bits);
+
+    for (std::size_t bit_index = width_bits; bit_index > 0; --bit_index) {
+        const std::size_t raw_bit_index = bit_index - 1;
+        const std::size_t byte_index = raw_bit_index / 8;
+        const std::size_t bit_in_byte = raw_bit_index % 8;
+
+        unsigned int byte_value = 0;
+        if (byte_index < storage.size()) {
+            byte_value = std::to_integer<unsigned int>(storage[byte_index]);
+        }
+        const bool bit = ((byte_value >> bit_in_byte) & 0x1U) != 0U;
+        bits.push_back(bit ? '1' : '0');
+    }
+
+    return bits;
+}
+
+std::string format_bits_in_base(const std::vector<std::byte>& storage,
+                                std::size_t width_bits,
+                                std::size_t digit_bits,
+                                const char* prefix) {
+    const std::string bits = storage_bits_string(storage, width_bits);
+    const std::size_t remainder = bits.size() % digit_bits;
+    const std::string padded_bits =
+        (remainder == 0 ? std::string() : std::string(digit_bits - remainder, '0')) + bits;
+
+    std::string digits;
+    digits.reserve(padded_bits.size() / digit_bits);
+    for (std::size_t offset = 0; offset < padded_bits.size(); offset += digit_bits) {
+        unsigned int digit_value = 0;
+        for (std::size_t bit = 0; bit < digit_bits; ++bit) {
+            digit_value <<= 1U;
+            digit_value |= static_cast<unsigned int>(padded_bits[offset + bit] - '0');
+        }
+        digits.push_back(kDigits[digit_value]);
+    }
+
+    return std::string(prefix) + trim_leading_zero_digits(digits);
+}
+
+}  // namespace
 
 Port::Port(std::string name,
            PortDirection direction,
@@ -61,6 +195,81 @@ void Port::clear() {
 
 void Port::initialize_zero() {
     clear();
+}
+
+std::string Port::value_string(PortValueBase base) const {
+    if (!valid_) {
+        return "z";
+    }
+
+    if (base == PortValueBase::Binary) {
+        return format_bits_in_base(visible_storage_, width_bits_, 1, "0b");
+    }
+    if (base == PortValueBase::Octal) {
+        return format_bits_in_base(visible_storage_, width_bits_, 3, "0o");
+    }
+    if (base == PortValueBase::Hexadecimal) {
+        return format_bits_in_base(visible_storage_, width_bits_, 4, "0x");
+    }
+
+    if (type_index_ == typeid(bool)) {
+        return format_scalar_value(read_storage_as<bool>(visible_storage_));
+    }
+    if (type_index_ == typeid(std::int8_t)) {
+        return format_scalar_value(read_storage_as<std::int8_t>(visible_storage_));
+    }
+    if (type_index_ == typeid(std::uint8_t)) {
+        return format_scalar_value(read_storage_as<std::uint8_t>(visible_storage_));
+    }
+    if (type_index_ == typeid(std::int16_t)) {
+        return format_scalar_value(read_storage_as<std::int16_t>(visible_storage_));
+    }
+    if (type_index_ == typeid(std::uint16_t)) {
+        return format_scalar_value(read_storage_as<std::uint16_t>(visible_storage_));
+    }
+    if (type_index_ == typeid(std::int32_t)) {
+        return format_scalar_value(read_storage_as<std::int32_t>(visible_storage_));
+    }
+    if (type_index_ == typeid(std::uint32_t)) {
+        return format_scalar_value(read_storage_as<std::uint32_t>(visible_storage_));
+    }
+    if (type_index_ == typeid(std::int64_t)) {
+        return format_scalar_value(read_storage_as<std::int64_t>(visible_storage_));
+    }
+    if (type_index_ == typeid(std::uint64_t)) {
+        return format_scalar_value(read_storage_as<std::uint64_t>(visible_storage_));
+    }
+    if (type_index_ == typeid(float)) {
+        return format_scalar_value(read_storage_as<float>(visible_storage_));
+    }
+    if (type_index_ == typeid(double)) {
+        return format_scalar_value(read_storage_as<double>(visible_storage_));
+    }
+
+    return format_hex_bytes(visible_storage_);
+}
+
+std::string Port::type_string() const {
+    return demangle_type_name(type_index_);
+}
+
+std::string Port::info(PortValueBase base) const {
+    return name_ + ": value=" + value_string(base) + ", type=" + type_string();
+}
+
+void Port::copy_runtime_from(const Port& other) {
+    if (direction_ != other.direction_ ||
+        width_bits_ != other.width_bits_ ||
+        data_size_ != other.data_size_ ||
+        type_index_ != other.type_index_) {
+        throw std::runtime_error("port runtime copy mismatch on " + name_);
+    }
+
+    visible_storage_ = other.visible_storage_;
+    pending_storage_ = other.pending_storage_;
+    valid_ = other.valid_;
+    pending_valid_ = other.pending_valid_;
+    std::memcpy(bound_variable_, other.bound_variable_, data_size_);
 }
 
 void Port::ensure_direction(PortDirection expected) const {

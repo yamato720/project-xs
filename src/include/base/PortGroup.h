@@ -47,6 +47,9 @@ class PortGroup {
     // 统一同步所有输入端口。
     void sync_inputs();
 
+    // 统一发射所有输出端口当前绑定变量的值。
+    void emit_outputs();
+
     // 统一提交所有端口的拍末状态。
     void end_cycle();
 
@@ -56,7 +59,19 @@ class PortGroup {
     // 把组内所有端口初始化为“0 可见”状态。
     void initialize_zero();
 
+    // 返回组内所有输入/输出端口的信息字符串。
+    // 每个端口通过 Port::info() 生成，端口之间以 " | " 拼接。
+    std::string info_inputs(PortValueBase base = PortValueBase::Decimal) const;
+    std::string info_outputs(PortValueBase base = PortValueBase::Decimal) const;
+
+    // 复制另一个端口组的运行时状态。
+    // 要求输入/输出端口数量、顺序和类型布局一致。
+    void copy_runtime_from(const PortGroup& other);
+
   private:
+    static std::string info_ports(const std::vector<std::shared_ptr<Port>>& ports,
+                                  PortValueBase base);
+
     std::string name_;
     std::vector<std::shared_ptr<Port>> inputs_;
     std::vector<std::shared_ptr<Port>> outputs_;

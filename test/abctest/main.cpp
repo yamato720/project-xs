@@ -3,6 +3,7 @@
 #include "base/KernelComponent.h"
 #include "base/Port.h"
 #include "base/PortGroup.h"
+#include "base/SimulationSession.h"
 
 #include <cstdint>
 #include <iostream>
@@ -11,52 +12,68 @@
 
 namespace {
 
-std::string read_or_z(const std::shared_ptr<project_xs::sim::Port>& port) {
-    std::uint64_t value = 0;
-    if (!port || !port->read(value)) {
-        return "z";
+class DemoCycleSimulator final : public project_xs::sim::CycleSimulator {
+  public:
+    DemoCycleSimulator(std::int64_t max_cycles, long double frequency_hz)
+        : project_xs::sim::CycleSimulator(max_cycles, frequency_hz),
+          source_value_(0) {
+        // 以后如果要接 HBM / AXI / 其他跨周期环境交互，这里就是 simulator 级默认接口入口。
+        ports().add_output(project_xs::sim::WirePort::make_output<std::uint64_t>(
+            "source_out",
+            &source_value_));
     }
-    return std::to_string(value);
-}
+
+  private:
+    void reset_extra() override {
+        source_value_ = 0;
+    }
+
+    void run_single(std::uint64_t cycle) override {
+        source_value_ = cycle;
+    }
+
+    std::uint64_t source_value_;
+};
 
 class KernelAComponent final : public project_xs::sim::KernelComponent {
   public:
     KernelAComponent()
         : project_xs::sim::KernelComponent("kernel_a", 1),
-          output_to_b_(0),
-          output_to_c_(0),
+          input_value_(0),
           output_value_(0) {
+        // A/B/C 三个组件现在都显式拥有 input + output。
+        // 这比旧版“有的组件只挂输入，结果存在成员变量里再被外面读走”更接近真实模块接口。
+        ports().add_input(project_xs::sim::WirePort::make_input<std::uint64_t>(
+            "in",
+            &input_value_));
         ports().add_output(project_xs::sim::WirePort::make_output<std::uint64_t>(
-            "kernel_a_out_to_b",
-            &output_to_b_));
-        ports().add_output(project_xs::sim::WirePort::make_output<std::uint64_t>(
-            "kernel_a_out_to_c",
-            &output_to_c_));
+            "out",
+            &output_value_));
+    }
+
+    std::shared_ptr<project_xs::sim::KernelComponent> clone() const override {
+        auto copy = std::make_shared<KernelAComponent>();
+        copy->copy_component_runtime_from(*this);
+        return copy;
     }
 
   protected:
-    void reset() override {
-        project_xs::sim::KernelComponent::reset();
-        output_to_b_ = 0;
-        output_to_c_ = 0;
+    void reset_extra() override {
+        input_value_ = 0;
         output_value_ = 0;
     }
 
     void run_single(std::uint64_t cycle) override {
+        (void)cycle;
         if (!phase_valid()) {
             return;
         }
 
-        output_value_ = cycle;
-        output_to_b_ = output_value_;
-        output_to_c_ = output_value_;
-        ports().get_output("kernel_a_out_to_b")->emit_bound_value();
-        ports().get_output("kernel_a_out_to_c")->emit_bound_value();
+        output_value_ = input_value_;
     }
 
   private:
-    std::uint64_t output_to_b_;
-    std::uint64_t output_to_c_;
+    std::uint64_t input_value_;
     std::uint64_t output_value_;
 };
 
@@ -65,17 +82,25 @@ class KernelBComponent final : public project_xs::sim::KernelComponent {
     KernelBComponent()
         : project_xs::sim::KernelComponent("kernel_b", 2),
           input_value_(0),
-          captured_value_(0) {
+          captured_value_(0),
+          output_value_(0) {
         ports().add_input(project_xs::sim::WirePort::make_input<std::uint64_t>(
-            "kernel_b_in",
+            "in",
             &input_value_));
+        ports().add_output(project_xs::sim::WirePort::make_output<std::uint64_t>(
+            "out",
+            &output_value_));
     }
 
-    std::uint64_t output_value() const { return output_value_; }
+    std::shared_ptr<project_xs::sim::KernelComponent> clone() const override {
+        auto copy = std::make_shared<KernelBComponent>();
+        copy->captured_value_ = captured_value_;
+        copy->copy_component_runtime_from(*this);
+        return copy;
+    }
 
   protected:
-    void reset() override {
-        project_xs::sim::KernelComponent::reset();
+    void reset_extra() override {
         input_value_ = 0;
         captured_value_ = 0;
         output_value_ = 0;
@@ -108,17 +133,25 @@ class KernelCComponent final : public project_xs::sim::KernelComponent {
     KernelCComponent()
         : project_xs::sim::KernelComponent("kernel_c", 3, 1),
           input_value_(0),
-          captured_value_(0) {
+          captured_value_(0),
+          output_value_(0) {
         ports().add_input(project_xs::sim::WirePort::make_input<std::uint64_t>(
-            "kernel_c_in",
+            "in",
             &input_value_));
+        ports().add_output(project_xs::sim::WirePort::make_output<std::uint64_t>(
+            "out",
+            &output_value_));
     }
 
-    std::uint64_t output_value() const { return output_value_; }
+    std::shared_ptr<project_xs::sim::KernelComponent> clone() const override {
+        auto copy = std::make_shared<KernelCComponent>();
+        copy->captured_value_ = captured_value_;
+        copy->copy_component_runtime_from(*this);
+        return copy;
+    }
 
   protected:
-    void reset() override {
-        project_xs::sim::KernelComponent::reset();
+    void reset_extra() override {
         input_value_ = 0;
         captured_value_ = 0;
         output_value_ = 0;
@@ -146,12 +179,79 @@ class KernelCComponent final : public project_xs::sim::KernelComponent {
     std::uint64_t output_value_ = 0;
 };
 
+class OrderProducerComponent final : public project_xs::sim::KernelComponent {
+  public:
+    OrderProducerComponent()
+        : project_xs::sim::KernelComponent("order_producer"),
+          output_value_(0) {
+        ports().add_output(project_xs::sim::WirePort::make_output<std::uint64_t>(
+            "out",
+            &output_value_));
+    }
+
+    std::shared_ptr<project_xs::sim::KernelComponent> clone() const override {
+        auto copy = std::make_shared<OrderProducerComponent>();
+        copy->copy_component_runtime_from(*this);
+        return copy;
+    }
+
+  protected:
+    void reset_extra() override {
+        output_value_ = 0;
+    }
+
+    void run_single(std::uint64_t cycle) override {
+        output_value_ = cycle;
+    }
+
+  private:
+    std::uint64_t output_value_;
+};
+
+class OrderConsumerComponent final : public project_xs::sim::KernelComponent {
+  public:
+    OrderConsumerComponent()
+        : project_xs::sim::KernelComponent("order_consumer"),
+          input_value_(0),
+          observed_value_(0) {
+        ports().add_input(project_xs::sim::WirePort::make_input<std::uint64_t>(
+            "in",
+            &input_value_));
+    }
+
+    std::shared_ptr<project_xs::sim::KernelComponent> clone() const override {
+        auto copy = std::make_shared<OrderConsumerComponent>();
+        copy->observed_value_ = observed_value_;
+        copy->copy_component_runtime_from(*this);
+        return copy;
+    }
+
+    std::uint64_t observed_value() const { return observed_value_; }
+
+  protected:
+    void reset_extra() override {
+        input_value_ = 0;
+        observed_value_ = 0;
+    }
+
+    void run_single(std::uint64_t cycle) override {
+        (void)cycle;
+        observed_value_ = input_value_;
+    }
+
+  private:
+    std::uint64_t input_value_;
+    std::uint64_t observed_value_;
+};
+
 class AbcDemoKernel final : public project_xs::sim::Kernel {
   public:
-    AbcDemoKernel(KernelAComponent* a_component,
+    AbcDemoKernel(std::string label,
+                  KernelAComponent* a_component,
                   KernelBComponent* b_component,
                   KernelCComponent* c_component)
-        : project_xs::sim::Kernel("demo_kernel"),
+        : project_xs::sim::Kernel(label),
+          label_(std::move(label)),
           a_component_(a_component),
           b_component_(b_component),
           c_component_(c_component),
@@ -161,82 +261,112 @@ class AbcDemoKernel final : public project_xs::sim::Kernel {
           reg_a_(0),
           reg_b_(0),
           reg_c_(0),
-          reg_outputs_("reg_outputs") {
+          reg_outputs_(create_port_group("reg_outputs")) {
+        // 这一组 wire 输出是“当前拍可见”的观测面。
+        // demo kernel 自己不参与 A/B/C 的功能计算，只负责把子组件输出汇总出来用于观察。
         ports().add_output(project_xs::sim::WirePort::make_output<std::uint64_t>(
-            "wire_kernel_a_out",
+            "A",
             &wire_a_));
         ports().add_output(project_xs::sim::WirePort::make_output<std::uint64_t>(
-            "wire_kernel_b_out",
+            "B",
             &wire_b_));
         ports().add_output(project_xs::sim::WirePort::make_output<std::uint64_t>(
-            "wire_kernel_c_out",
+            "C",
             &wire_c_));
 
+        // 这一组 reg 输出是“下一拍可见”的对照面。
+        // reg_outputs_ 不是业务上必需的模块端口，而是测试里额外加的一层，
+        // 专门用来和上面的 wire 输出做逐拍比较。
         reg_outputs_.add_output(project_xs::sim::RegPort::make_output<std::uint64_t>(
-            "reg_kernel_a_out",
+            "A",
             &reg_a_));
         reg_outputs_.add_output(project_xs::sim::RegPort::make_output<std::uint64_t>(
-            "reg_kernel_b_out",
+            "B",
             &reg_b_));
         reg_outputs_.add_output(project_xs::sim::RegPort::make_output<std::uint64_t>(
-            "reg_kernel_c_out",
+            "C",
             &reg_c_));
+
+    }
+
+    std::shared_ptr<project_xs::sim::Kernel> clone() const override {
+        auto a_copy = std::dynamic_pointer_cast<KernelAComponent>(a_component_->clone());
+        auto b_copy = std::dynamic_pointer_cast<KernelBComponent>(b_component_->clone());
+        std::shared_ptr<KernelCComponent> c_copy;
+        if (c_component_) {
+            c_copy = std::dynamic_pointer_cast<KernelCComponent>(c_component_->clone());
+        }
+
+        b_copy->ports().get_input("in")->connect(a_copy->ports().get_output("out"));
+        if (c_copy) {
+            c_copy->ports().get_input("in")->connect(b_copy->ports().get_output("out"));
+        }
+
+        auto copy = std::make_shared<AbcDemoKernel>(
+            label_,
+            a_copy.get(),
+            b_copy.get(),
+            c_copy.get());
+
+        copy->add_component(a_copy);
+        copy->add_component(b_copy);
+        if (c_copy) {
+            copy->add_component(c_copy);
+        }
+
+        copy->reg_outputs_.copy_runtime_from(reg_outputs_);
+        copy->copy_kernel_runtime_from(*this);
+        return copy;
+    }
+
+    bool remove_demo_component(std::string_view name) {
+        if (name == "kernel_c") {
+            c_component_ = nullptr;
+            return remove_component(name);
+        }
+        return false;
     }
 
   protected:
-    void reset() override {
-        project_xs::sim::Kernel::reset();
-        reg_outputs_.clear();
+    void on_attached_to_simulator(project_xs::sim::CycleSimulator& simulator) override {
+        a_component_->ports().get_input("in")->connect(simulator.ports().get_output("source_out"));
+    }
+
+    void reset_extra() override {
         wire_a_ = wire_b_ = wire_c_ = 0;
         reg_a_ = reg_b_ = reg_c_ = 0;
     }
 
-    void initialize_zero() override {
-        project_xs::sim::Kernel::initialize_zero();
-        reg_outputs_.initialize_zero();
-    }
-
     void run_single(std::uint64_t cycle) override {
+        // 这里先清空默认 wire 观测口。
+        // 不清空的话，当前拍如果不重新赋值，wire 口会保留上一拍的 visible 状态，
+        // 就看不出“本拍是否真的重新发射了值”。
         ports().clear();
 
+        // 默认 Kernel::run_single() 会按注册顺序推进 source -> A -> B -> C。
+        // 也就是说，子组件内部的 sync_input / emit_outputs / phase 推进都已经发生完了；
+        // 这里做的只是“把子组件结果汇总到 demo kernel 自己的观测口”。
         project_xs::sim::Kernel::run_single(cycle);
 
-        std::uint64_t a_value = 0;
-        if (a_component_->ports().get_output("kernel_a_out_to_b")->read(a_value)) {
-            wire_a_ = a_value;
+        // read_component_output() 是这个测试额外加的辅助函数。
+        // 它的目的不是实现数据通路，而是把子组件端口上的可见值拷到 demo kernel 的观测变量里，
+        // 这样外层就能继续用 PortGroup 打印 A/B/C 的统一视图。
+        read_component_output(*a_component_, "out", wire_a_);
+        read_component_output(*b_component_, "out", wire_b_);
+        wire_c_ = 0;
+        if (c_component_) {
+            read_component_output(*c_component_, "out", wire_c_);
         }
-        wire_b_ = b_component_->output_value();
-        wire_c_ = c_component_->output_value();
 
+        // reg_* 只是把同一组观测值再喂给 reg 端口，专门用来展示 wire/reg 的时序差异。
+        // 这部分在 UE/游戏业务代码里通常会显得偏“测试脚手架”，不是核心业务逻辑。
         reg_a_ = wire_a_;
         reg_b_ = wire_b_;
         reg_c_ = wire_c_;
-
-        ports().get_output("wire_kernel_a_out")->emit_bound_value();
-        ports().get_output("wire_kernel_b_out")->emit_bound_value();
-        ports().get_output("wire_kernel_c_out")->emit_bound_value();
-
-        reg_outputs_.get_output("reg_kernel_a_out")->emit_bound_value();
-        reg_outputs_.get_output("reg_kernel_b_out")->emit_bound_value();
-        reg_outputs_.get_output("reg_kernel_c_out")->emit_bound_value();
-
-        std::cout << "[cycle " << cycle << "] wire: "
-                  << "A=" << read_or_z(ports().get_output("wire_kernel_a_out")) << " "
-                  << "B=" << read_or_z(ports().get_output("wire_kernel_b_out")) << " "
-                  << "C=" << read_or_z(ports().get_output("wire_kernel_c_out")) << "\n";
-
-        std::cout << "[cycle " << cycle << "] reg : "
-                  << "A=" << read_or_z(reg_outputs_.get_output("reg_kernel_a_out")) << " "
-                  << "B=" << read_or_z(reg_outputs_.get_output("reg_kernel_b_out")) << " "
-                  << "C=" << read_or_z(reg_outputs_.get_output("reg_kernel_c_out")) << "\n";
-    }
-
-    void end_cycle() override {
-        project_xs::sim::Kernel::end_cycle();
-        reg_outputs_.end_cycle();
     }
 
   private:
+    std::string label_;
     KernelAComponent* a_component_;
     KernelBComponent* b_component_;
     KernelCComponent* c_component_;
@@ -246,24 +376,76 @@ class AbcDemoKernel final : public project_xs::sim::Kernel {
     std::uint64_t reg_a_;
     std::uint64_t reg_b_;
     std::uint64_t reg_c_;
-    project_xs::sim::PortGroup reg_outputs_;
+    project_xs::sim::PortGroup& reg_outputs_;
+
+    std::string debug_info(std::uint64_t cycle) const override {
+        // 这里直接使用默认十进制输出。
+        // PortGroup::info_outputs() 会顺序调用每个端口的 Port::info()。
+        return "[" + label_ + "][cycle " + std::to_string(cycle) + "] wire: " +
+               ports().info_outputs() + "\n[" + label_ + "][cycle " +
+               std::to_string(cycle) + "] reg : " + reg_outputs_.info_outputs();
+    }
+
+    static void read_component_output(const project_xs::sim::KernelComponent& component,
+                                      const std::string& port_name,
+                                      std::uint64_t& out) {
+        // 这个函数也是测试辅助函数，不是框架必需接口。
+        // 当前 Port::info() 负责“可读打印”，而 read() 仍然负责“严格类型取值”；
+        // 这里保留 read() 是为了把子组件输出拉到 demo kernel 自己的观测变量里。
+        (void)component.ports().get_output(port_name)->read(out);
+    }
 };
 
-}  // namespace
+class OrderProbeKernel final : public project_xs::sim::Kernel {
+  public:
+    OrderProbeKernel(std::string label,
+                     OrderProducerComponent* producer,
+                     OrderConsumerComponent* consumer)
+        : project_xs::sim::Kernel(label),
+          producer_(producer),
+          consumer_(consumer) {}
 
-int main() {
-    project_xs::sim::CycleSimulator simulator(12);
+    std::shared_ptr<project_xs::sim::Kernel> clone() const override {
+        auto producer_copy =
+            std::dynamic_pointer_cast<OrderProducerComponent>(producer_->clone());
+        auto consumer_copy =
+            std::dynamic_pointer_cast<OrderConsumerComponent>(consumer_->clone());
 
+        consumer_copy->ports().get_input("in")->connect(producer_copy->ports().get_output("out"));
+
+        auto copy = std::make_shared<OrderProbeKernel>(
+            name(),
+            producer_copy.get(),
+            consumer_copy.get());
+        copy->add_component(producer_copy);
+        copy->add_component(consumer_copy);
+        copy->copy_kernel_runtime_from(*this);
+        return copy;
+    }
+
+  protected:
+    void run_single(std::uint64_t cycle) override {
+        project_xs::sim::Kernel::run_single(cycle);
+        std::cout << "[" << name() << "][cycle " << cycle << "] observed="
+                  << consumer_->observed_value() << " expected=" << cycle
+                  << " match=" << (consumer_->observed_value() == cycle ? "yes" : "no") << "\n";
+    }
+
+  private:
+    OrderProducerComponent* producer_;
+    OrderConsumerComponent* consumer_;
+};
+
+std::shared_ptr<AbcDemoKernel> build_demo_kernel(const std::string& label) {
     auto component_a = std::make_shared<KernelAComponent>();
     auto component_b = std::make_shared<KernelBComponent>();
     auto component_c = std::make_shared<KernelCComponent>();
 
-    component_b->ports().get_input("kernel_b_in")->connect(
-        component_a->ports().get_output("kernel_a_out_to_b"));
-    component_c->ports().get_input("kernel_c_in")->connect(
-        component_a->ports().get_output("kernel_a_out_to_c"));
+    component_b->ports().get_input("in")->connect(component_a->ports().get_output("out"));
+    component_c->ports().get_input("in")->connect(component_b->ports().get_output("out"));
 
     auto demo_kernel = std::make_shared<AbcDemoKernel>(
+        label,
         component_a.get(),
         component_b.get(),
         component_c.get());
@@ -272,15 +454,62 @@ int main() {
     demo_kernel->add_component(component_b);
     demo_kernel->add_component(component_c);
 
-    simulator.add_kernel(demo_kernel);
+    return demo_kernel;
+}
+
+std::shared_ptr<OrderProbeKernel> build_order_probe_kernel(const std::string& label) {
+    auto producer = std::make_shared<OrderProducerComponent>();
+    auto consumer = std::make_shared<OrderConsumerComponent>();
+
+    consumer->ports().get_input("in")->connect(producer->ports().get_output("out"));
+
+    auto probe_kernel = std::make_shared<OrderProbeKernel>(
+        label,
+        producer.get(),
+        consumer.get());
+    probe_kernel->add_component(producer);
+    probe_kernel->add_component(consumer);
+    return probe_kernel;
+}
+
+}  // namespace
+
+int main() {
+    // session 自己有一套时间步频率，底层 simulator 则各自有自己的周期频率。
+    // 当前 demo 同时挂两个 simulator：
+    // - sim_a: 4Hz，3 秒内会跑 12 个周期
+    // - sim_b: 2Hz，3 秒内会跑 6 个周期
+    // session 会一直运行到总时间到达，或者全部 simulator 自己 finished。
+    project_xs::sim::SimulationSession session(4.0L, 3.0L);
+    auto simulator_a = std::make_shared<DemoCycleSimulator>(6, 4.0L);
+    auto simulator_b = std::make_shared<DemoCycleSimulator>(-1, 1.0L);
+
+    auto kernel_a = build_demo_kernel("sim_a");
+    simulator_a->add_kernel(kernel_a);
+    simulator_a->add_kernel(build_order_probe_kernel("order_probe"));
+
+    // fullcopy 会把 simulator_a 的配置、运行时状态和 kernel 内容完整复制到 simulator_b。
+    simulator_b->fullcopy(*simulator_a);
+    (*simulator_b)(6, 2.0L);
+
+    // 在完整复制出的 kernel 上删除 C 组件，验证 fullcopy 后仍能做局部裁剪。
+    simulator_b->remove_kernel("sim_a");
+    auto kernel_b = build_demo_kernel("sim_b_fullcopy_without_c");
+    kernel_b->remove_demo_component("kernel_c");
+    simulator_b->add_kernel(kernel_b);
+
+    session.add_simulator(simulator_a);
+    session.add_simulator(simulator_b);
 
     // 先做一次全局 reset，再把所有寄存器型端口初始化成 0。
-    simulator.reset();
-    simulator.initialize_zero();
+    // initialize_zero() 也是为了让 reg 观测更直观：
+    // 这样仿真起始拍就能看到确定的 0，而不是一开始全是 z。
+    session.reset();
+    session.initialize_zero();
 
-    std::cout << "start cycle simulation, max_cycles=12, compare wire group and reg group\n";
-    simulator.run();
-    std::cout << "simulation finished at cycle " << simulator.current_cycle() << "\n";
+    std::cout << session.start_info() << "\n";
+    session.run();
+    std::cout << session.finish_info() << "\n";
 
     return 0;
 }
