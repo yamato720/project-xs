@@ -1,0 +1,44 @@
+{
+  "title": "Project-XS XPlus HLS Minimal Review",
+  "subtitle": "最小化渲染样例：保留全部 XO 与 CFG，弱化注释层，只审查接口、综合与实现报告接线是否正确。",
+  "source_note": "这个 spec 只保留最少的渲染控制字段；XO、CFG、csynth 和 routed timing 都通过相对路径显式指定，并关闭自动发现。",
+  "cfg": "../project_xplus_hls/connectivity_u55c.cfg",
+  "artifacts": {
+    "auto_discover": false,
+    "csynth_dir": "../project_xplus_hls/vivado-log/csynth",
+    "schedule_dir": "../project_xplus_hls/vivado-log/sched"
+  },
+  "output": {
+    "json": "reports/min_review.json",
+    "html": "reports/min_review.html"
+  },
+  "sequence": [
+    "spmv_csr_kernel",
+    "init_pcg_kernel",
+    "dot_kernel",
+    "update_xrz_kernel",
+    "update_p_kernel"
+  ],
+  "kernels": [
+    {
+      "name": "spmv_csr_kernel",
+      "xo": "../project_xplus_hls/xo/spmv_csr_kernel.xo"
+    },
+    {
+      "name": "init_pcg_kernel",
+      "xo": "../project_xplus_hls/xo/init_pcg_kernel.xo"
+    },
+    {
+      "name": "dot_kernel",
+      "xo": "../project_xplus_hls/xo/dot_kernel.xo"
+    },
+    {
+      "name": "update_xrz_kernel",
+      "xo": "../project_xplus_hls/xo/update_xrz_kernel.xo"
+    },
+    {
+      "name": "update_p_kernel",
+      "xo": "../project_xplus_hls/xo/update_p_kernel.xo"
+    }
+  ]
+}

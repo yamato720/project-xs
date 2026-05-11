@@ -1,0 +1,1676 @@
+{
+  "title": "Project-XS XPlus HLS Minimal Review",
+  "subtitle": "最小化渲染样例：保留全部 XO 与 CFG，弱化注释层，只审查接口、综合与实现报告接线是否正确。",
+  "spec_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls_min/spec.json",
+  "example_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls_min",
+  "source_note": "这个 spec 只保留最少的渲染控制字段；XO、CFG、csynth 和 routed timing 都通过相对路径显式指定，并关闭自动发现。",
+  "sequence": [
+    "spmv_csr_kernel",
+    "init_pcg_kernel",
+    "dot_kernel",
+    "update_xrz_kernel",
+    "update_p_kernel"
+  ],
+  "sequence_descriptions": {},
+  "dependencies": [],
+  "host_nodes": [],
+  "connectivity": {
+    "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+    "kernels": [
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "count": "1",
+        "instances": [
+          "spmv_csr_kernel_1"
+        ],
+        "binding_count": 5
+      },
+      {
+        "kernel_name": "init_pcg_kernel",
+        "count": "1",
+        "instances": [
+          "init_pcg_kernel_1"
+        ],
+        "binding_count": 7
+      },
+      {
+        "kernel_name": "dot_kernel",
+        "count": "1",
+        "instances": [
+          "dot_kernel_1"
+        ],
+        "binding_count": 3
+      },
+      {
+        "kernel_name": "update_xrz_kernel",
+        "count": "1",
+        "instances": [
+          "update_xrz_kernel_1"
+        ],
+        "binding_count": 7
+      },
+      {
+        "kernel_name": "update_p_kernel",
+        "count": "1",
+        "instances": [
+          "update_p_kernel_1"
+        ],
+        "binding_count": 2
+      }
+    ]
+  },
+  "vivado": {
+    "auto_discover": false,
+    "vivado_log_dir": "",
+    "csynth_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth",
+    "schedule_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched",
+    "link_dir": "",
+    "link_timing": {
+      "report_path": "",
+      "available": false,
+      "requested_path": "",
+      "how_to_get": "期望文件名通常为 impl_1_*timing_summary*_routed.rpt 或同类 routed timing summary，常见于 v++ link / Vivado implementation 的 reports/link/imp/ 或 impl report 目录中",
+      "constraints_met": false,
+      "design_summary": {},
+      "clock_summary": [],
+      "kernel_clock_summary": []
+    },
+    "pipeline_overview": [
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "kernel_pipeline": "spmv_csr_kernel_Pipeline_load_x",
+        "loop_name": "load_x",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "3",
+        "trip_count": "1 ~ 1024",
+        "pipelined": "yes",
+        "pipeline_depth": "3",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "kernel_pipeline": "top-level-loop",
+        "loop_name": "spmv_rows",
+        "ii_achieved": "-",
+        "ii_target": "-",
+        "iteration_latency": "?",
+        "trip_count": "1 ~ ?",
+        "pipelined": "no",
+        "pipeline_depth": "",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "kernel_pipeline": "top-level-loop",
+        "loop_name": "VITIS_LOOP_54_1",
+        "ii_achieved": "-",
+        "ii_target": "-",
+        "iteration_latency": "20",
+        "trip_count": "?",
+        "pipelined": "no",
+        "pipeline_depth": "",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "init_pcg_kernel",
+        "kernel_pipeline": "init_pcg_kernel_Pipeline_init_loop",
+        "loop_name": "init_loop",
+        "ii_achieved": "5",
+        "ii_target": "1",
+        "iteration_latency": "32",
+        "trip_count": "1 ~ ?",
+        "pipelined": "yes",
+        "pipeline_depth": "32",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "dot_kernel",
+        "kernel_pipeline": "dot_kernel_Pipeline_dot_loop",
+        "loop_name": "dot_loop",
+        "ii_achieved": "5",
+        "ii_target": "1",
+        "iteration_latency": "16",
+        "trip_count": "1 ~ ?",
+        "pipelined": "yes",
+        "pipeline_depth": "16",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "update_xrz_kernel",
+        "kernel_pipeline": "update_xrz_kernel_Pipeline_update_loop",
+        "loop_name": "update_loop",
+        "ii_achieved": "5",
+        "ii_target": "1",
+        "iteration_latency": "150",
+        "trip_count": "1 ~ ?",
+        "pipelined": "yes",
+        "pipeline_depth": "150",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "update_p_kernel",
+        "kernel_pipeline": "update_p_kernel_Pipeline_update_p_loop",
+        "loop_name": "update_p_loop",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "157",
+        "trip_count": "?",
+        "pipelined": "yes",
+        "pipeline_depth": "157",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
+      }
+    ]
+  },
+  "kernels": [
+    {
+      "name": "spmv_csr_kernel",
+      "input_index": 0,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/spmv_csr_kernel.xo",
+        "kernel_name": "spmv_csr_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:spmv_csr_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_ROW",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_COL",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_VAL",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_X",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_Y",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x54"
+          }
+        ],
+        "args": [
+          {
+            "name": "row_ptr",
+            "id": "0",
+            "port": "M_AXI_GMEM_ROW",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "col_idx",
+            "id": "1",
+            "port": "M_AXI_GMEM_COL",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "values",
+            "id": "2",
+            "port": "M_AXI_GMEM_VAL",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "x",
+            "id": "3",
+            "port": "M_AXI_GMEM_X",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          },
+          {
+            "name": "y",
+            "id": "4",
+            "port": "M_AXI_GMEM_Y",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x40",
+            "type": "void*"
+          },
+          {
+            "name": "n",
+            "id": "5",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x4C",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "spmv_csr_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/spmv_csr_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/spmv_csr_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "spmv_csr_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "4",
+          "DSP": "11",
+          "FF": "7583",
+          "LUT": "11253",
+          "URAM": "0"
+        },
+        "loop_latency": [
+          {
+            "name": "spmv_rows",
+            "path": "spmv_rows",
+            "slack_ns": "2.43",
+            "trip_count": "",
+            "latency_cycles": "",
+            "latency_abs": "",
+            "iteration_latency": "",
+            "pipeline_ii": "",
+            "pipeline_depth": ""
+          },
+          {
+            "name": "VITIS_LOOP_54_1",
+            "path": "spmv_rows/VITIS_LOOP_54_1",
+            "slack_ns": "2.43",
+            "trip_count": "",
+            "latency_cycles": "",
+            "latency_abs": "",
+            "iteration_latency": "20",
+            "pipeline_ii": "",
+            "pipeline_depth": ""
+          }
+        ]
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "306",
+          "top_loop_rows": [
+            {
+              "loop_name": "spmv_rows",
+              "latency_min": "?",
+              "latency_max": "?",
+              "iteration_latency": "?",
+              "ii_achieved": "-",
+              "ii_target": "-",
+              "trip_count": "1 ~ ?",
+              "pipelined": "no"
+            },
+            {
+              "loop_name": "VITIS_LOOP_54_1",
+              "latency_min": "?",
+              "latency_max": "?",
+              "iteration_latency": "20",
+              "ii_achieved": "-",
+              "ii_target": "-",
+              "trip_count": "?",
+              "pipelined": "no"
+            }
+          ]
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt",
+            "pipeline_name": "spmv_csr_kernel_Pipeline_load_x",
+            "fsm_states": "3",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "3",
+            "loop_rows": [
+              {
+                "loop_name": "load_x",
+                "latency_min": "2",
+                "latency_max": "1025",
+                "iteration_latency": "3",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "1 ~ 1024",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "spmv_csr_kernel_Pipeline_load_x",
+            "loop_name": "load_x",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "3",
+            "trip_count": "1 ~ 1024",
+            "pipelined": "yes",
+            "pipeline_depth": "3",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
+          },
+          {
+            "kernel_pipeline": "top-level-loop",
+            "loop_name": "spmv_rows",
+            "ii_achieved": "-",
+            "ii_target": "-",
+            "iteration_latency": "?",
+            "trip_count": "1 ~ ?",
+            "pipelined": "no",
+            "pipeline_depth": "",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+          },
+          {
+            "kernel_pipeline": "top-level-loop",
+            "loop_name": "VITIS_LOOP_54_1",
+            "ii_achieved": "-",
+            "ii_target": "-",
+            "iteration_latency": "20",
+            "trip_count": "?",
+            "pipelined": "no",
+            "pipeline_depth": "",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "instances": [
+          "spmv_csr_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "row_ptr",
+            "target": "HBM[0]",
+            "raw": "spmv_csr_kernel_1.row_ptr:HBM[0]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "col_idx",
+            "target": "HBM[0]",
+            "raw": "spmv_csr_kernel_1.col_idx:HBM[0]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "values",
+            "target": "HBM[1]",
+            "raw": "spmv_csr_kernel_1.values:HBM[1]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "x",
+            "target": "HBM[6]",
+            "raw": "spmv_csr_kernel_1.x:HBM[6]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "y",
+            "target": "HBM[7]",
+            "raw": "spmv_csr_kernel_1.y:HBM[7]",
+            "kernel_name": "spmv_csr_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "row_ptr": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[0]"
+            }
+          ],
+          "col_idx": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[0]"
+            }
+          ],
+          "values": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[1]"
+            }
+          ],
+          "x": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "y": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[7]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "init_pcg_kernel",
+      "input_index": 1,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/init_pcg_kernel.xo",
+        "kernel_name": "init_pcg_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:init_pcg_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_B",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_AX",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_MINV",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_R",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_Z",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_P",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_METRICS",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x6C"
+          }
+        ],
+        "args": [
+          {
+            "name": "b",
+            "id": "0",
+            "port": "M_AXI_GMEM_B",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "ax",
+            "id": "1",
+            "port": "M_AXI_GMEM_AX",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "m_inv",
+            "id": "2",
+            "port": "M_AXI_GMEM_MINV",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "r",
+            "id": "3",
+            "port": "M_AXI_GMEM_R",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          },
+          {
+            "name": "z",
+            "id": "4",
+            "port": "M_AXI_GMEM_Z",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x40",
+            "type": "void*"
+          },
+          {
+            "name": "p",
+            "id": "5",
+            "port": "M_AXI_GMEM_P",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x4C",
+            "type": "void*"
+          },
+          {
+            "name": "metrics",
+            "id": "6",
+            "port": "M_AXI_GMEM_METRICS",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x58",
+            "type": "void*"
+          },
+          {
+            "name": "n",
+            "id": "7",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x64",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "init_pcg_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/init_pcg_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/init_pcg_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "init_pcg_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "1",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "3.333 ns",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "2",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "11",
+          "FF": "11204",
+          "LUT": "17306",
+          "URAM": "0"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "210",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt",
+            "pipeline_name": "init_pcg_kernel_Pipeline_init_loop",
+            "fsm_states": "32",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "5",
+            "individual_depth": "32",
+            "loop_rows": [
+              {
+                "loop_name": "init_loop",
+                "latency_min": "31",
+                "latency_max": "?",
+                "iteration_latency": "32",
+                "ii_achieved": "5",
+                "ii_target": "1",
+                "trip_count": "1 ~ ?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "init_pcg_kernel_Pipeline_init_loop",
+            "loop_name": "init_loop",
+            "ii_achieved": "5",
+            "ii_target": "1",
+            "iteration_latency": "32",
+            "trip_count": "1 ~ ?",
+            "pipelined": "yes",
+            "pipeline_depth": "32",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "instances": [
+          "init_pcg_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "b",
+            "target": "HBM[2]",
+            "raw": "init_pcg_kernel_1.b:HBM[2]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "ax",
+            "target": "HBM[7]",
+            "raw": "init_pcg_kernel_1.ax:HBM[7]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "m_inv",
+            "target": "HBM[8]",
+            "raw": "init_pcg_kernel_1.m_inv:HBM[8]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "r",
+            "target": "HBM[4]",
+            "raw": "init_pcg_kernel_1.r:HBM[4]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "z",
+            "target": "HBM[5]",
+            "raw": "init_pcg_kernel_1.z:HBM[5]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "p",
+            "target": "HBM[6]",
+            "raw": "init_pcg_kernel_1.p:HBM[6]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "metrics",
+            "target": "HBM[9]",
+            "raw": "init_pcg_kernel_1.metrics:HBM[9]",
+            "kernel_name": "init_pcg_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "b": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[2]"
+            }
+          ],
+          "ax": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[7]"
+            }
+          ],
+          "m_inv": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[8]"
+            }
+          ],
+          "r": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[4]"
+            }
+          ],
+          "z": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[5]"
+            }
+          ],
+          "p": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "metrics": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[9]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "dot_kernel",
+      "input_index": 2,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/dot_kernel.xo",
+        "kernel_name": "dot_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:dot_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_A",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_B",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_OUT",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x3C"
+          }
+        ],
+        "args": [
+          {
+            "name": "a",
+            "id": "0",
+            "port": "M_AXI_GMEM_A",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "b",
+            "id": "1",
+            "port": "M_AXI_GMEM_B",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "out",
+            "id": "2",
+            "port": "M_AXI_GMEM_OUT",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "n",
+            "id": "3",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x34",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "dot_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/dot_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/dot_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "dot_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "1",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "3.333 ns",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "2",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "8",
+          "FF": "4936",
+          "LUT": "7521",
+          "URAM": "0"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "143",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt",
+            "pipeline_name": "dot_kernel_Pipeline_dot_loop",
+            "fsm_states": "16",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "5",
+            "individual_depth": "16",
+            "loop_rows": [
+              {
+                "loop_name": "dot_loop",
+                "latency_min": "15",
+                "latency_max": "?",
+                "iteration_latency": "16",
+                "ii_achieved": "5",
+                "ii_target": "1",
+                "trip_count": "1 ~ ?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "dot_kernel_Pipeline_dot_loop",
+            "loop_name": "dot_loop",
+            "ii_achieved": "5",
+            "ii_target": "1",
+            "iteration_latency": "16",
+            "trip_count": "1 ~ ?",
+            "pipelined": "yes",
+            "pipeline_depth": "16",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "instances": [
+          "dot_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "dot_kernel_1",
+            "arg": "a",
+            "target": "HBM[6]",
+            "raw": "dot_kernel_1.a:HBM[6]",
+            "kernel_name": "dot_kernel"
+          },
+          {
+            "instance": "dot_kernel_1",
+            "arg": "b",
+            "target": "HBM[7]",
+            "raw": "dot_kernel_1.b:HBM[7]",
+            "kernel_name": "dot_kernel"
+          },
+          {
+            "instance": "dot_kernel_1",
+            "arg": "out",
+            "target": "HBM[9]",
+            "raw": "dot_kernel_1.out:HBM[9]",
+            "kernel_name": "dot_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "a": [
+            {
+              "instance": "dot_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "b": [
+            {
+              "instance": "dot_kernel_1",
+              "target": "HBM[7]"
+            }
+          ],
+          "out": [
+            {
+              "instance": "dot_kernel_1",
+              "target": "HBM[9]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "update_xrz_kernel",
+      "input_index": 3,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_xrz_kernel.xo",
+        "kernel_name": "update_xrz_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:update_xrz_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_X",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_P",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_R",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_AP",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_MINV",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_Z",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_METRICS",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x78"
+          }
+        ],
+        "args": [
+          {
+            "name": "x",
+            "id": "0",
+            "port": "M_AXI_GMEM_X",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "p",
+            "id": "1",
+            "port": "M_AXI_GMEM_P",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "r",
+            "id": "2",
+            "port": "M_AXI_GMEM_R",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "ap",
+            "id": "3",
+            "port": "M_AXI_GMEM_AP",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          },
+          {
+            "name": "m_inv",
+            "id": "4",
+            "port": "M_AXI_GMEM_MINV",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x40",
+            "type": "void*"
+          },
+          {
+            "name": "z",
+            "id": "5",
+            "port": "M_AXI_GMEM_Z",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x4C",
+            "type": "void*"
+          },
+          {
+            "name": "metrics",
+            "id": "6",
+            "port": "M_AXI_GMEM_METRICS",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x58",
+            "type": "void*"
+          },
+          {
+            "name": "alpha",
+            "id": "7",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x8",
+            "offset": "0x64",
+            "type": "double"
+          },
+          {
+            "name": "n",
+            "id": "8",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x70",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "update_xrz_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_xrz_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_xrz_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "update_xrz_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.614",
+        "estimated_clock_mhz": "382.555",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "1",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "3.333 ns",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "2",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "11",
+          "FF": "12152",
+          "LUT": "17717",
+          "URAM": "0"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "210",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt",
+            "pipeline_name": "update_xrz_kernel_Pipeline_update_loop",
+            "fsm_states": "150",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "5",
+            "individual_depth": "150",
+            "loop_rows": [
+              {
+                "loop_name": "update_loop",
+                "latency_min": "149",
+                "latency_max": "?",
+                "iteration_latency": "150",
+                "ii_achieved": "5",
+                "ii_target": "1",
+                "trip_count": "1 ~ ?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "update_xrz_kernel_Pipeline_update_loop",
+            "loop_name": "update_loop",
+            "ii_achieved": "5",
+            "ii_target": "1",
+            "iteration_latency": "150",
+            "trip_count": "1 ~ ?",
+            "pipelined": "yes",
+            "pipeline_depth": "150",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "instances": [
+          "update_xrz_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "x",
+            "target": "HBM[3]",
+            "raw": "update_xrz_kernel_1.x:HBM[3]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "p",
+            "target": "HBM[6]",
+            "raw": "update_xrz_kernel_1.p:HBM[6]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "r",
+            "target": "HBM[4]",
+            "raw": "update_xrz_kernel_1.r:HBM[4]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "ap",
+            "target": "HBM[7]",
+            "raw": "update_xrz_kernel_1.ap:HBM[7]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "m_inv",
+            "target": "HBM[8]",
+            "raw": "update_xrz_kernel_1.m_inv:HBM[8]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "z",
+            "target": "HBM[5]",
+            "raw": "update_xrz_kernel_1.z:HBM[5]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "metrics",
+            "target": "HBM[9]",
+            "raw": "update_xrz_kernel_1.metrics:HBM[9]",
+            "kernel_name": "update_xrz_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "x": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[3]"
+            }
+          ],
+          "p": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "r": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[4]"
+            }
+          ],
+          "ap": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[7]"
+            }
+          ],
+          "m_inv": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[8]"
+            }
+          ],
+          "z": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[5]"
+            }
+          ],
+          "metrics": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[9]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "update_p_kernel",
+      "input_index": 4,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_p_kernel.xo",
+        "kernel_name": "update_p_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:update_p_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_Z",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_P",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x3C"
+          }
+        ],
+        "args": [
+          {
+            "name": "z",
+            "id": "0",
+            "port": "M_AXI_GMEM_Z",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "p",
+            "id": "1",
+            "port": "M_AXI_GMEM_P",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "beta",
+            "id": "2",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "double"
+          },
+          {
+            "name": "n",
+            "id": "3",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x34",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "update_p_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_p_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_p_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "update_p_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "11",
+          "FF": "4437",
+          "LUT": "5439",
+          "URAM": "0"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "73",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt",
+            "pipeline_name": "update_p_kernel_Pipeline_update_p_loop",
+            "fsm_states": "157",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "157",
+            "loop_rows": [
+              {
+                "loop_name": "update_p_loop",
+                "latency_min": "?",
+                "latency_max": "?",
+                "iteration_latency": "157",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "update_p_kernel_Pipeline_update_p_loop",
+            "loop_name": "update_p_loop",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "157",
+            "trip_count": "?",
+            "pipelined": "yes",
+            "pipeline_depth": "157",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "instances": [
+          "update_p_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "update_p_kernel_1",
+            "arg": "z",
+            "target": "HBM[5]",
+            "raw": "update_p_kernel_1.z:HBM[5]",
+            "kernel_name": "update_p_kernel"
+          },
+          {
+            "instance": "update_p_kernel_1",
+            "arg": "p",
+            "target": "HBM[6]",
+            "raw": "update_p_kernel_1.p:HBM[6]",
+            "kernel_name": "update_p_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "z": [
+            {
+              "instance": "update_p_kernel_1",
+              "target": "HBM[5]"
+            }
+          ],
+          "p": [
+            {
+              "instance": "update_p_kernel_1",
+              "target": "HBM[6]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    }
+  ]
+}

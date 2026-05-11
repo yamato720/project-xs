@@ -2,9 +2,16 @@
   "title": "Project-XS XPlus HLS Example",
   "subtitle": "基于 Project-XPlus 的 5 个 HLS kernel，以 XO 自动解析接口，JSON 注释补充 host orchestration、component 草图与 XS 模拟器映射。",
   "source_note": "规则：能从 xo 提取的接口/arg/kernel 元数据由脚本自动解析；执行顺序、依赖、host 控制、component 拆分、XS 映射等全部来自本 JSON。",
+  "cfg": "connectivity_u55c.cfg",
+  "artifacts": {
+    "auto_discover": false,
+    "csynth_dir": "vivado-log/csynth",
+    "schedule_dir": "vivado-log/sched",
+    "link_timing_report": "vivado-log/link/impl_1_hw_bb_locked_timing_summary_routed.rpt"
+  },
   "output": {
-    "json": "reports/project_xplus_hls_example.json",
-    "html": "reports/project_xplus_hls_example.html"
+    "json": "reports/xo_report.json",
+    "html": "reports/xo_report.html"
   },
   "sequence": [
     "spmv_csr_kernel",
@@ -76,7 +83,7 @@
   "kernels": [
     {
       "name": "spmv_csr_kernel",
-      "xo": "../../../Project-XPlus/build/sw_emu/spmv_csr_kernel.xo",
+      "xo": "xo/spmv_csr_kernel.xo",
       "role": "阶段 1 / 阶段 2：稀疏乘",
       "summary": [
         "这个顶层 kernel 对应硬件中的一次 CSR SpMV。",
@@ -85,13 +92,6 @@
       ],
       "reads": ["row_ptr", "col_idx", "values", "x/p"],
       "writes": ["y(ax/ap)"],
-      "hbm_mapping": [
-        {"arg": "row_ptr", "target": "HBM[0]"},
-        {"arg": "col_idx", "target": "HBM[0]"},
-        {"arg": "values", "target": "HBM[1]"},
-        {"arg": "x", "target": "HBM[6]"},
-        {"arg": "y", "target": "HBM[7]"}
-      ],
       "xs_mapping": {
         "kernel": "Kernel",
         "memory": ["global CSR", "vector cache"],
@@ -136,7 +136,7 @@
     },
     {
       "name": "init_pcg_kernel",
-      "xo": "../../../Project-XPlus/build/sw_emu/init_pcg_kernel.xo",
+      "xo": "xo/init_pcg_kernel.xo",
       "role": "初始化阶段",
       "summary": [
         "把 Jacobi-PCG 的前缀步骤合并在一个 kernel 内完成。",
@@ -145,15 +145,6 @@
       ],
       "reads": ["b", "ax", "m_inv"],
       "writes": ["r", "z", "p", "metrics(rz, rr)"],
-      "hbm_mapping": [
-        {"arg": "b", "target": "HBM[2]"},
-        {"arg": "ax", "target": "HBM[7]"},
-        {"arg": "m_inv", "target": "HBM[8]"},
-        {"arg": "r", "target": "HBM[4]"},
-        {"arg": "z", "target": "HBM[5]"},
-        {"arg": "p", "target": "HBM[6]"},
-        {"arg": "metrics", "target": "HBM[9]"}
-      ],
       "xs_mapping": {
         "kernel": "Kernel",
         "memory": ["rhs", "ax buffer", "jacobi inverse"],
@@ -208,7 +199,7 @@
     },
     {
       "name": "dot_kernel",
-      "xo": "../../../Project-XPlus/build/sw_emu/dot_kernel.xo",
+      "xo": "xo/dot_kernel.xo",
       "role": "标量归约阶段",
       "summary": [
         "当前主循环里只负责计算 pAp = p^T ap。",
@@ -217,11 +208,6 @@
       ],
       "reads": ["a", "b"],
       "writes": ["out[0]"],
-      "hbm_mapping": [
-        {"arg": "a", "target": "HBM[6]"},
-        {"arg": "b", "target": "HBM[7]"},
-        {"arg": "out", "target": "HBM[9]"}
-      ],
       "xs_mapping": {
         "kernel": "KernelComponent or reduction Kernel",
         "memory": ["vector a", "vector b"],
@@ -257,7 +243,7 @@
     },
     {
       "name": "update_xrz_kernel",
-      "xo": "../../../Project-XPlus/build/sw_emu/update_xrz_kernel.xo",
+      "xo": "xo/update_xrz_kernel.xo",
       "role": "向量更新阶段",
       "summary": [
         "这一层把与 alpha 绑定的一轮向量更新合并到一个 kernel 中。",
@@ -266,15 +252,6 @@
       ],
       "reads": ["p", "r", "ap", "m_inv", "alpha"],
       "writes": ["x", "r", "z", "metrics(rz_new, rr)"],
-      "hbm_mapping": [
-        {"arg": "x", "target": "HBM[3]"},
-        {"arg": "p", "target": "HBM[6]"},
-        {"arg": "r", "target": "HBM[4]"},
-        {"arg": "ap", "target": "HBM[7]"},
-        {"arg": "m_inv", "target": "HBM[8]"},
-        {"arg": "z", "target": "HBM[5]"},
-        {"arg": "metrics", "target": "HBM[9]"}
-      ],
       "xs_mapping": {
         "kernel": "Kernel",
         "memory": ["state vectors", "ap buffer", "jacobi inverse"],
@@ -329,7 +306,7 @@
     },
     {
       "name": "update_p_kernel",
-      "xo": "../../../Project-XPlus/build/sw_emu/update_p_kernel.xo",
+      "xo": "xo/update_p_kernel.xo",
       "role": "方向更新阶段",
       "summary": [
         "这一层只负责方向向量更新 p = z + beta p。",
@@ -338,10 +315,6 @@
       ],
       "reads": ["z", "p", "beta"],
       "writes": ["p"],
-      "hbm_mapping": [
-        {"arg": "z", "target": "HBM[5]"},
-        {"arg": "p", "target": "HBM[6]"}
-      ],
       "xs_mapping": {
         "kernel": "KernelComponent or vector update Kernel",
         "memory": ["z buffer", "p buffer"],

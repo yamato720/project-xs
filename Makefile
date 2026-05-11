@@ -10,7 +10,7 @@ INCLUDE_DIR := $(SRC_DIR)/include
 BASE_SRC_DIR := $(SRC_DIR)/base
 BASE_INCLUDE_DIR := $(INCLUDE_DIR)/base
 SCRIPT := $(ROOT_DIR)/script/generate_cg_dataset.py
-XPLUS_HLS_EXAMPLE_SCRIPT := $(ROOT_DIR)/script/render_xplus_hls_example.py
+XPLUS_HLS_EXAMPLE_SCRIPT := $(ROOT_DIR)/script/parse_xo.py
 MAIN_SRC := $(ROOT_DIR)/main.cpp
 ABC_TEST_DIR := $(ROOT_DIR)/test/abctest
 TEST_ROOT_DIR := $(ROOT_DIR)/test
@@ -80,7 +80,7 @@ run-cycle-sim:
 	@$(MAKE) test abctest
 
 render-xplus-hls-example:
-	$(PYTHON) $(XPLUS_HLS_EXAMPLE_SCRIPT)
+	$(PYTHON) $(XPLUS_HLS_EXAMPLE_SCRIPT) $(ROOT_DIR)/example/project_xplus_hls
 
 clean:
 	rm -rf $(BUILD_DIR)

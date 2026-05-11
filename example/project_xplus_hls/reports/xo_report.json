@@ -1,0 +1,2709 @@
+{
+  "title": "Project-XS XPlus HLS Example",
+  "subtitle": "基于 Project-XPlus 的 5 个 HLS kernel，以 XO 自动解析接口，JSON 注释补充 host orchestration、component 草图与 XS 模拟器映射。",
+  "spec_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/project_xplus_hls_spec.json",
+  "example_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls",
+  "source_note": "规则：能从 xo 提取的接口/arg/kernel 元数据由脚本自动解析；执行顺序、依赖、host 控制、component 拆分、XS 映射等全部来自本 JSON。",
+  "sequence": [
+    "spmv_csr_kernel",
+    "init_pcg_kernel",
+    "dot_kernel",
+    "update_xrz_kernel",
+    "update_p_kernel"
+  ],
+  "sequence_descriptions": {
+    "spmv_csr_kernel": "ax = A * x0 / ap = A * p",
+    "init_pcg_kernel": "r / z / p / rz / rr",
+    "dot_kernel": "pAp = p^T ap",
+    "update_xrz_kernel": "x / r / z / rz_new / rr",
+    "update_p_kernel": "p = z + beta p"
+  },
+  "dependencies": [
+    {
+      "upstream": "spmv_csr_kernel",
+      "downstream": "init_pcg_kernel",
+      "description": "初始化路径：ax 作为 init 的输入"
+    },
+    {
+      "upstream": "spmv_csr_kernel",
+      "downstream": "dot_kernel",
+      "description": "主循环路径：ap 作为 dot 的输入"
+    },
+    {
+      "upstream": "dot_kernel",
+      "downstream": "update_xrz_kernel",
+      "description": "host 读取 pAp 与 rz 后计算 alpha，并将其作为标量参数驱动 update_xrz"
+    },
+    {
+      "upstream": "update_xrz_kernel",
+      "downstream": "update_p_kernel",
+      "description": "host 读取 rz_new / rz_old 后计算 beta，并将其作为标量参数驱动 update_p"
+    },
+    {
+      "upstream": "update_p_kernel",
+      "downstream": "spmv_csr_kernel",
+      "description": "更新后的 p 进入下一轮 SpMV"
+    }
+  ],
+  "host_nodes": [
+    {
+      "name": "host_alpha_controller",
+      "role": "读取 pAp 与 rz，计算 alpha",
+      "reads": [
+        "dot_out(pAp)",
+        "rz_old"
+      ],
+      "writes": [
+        "alpha"
+      ],
+      "drives": [
+        "update_xrz_kernel"
+      ],
+      "sim_mapping": [
+        "Kernel scheduler state",
+        "RegPort alpha_reg",
+        "AxiLiteIf(alpha arg)"
+      ]
+    },
+    {
+      "name": "host_beta_controller",
+      "role": "读取 rz_new / rz_old，计算 beta",
+      "reads": [
+        "metrics(rz_new)",
+        "rz_old"
+      ],
+      "writes": [
+        "beta"
+      ],
+      "drives": [
+        "update_p_kernel"
+      ],
+      "sim_mapping": [
+        "Kernel scheduler state",
+        "RegPort beta_reg",
+        "AxiLiteIf(beta arg)"
+      ]
+    },
+    {
+      "name": "host_convergence_controller",
+      "role": "读取 rr，判断 break / continue",
+      "reads": [
+        "metrics(rr)",
+        "tau",
+        "max_iters"
+      ],
+      "writes": [
+        "loop_continue"
+      ],
+      "drives": [
+        "spmv_csr_kernel(next iter)"
+      ],
+      "sim_mapping": [
+        "CycleSimulator top loop",
+        "RegPort rr_reg",
+        "termination flag"
+      ]
+    }
+  ],
+  "connectivity": {
+    "cfg_path": "connectivity_u55c.cfg",
+    "kernels": [
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "count": "1",
+        "instances": [
+          "spmv_csr_kernel_1"
+        ],
+        "binding_count": 5
+      },
+      {
+        "kernel_name": "init_pcg_kernel",
+        "count": "1",
+        "instances": [
+          "init_pcg_kernel_1"
+        ],
+        "binding_count": 7
+      },
+      {
+        "kernel_name": "dot_kernel",
+        "count": "1",
+        "instances": [
+          "dot_kernel_1"
+        ],
+        "binding_count": 3
+      },
+      {
+        "kernel_name": "update_xrz_kernel",
+        "count": "1",
+        "instances": [
+          "update_xrz_kernel_1"
+        ],
+        "binding_count": 7
+      },
+      {
+        "kernel_name": "update_p_kernel",
+        "count": "1",
+        "instances": [
+          "update_p_kernel_1"
+        ],
+        "binding_count": 2
+      }
+    ]
+  },
+  "vivado": {
+    "auto_discover": false,
+    "vivado_log_dir": "",
+    "csynth_dir": "vivado-log/csynth",
+    "schedule_dir": "vivado-log/sched",
+    "link_dir": "",
+    "link_timing": {
+      "report_path": "vivado-log/link/impl_1_hw_bb_locked_timing_summary_routed.rpt",
+      "available": true,
+      "requested_path": "vivado-log/link/impl_1_hw_bb_locked_timing_summary_routed.rpt",
+      "how_to_get": "",
+      "constraints_met": true,
+      "design_summary": {
+        "wns_ns": "0.003",
+        "tns_ns": "0.000",
+        "tns_failing_endpoints": "0",
+        "tns_total_endpoints": "705530",
+        "whs_ns": "0.009",
+        "ths_ns": "0.000",
+        "ths_failing_endpoints": "0",
+        "ths_total_endpoints": "702735",
+        "wpws_ns": "0.000",
+        "tpws_ns": "0.000",
+        "tpws_failing_endpoints": "0",
+        "tpws_total_endpoints": "278095"
+      },
+      "clock_summary": [
+        {
+          "name": "io_clk_freerun_00_clk_p",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "clk_kernel_00_unbuffered_net",
+          "waveform_ns": "{0.000 1.667}",
+          "period_ns": "3.333",
+          "frequency_mhz": "300.000"
+        },
+        {
+          "name": "clk_kernel_01_unbuffered_net",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "hbm_aclk",
+          "waveform_ns": "{0.000 1.111}",
+          "period_ns": "2.222",
+          "frequency_mhz": "450.000"
+        },
+        {
+          "name": "io_clk_pcie_00_clk_p",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_4",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_5",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_6",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_7",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_4",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_5",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_6",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_7",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_4",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_5",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_6",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_7",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "dma_ip_axi_aclk_1",
+          "waveform_ns": "{0.000 2.000}",
+          "period_ns": "4.000",
+          "frequency_mhz": "250.000"
+        },
+        {
+          "name": "clk_out1_bd_39ab_clkwiz_level0_periph_0_1",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+          "waveform_ns": "{0.000 10.000}",
+          "period_ns": "20.000",
+          "frequency_mhz": "50.000"
+        },
+        {
+          "name": "clk_sck",
+          "waveform_ns": "{0.000 20.000}",
+          "period_ns": "40.000",
+          "frequency_mhz": "25.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+          "waveform_ns": "{80.000 160.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+          "waveform_ns": "{80.000 160.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "mcap_clk_1",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "pipe_clk_1",
+          "waveform_ns": "{0.000 2.000}",
+          "period_ns": "4.000",
+          "frequency_mhz": "250.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_4",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_5",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_6",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_7",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/INTERNAL_TCK",
+          "waveform_ns": "{0.000 25.000}",
+          "period_ns": "50.000",
+          "frequency_mhz": "20.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/Use_External.Use_BSCANID.No_Dbg_Reg_Access.BUFG_UPDATE/Using_FPGA.Native/O",
+          "waveform_ns": "{0.000 50.000}",
+          "period_ns": "100.000",
+          "frequency_mhz": "10.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[0].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[10].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[11].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[12].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[13].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[14].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[15].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[1].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[2].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[3].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[4].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[5].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[6].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[7].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[8].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[9].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_clk_i/bufg_gt_intclk/O",
+          "waveform_ns": "{0.000 500.000}",
+          "period_ns": "1000.000",
+          "frequency_mhz": "1.000"
+        }
+      ],
+      "kernel_clock_summary": [
+        {
+          "name": "clk_kernel_00_unbuffered_net",
+          "waveform_ns": "{0.000 1.667}",
+          "period_ns": "3.333",
+          "frequency_mhz": "300.000",
+          "wns_ns": "0.223",
+          "tns_ns": "0.000",
+          "tns_failing_endpoints": "0",
+          "tns_total_endpoints": "187381",
+          "whs_ns": "0.009",
+          "ths_ns": "0.000",
+          "ths_failing_endpoints": "0",
+          "ths_total_endpoints": "187381",
+          "wpws_ns": "1.125",
+          "tpws_ns": "0.000",
+          "tpws_failing_endpoints": "0",
+          "tpws_total_endpoints": "68078"
+        },
+        {
+          "name": "clk_kernel_01_unbuffered_net",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000",
+          "wns_ns": "0.653",
+          "tns_ns": "0.000",
+          "tns_failing_endpoints": "0",
+          "tns_total_endpoints": "264",
+          "whs_ns": "0.016",
+          "ths_ns": "0.000",
+          "ths_failing_endpoints": "0",
+          "ths_total_endpoints": "264",
+          "wpws_ns": "0.468",
+          "tpws_ns": "0.000",
+          "tpws_failing_endpoints": "0",
+          "tpws_total_endpoints": "174"
+        }
+      ]
+    },
+    "pipeline_overview": [
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "kernel_pipeline": "spmv_csr_kernel_Pipeline_load_x",
+        "loop_name": "load_x",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "3",
+        "trip_count": "1 ~ 1024",
+        "pipelined": "yes",
+        "pipeline_depth": "3",
+        "report_path": "vivado-log/sched/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "kernel_pipeline": "top-level-loop",
+        "loop_name": "spmv_rows",
+        "ii_achieved": "-",
+        "ii_target": "-",
+        "iteration_latency": "?",
+        "trip_count": "1 ~ ?",
+        "pipelined": "no",
+        "pipeline_depth": "",
+        "report_path": "vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "kernel_pipeline": "top-level-loop",
+        "loop_name": "VITIS_LOOP_54_1",
+        "ii_achieved": "-",
+        "ii_target": "-",
+        "iteration_latency": "20",
+        "trip_count": "?",
+        "pipelined": "no",
+        "pipeline_depth": "",
+        "report_path": "vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "init_pcg_kernel",
+        "kernel_pipeline": "init_pcg_kernel_Pipeline_init_loop",
+        "loop_name": "init_loop",
+        "ii_achieved": "5",
+        "ii_target": "1",
+        "iteration_latency": "32",
+        "trip_count": "1 ~ ?",
+        "pipelined": "yes",
+        "pipeline_depth": "32",
+        "report_path": "vivado-log/sched/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "dot_kernel",
+        "kernel_pipeline": "dot_kernel_Pipeline_dot_loop",
+        "loop_name": "dot_loop",
+        "ii_achieved": "5",
+        "ii_target": "1",
+        "iteration_latency": "16",
+        "trip_count": "1 ~ ?",
+        "pipelined": "yes",
+        "pipeline_depth": "16",
+        "report_path": "vivado-log/sched/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "update_xrz_kernel",
+        "kernel_pipeline": "update_xrz_kernel_Pipeline_update_loop",
+        "loop_name": "update_loop",
+        "ii_achieved": "5",
+        "ii_target": "1",
+        "iteration_latency": "150",
+        "trip_count": "1 ~ ?",
+        "pipelined": "yes",
+        "pipeline_depth": "150",
+        "report_path": "vivado-log/sched/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "update_p_kernel",
+        "kernel_pipeline": "update_p_kernel_Pipeline_update_p_loop",
+        "loop_name": "update_p_loop",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "157",
+        "trip_count": "?",
+        "pipelined": "yes",
+        "pipeline_depth": "157",
+        "report_path": "vivado-log/sched/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
+      }
+    ]
+  },
+  "kernels": [
+    {
+      "name": "spmv_csr_kernel",
+      "input_index": 0,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/spmv_csr_kernel.xo",
+        "kernel_name": "spmv_csr_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:spmv_csr_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_ROW",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_COL",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_VAL",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_X",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_Y",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x54"
+          }
+        ],
+        "args": [
+          {
+            "name": "row_ptr",
+            "id": "0",
+            "port": "M_AXI_GMEM_ROW",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "col_idx",
+            "id": "1",
+            "port": "M_AXI_GMEM_COL",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "values",
+            "id": "2",
+            "port": "M_AXI_GMEM_VAL",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "x",
+            "id": "3",
+            "port": "M_AXI_GMEM_X",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          },
+          {
+            "name": "y",
+            "id": "4",
+            "port": "M_AXI_GMEM_Y",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x40",
+            "type": "void*"
+          },
+          {
+            "name": "n",
+            "id": "5",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x4C",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "spmv_csr_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "vivado-log/csynth/spmv_csr_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "vivado-log/csynth/spmv_csr_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "spmv_csr_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "4",
+          "DSP": "11",
+          "FF": "7583",
+          "LUT": "11253",
+          "URAM": "0"
+        },
+        "loop_latency": [
+          {
+            "name": "spmv_rows",
+            "path": "spmv_rows",
+            "slack_ns": "2.43",
+            "trip_count": "",
+            "latency_cycles": "",
+            "latency_abs": "",
+            "iteration_latency": "",
+            "pipeline_ii": "",
+            "pipeline_depth": ""
+          },
+          {
+            "name": "VITIS_LOOP_54_1",
+            "path": "spmv_rows/VITIS_LOOP_54_1",
+            "slack_ns": "2.43",
+            "trip_count": "",
+            "latency_cycles": "",
+            "latency_abs": "",
+            "iteration_latency": "20",
+            "pipeline_ii": "",
+            "pipeline_depth": ""
+          }
+        ]
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "306",
+          "top_loop_rows": [
+            {
+              "loop_name": "spmv_rows",
+              "latency_min": "?",
+              "latency_max": "?",
+              "iteration_latency": "?",
+              "ii_achieved": "-",
+              "ii_target": "-",
+              "trip_count": "1 ~ ?",
+              "pipelined": "no"
+            },
+            {
+              "loop_name": "VITIS_LOOP_54_1",
+              "latency_min": "?",
+              "latency_max": "?",
+              "iteration_latency": "20",
+              "ii_achieved": "-",
+              "ii_target": "-",
+              "trip_count": "?",
+              "pipelined": "no"
+            }
+          ]
+        },
+        "children": [
+          {
+            "report_path": "vivado-log/sched/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt",
+            "pipeline_name": "spmv_csr_kernel_Pipeline_load_x",
+            "fsm_states": "3",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "3",
+            "loop_rows": [
+              {
+                "loop_name": "load_x",
+                "latency_min": "2",
+                "latency_max": "1025",
+                "iteration_latency": "3",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "1 ~ 1024",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "spmv_csr_kernel_Pipeline_load_x",
+            "loop_name": "load_x",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "3",
+            "trip_count": "1 ~ 1024",
+            "pipelined": "yes",
+            "pipeline_depth": "3",
+            "report_path": "vivado-log/sched/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
+          },
+          {
+            "kernel_pipeline": "top-level-loop",
+            "loop_name": "spmv_rows",
+            "ii_achieved": "-",
+            "ii_target": "-",
+            "iteration_latency": "?",
+            "trip_count": "1 ~ ?",
+            "pipelined": "no",
+            "pipeline_depth": "",
+            "report_path": "vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+          },
+          {
+            "kernel_pipeline": "top-level-loop",
+            "loop_name": "VITIS_LOOP_54_1",
+            "ii_achieved": "-",
+            "ii_target": "-",
+            "iteration_latency": "20",
+            "trip_count": "?",
+            "pipelined": "no",
+            "pipeline_depth": "",
+            "report_path": "vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "connectivity_u55c.cfg",
+        "instances": [
+          "spmv_csr_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "row_ptr",
+            "target": "HBM[0]",
+            "raw": "spmv_csr_kernel_1.row_ptr:HBM[0]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "col_idx",
+            "target": "HBM[0]",
+            "raw": "spmv_csr_kernel_1.col_idx:HBM[0]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "values",
+            "target": "HBM[1]",
+            "raw": "spmv_csr_kernel_1.values:HBM[1]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "x",
+            "target": "HBM[6]",
+            "raw": "spmv_csr_kernel_1.x:HBM[6]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "y",
+            "target": "HBM[7]",
+            "raw": "spmv_csr_kernel_1.y:HBM[7]",
+            "kernel_name": "spmv_csr_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "row_ptr": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[0]"
+            }
+          ],
+          "col_idx": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[0]"
+            }
+          ],
+          "values": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[1]"
+            }
+          ],
+          "x": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "y": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[7]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "阶段 1 / 阶段 2：稀疏乘",
+        "summary": [
+          "这个顶层 kernel 对应硬件中的一次 CSR SpMV。",
+          "它在初始化路径上计算 ax = A * x0，在主循环路径上计算 ap = A * p。",
+          "XO 里可提取参数、端口和 control protocol；行扫描语义和缓存策略则通过这里的 JSON 注释补足。"
+        ],
+        "reads": [
+          "row_ptr",
+          "col_idx",
+          "values",
+          "x/p"
+        ],
+        "writes": [
+          "y(ax/ap)"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "Kernel",
+          "memory": [
+            "global CSR",
+            "vector cache"
+          ],
+          "ports": [
+            "AXI read row_ptr",
+            "AXI read col_idx",
+            "AXI read values",
+            "AXI read x",
+            "AXI write y"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel",
+          "control_if": "AxiLiteIf",
+          "data_if": [
+            "AxiMasterIf(row_ptr)",
+            "AxiMasterIf(col_idx)",
+            "AxiMasterIf(values)",
+            "AxiMasterIf(x)",
+            "AxiMasterIf(y)"
+          ],
+          "state_ports": [
+            "RegPort x_local_valid",
+            "RegPort row_acc_valid",
+            "WirePort row_value"
+          ]
+        },
+        "components": [
+          {
+            "name": "load_x_component",
+            "role": "把输入向量搬到本地缓存",
+            "reads": [
+              "x/p"
+            ],
+            "writes": [
+              "x_local"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(x)",
+              "RegPort x_local"
+            ]
+          },
+          {
+            "name": "csr_row_scan_component",
+            "role": "按 row_ptr / col_idx 扫描 CSR 行",
+            "reads": [
+              "row_ptr",
+              "col_idx",
+              "values",
+              "x_local"
+            ],
+            "writes": [
+              "row_acc"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(row_ptr)",
+              "AxiMasterIf(col_idx)",
+              "AxiMasterIf(values)",
+              "RegPort row_acc"
+            ]
+          },
+          {
+            "name": "row_commit_component",
+            "role": "把一行累加结果写回 y",
+            "reads": [
+              "row_acc"
+            ],
+            "writes": [
+              "y(ax/ap)"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(y)",
+              "WirePort row_value"
+            ]
+          }
+        ],
+        "component_edges": [
+          {
+            "upstream": "load_x_component",
+            "downstream": "csr_row_scan_component",
+            "description": "缓存向量后进入按行扫描"
+          },
+          {
+            "upstream": "csr_row_scan_component",
+            "downstream": "row_commit_component",
+            "description": "每行聚合完成后提交输出"
+          }
+        ]
+      }
+    },
+    {
+      "name": "init_pcg_kernel",
+      "input_index": 1,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/init_pcg_kernel.xo",
+        "kernel_name": "init_pcg_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:init_pcg_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_B",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_AX",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_MINV",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_R",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_Z",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_P",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_METRICS",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x6C"
+          }
+        ],
+        "args": [
+          {
+            "name": "b",
+            "id": "0",
+            "port": "M_AXI_GMEM_B",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "ax",
+            "id": "1",
+            "port": "M_AXI_GMEM_AX",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "m_inv",
+            "id": "2",
+            "port": "M_AXI_GMEM_MINV",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "r",
+            "id": "3",
+            "port": "M_AXI_GMEM_R",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          },
+          {
+            "name": "z",
+            "id": "4",
+            "port": "M_AXI_GMEM_Z",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x40",
+            "type": "void*"
+          },
+          {
+            "name": "p",
+            "id": "5",
+            "port": "M_AXI_GMEM_P",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x4C",
+            "type": "void*"
+          },
+          {
+            "name": "metrics",
+            "id": "6",
+            "port": "M_AXI_GMEM_METRICS",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x58",
+            "type": "void*"
+          },
+          {
+            "name": "n",
+            "id": "7",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x64",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "init_pcg_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "vivado-log/csynth/init_pcg_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "vivado-log/csynth/init_pcg_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "init_pcg_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "1",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "3.333 ns",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "2",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "11",
+          "FF": "11204",
+          "LUT": "17306",
+          "URAM": "0"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "vivado-log/sched/init_pcg_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "vivado-log/sched/init_pcg_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "210",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "vivado-log/sched/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt",
+            "pipeline_name": "init_pcg_kernel_Pipeline_init_loop",
+            "fsm_states": "32",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "5",
+            "individual_depth": "32",
+            "loop_rows": [
+              {
+                "loop_name": "init_loop",
+                "latency_min": "31",
+                "latency_max": "?",
+                "iteration_latency": "32",
+                "ii_achieved": "5",
+                "ii_target": "1",
+                "trip_count": "1 ~ ?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "init_pcg_kernel_Pipeline_init_loop",
+            "loop_name": "init_loop",
+            "ii_achieved": "5",
+            "ii_target": "1",
+            "iteration_latency": "32",
+            "trip_count": "1 ~ ?",
+            "pipelined": "yes",
+            "pipeline_depth": "32",
+            "report_path": "vivado-log/sched/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "connectivity_u55c.cfg",
+        "instances": [
+          "init_pcg_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "b",
+            "target": "HBM[2]",
+            "raw": "init_pcg_kernel_1.b:HBM[2]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "ax",
+            "target": "HBM[7]",
+            "raw": "init_pcg_kernel_1.ax:HBM[7]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "m_inv",
+            "target": "HBM[8]",
+            "raw": "init_pcg_kernel_1.m_inv:HBM[8]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "r",
+            "target": "HBM[4]",
+            "raw": "init_pcg_kernel_1.r:HBM[4]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "z",
+            "target": "HBM[5]",
+            "raw": "init_pcg_kernel_1.z:HBM[5]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "p",
+            "target": "HBM[6]",
+            "raw": "init_pcg_kernel_1.p:HBM[6]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "metrics",
+            "target": "HBM[9]",
+            "raw": "init_pcg_kernel_1.metrics:HBM[9]",
+            "kernel_name": "init_pcg_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "b": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[2]"
+            }
+          ],
+          "ax": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[7]"
+            }
+          ],
+          "m_inv": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[8]"
+            }
+          ],
+          "r": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[4]"
+            }
+          ],
+          "z": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[5]"
+            }
+          ],
+          "p": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "metrics": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[9]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "初始化阶段",
+        "summary": [
+          "把 Jacobi-PCG 的前缀步骤合并在一个 kernel 内完成。",
+          "包括 r = b - ax、z = M^-1 r、p = z 以及 rz / rr 的 reduction。",
+          "XO 只知道它有哪些参数和端口；这里的 JSON 负责说明内部逻辑拆分。"
+        ],
+        "reads": [
+          "b",
+          "ax",
+          "m_inv"
+        ],
+        "writes": [
+          "r",
+          "z",
+          "p",
+          "metrics(rz, rr)"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "Kernel",
+          "memory": [
+            "rhs",
+            "ax buffer",
+            "jacobi inverse"
+          ],
+          "ports": [
+            "AXI read b",
+            "AXI read ax",
+            "AXI read m_inv",
+            "AXI write r/z/p/metrics"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel",
+          "control_if": "AxiLiteIf",
+          "data_if": [
+            "AxiMasterIf(b)",
+            "AxiMasterIf(ax)",
+            "AxiMasterIf(m_inv)",
+            "AxiMasterIf(r/z/p/metrics)"
+          ],
+          "state_ports": [
+            "RegPort r_stage",
+            "RegPort z_stage",
+            "RegPort p_stage",
+            "RegPort metrics_stage"
+          ]
+        },
+        "components": [
+          {
+            "name": "residual_component",
+            "role": "计算 r = b - ax",
+            "reads": [
+              "b",
+              "ax"
+            ],
+            "writes": [
+              "r"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(b)",
+              "AxiMasterIf(ax)",
+              "RegPort r_stage"
+            ]
+          },
+          {
+            "name": "jacobi_apply_component",
+            "role": "计算 z = M^-1 r",
+            "reads": [
+              "r",
+              "m_inv"
+            ],
+            "writes": [
+              "z"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(m_inv)",
+              "RegPort r_stage",
+              "RegPort z_stage"
+            ]
+          },
+          {
+            "name": "seed_direction_component",
+            "role": "初始化 p = z",
+            "reads": [
+              "z"
+            ],
+            "writes": [
+              "p"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "RegPort z_stage",
+              "RegPort p_stage"
+            ]
+          },
+          {
+            "name": "rz_rr_reduce_component",
+            "role": "归约 rz / rr 到 metrics",
+            "reads": [
+              "r",
+              "z"
+            ],
+            "writes": [
+              "metrics(rz, rr)"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "RegPort r_stage",
+              "RegPort z_stage",
+              "RegPort metrics_stage"
+            ]
+          }
+        ],
+        "component_edges": [
+          {
+            "upstream": "residual_component",
+            "downstream": "jacobi_apply_component",
+            "description": "r 进入 Jacobi"
+          },
+          {
+            "upstream": "jacobi_apply_component",
+            "downstream": "seed_direction_component",
+            "description": "z 直接成为初始方向"
+          },
+          {
+            "upstream": "residual_component",
+            "downstream": "rz_rr_reduce_component",
+            "description": "r 进入 reduction"
+          },
+          {
+            "upstream": "jacobi_apply_component",
+            "downstream": "rz_rr_reduce_component",
+            "description": "z 进入 reduction"
+          }
+        ]
+      }
+    },
+    {
+      "name": "dot_kernel",
+      "input_index": 2,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/dot_kernel.xo",
+        "kernel_name": "dot_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:dot_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_A",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_B",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_OUT",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x3C"
+          }
+        ],
+        "args": [
+          {
+            "name": "a",
+            "id": "0",
+            "port": "M_AXI_GMEM_A",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "b",
+            "id": "1",
+            "port": "M_AXI_GMEM_B",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "out",
+            "id": "2",
+            "port": "M_AXI_GMEM_OUT",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "n",
+            "id": "3",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x34",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "dot_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "vivado-log/csynth/dot_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "vivado-log/csynth/dot_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "dot_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "1",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "3.333 ns",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "2",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "8",
+          "FF": "4936",
+          "LUT": "7521",
+          "URAM": "0"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "vivado-log/sched/dot_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "vivado-log/sched/dot_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "143",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "vivado-log/sched/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt",
+            "pipeline_name": "dot_kernel_Pipeline_dot_loop",
+            "fsm_states": "16",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "5",
+            "individual_depth": "16",
+            "loop_rows": [
+              {
+                "loop_name": "dot_loop",
+                "latency_min": "15",
+                "latency_max": "?",
+                "iteration_latency": "16",
+                "ii_achieved": "5",
+                "ii_target": "1",
+                "trip_count": "1 ~ ?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "dot_kernel_Pipeline_dot_loop",
+            "loop_name": "dot_loop",
+            "ii_achieved": "5",
+            "ii_target": "1",
+            "iteration_latency": "16",
+            "trip_count": "1 ~ ?",
+            "pipelined": "yes",
+            "pipeline_depth": "16",
+            "report_path": "vivado-log/sched/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "connectivity_u55c.cfg",
+        "instances": [
+          "dot_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "dot_kernel_1",
+            "arg": "a",
+            "target": "HBM[6]",
+            "raw": "dot_kernel_1.a:HBM[6]",
+            "kernel_name": "dot_kernel"
+          },
+          {
+            "instance": "dot_kernel_1",
+            "arg": "b",
+            "target": "HBM[7]",
+            "raw": "dot_kernel_1.b:HBM[7]",
+            "kernel_name": "dot_kernel"
+          },
+          {
+            "instance": "dot_kernel_1",
+            "arg": "out",
+            "target": "HBM[9]",
+            "raw": "dot_kernel_1.out:HBM[9]",
+            "kernel_name": "dot_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "a": [
+            {
+              "instance": "dot_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "b": [
+            {
+              "instance": "dot_kernel_1",
+              "target": "HBM[7]"
+            }
+          ],
+          "out": [
+            {
+              "instance": "dot_kernel_1",
+              "target": "HBM[9]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "标量归约阶段",
+        "summary": [
+          "当前主循环里只负责计算 pAp = p^T ap。",
+          "XO 能给出 out[0] 是一个 addressable port 绑定的 scalar 输出。",
+          "更细的归约行为、acc 寄存语义和 component 草图由 JSON 提供。"
+        ],
+        "reads": [
+          "a",
+          "b"
+        ],
+        "writes": [
+          "out[0]"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "KernelComponent or reduction Kernel",
+          "memory": [
+            "vector a",
+            "vector b"
+          ],
+          "ports": [
+            "AXI read a",
+            "AXI read b",
+            "AXI write out"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel or KernelComponent",
+          "control_if": "AxiLiteIf",
+          "data_if": [
+            "AxiMasterIf(a)",
+            "AxiMasterIf(b)",
+            "AxiMasterIf(out)"
+          ],
+          "state_ports": [
+            "RegPort dot_acc",
+            "WirePort dot_out"
+          ]
+        },
+        "components": [
+          {
+            "name": "dot_mulacc_component",
+            "role": "逐元素乘加累积",
+            "reads": [
+              "a",
+              "b"
+            ],
+            "writes": [
+              "acc"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(a)",
+              "AxiMasterIf(b)",
+              "RegPort dot_acc"
+            ]
+          },
+          {
+            "name": "dot_commit_component",
+            "role": "把累计值写到 out[0]",
+            "reads": [
+              "acc"
+            ],
+            "writes": [
+              "out[0]"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "RegPort dot_acc",
+              "AxiMasterIf(out)"
+            ]
+          }
+        ],
+        "component_edges": [
+          {
+            "upstream": "dot_mulacc_component",
+            "downstream": "dot_commit_component",
+            "description": "累加结束后提交标量"
+          }
+        ]
+      }
+    },
+    {
+      "name": "update_xrz_kernel",
+      "input_index": 3,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_xrz_kernel.xo",
+        "kernel_name": "update_xrz_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:update_xrz_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_X",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_P",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_R",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_AP",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_MINV",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_Z",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_METRICS",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x78"
+          }
+        ],
+        "args": [
+          {
+            "name": "x",
+            "id": "0",
+            "port": "M_AXI_GMEM_X",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "p",
+            "id": "1",
+            "port": "M_AXI_GMEM_P",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "r",
+            "id": "2",
+            "port": "M_AXI_GMEM_R",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "ap",
+            "id": "3",
+            "port": "M_AXI_GMEM_AP",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          },
+          {
+            "name": "m_inv",
+            "id": "4",
+            "port": "M_AXI_GMEM_MINV",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x40",
+            "type": "void*"
+          },
+          {
+            "name": "z",
+            "id": "5",
+            "port": "M_AXI_GMEM_Z",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x4C",
+            "type": "void*"
+          },
+          {
+            "name": "metrics",
+            "id": "6",
+            "port": "M_AXI_GMEM_METRICS",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x58",
+            "type": "void*"
+          },
+          {
+            "name": "alpha",
+            "id": "7",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x8",
+            "offset": "0x64",
+            "type": "double"
+          },
+          {
+            "name": "n",
+            "id": "8",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x70",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "update_xrz_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "vivado-log/csynth/update_xrz_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "vivado-log/csynth/update_xrz_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "update_xrz_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.614",
+        "estimated_clock_mhz": "382.555",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "1",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "3.333 ns",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "2",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "11",
+          "FF": "12152",
+          "LUT": "17717",
+          "URAM": "0"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "vivado-log/sched/update_xrz_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "vivado-log/sched/update_xrz_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "210",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "vivado-log/sched/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt",
+            "pipeline_name": "update_xrz_kernel_Pipeline_update_loop",
+            "fsm_states": "150",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "5",
+            "individual_depth": "150",
+            "loop_rows": [
+              {
+                "loop_name": "update_loop",
+                "latency_min": "149",
+                "latency_max": "?",
+                "iteration_latency": "150",
+                "ii_achieved": "5",
+                "ii_target": "1",
+                "trip_count": "1 ~ ?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "update_xrz_kernel_Pipeline_update_loop",
+            "loop_name": "update_loop",
+            "ii_achieved": "5",
+            "ii_target": "1",
+            "iteration_latency": "150",
+            "trip_count": "1 ~ ?",
+            "pipelined": "yes",
+            "pipeline_depth": "150",
+            "report_path": "vivado-log/sched/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "connectivity_u55c.cfg",
+        "instances": [
+          "update_xrz_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "x",
+            "target": "HBM[3]",
+            "raw": "update_xrz_kernel_1.x:HBM[3]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "p",
+            "target": "HBM[6]",
+            "raw": "update_xrz_kernel_1.p:HBM[6]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "r",
+            "target": "HBM[4]",
+            "raw": "update_xrz_kernel_1.r:HBM[4]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "ap",
+            "target": "HBM[7]",
+            "raw": "update_xrz_kernel_1.ap:HBM[7]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "m_inv",
+            "target": "HBM[8]",
+            "raw": "update_xrz_kernel_1.m_inv:HBM[8]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "z",
+            "target": "HBM[5]",
+            "raw": "update_xrz_kernel_1.z:HBM[5]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "metrics",
+            "target": "HBM[9]",
+            "raw": "update_xrz_kernel_1.metrics:HBM[9]",
+            "kernel_name": "update_xrz_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "x": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[3]"
+            }
+          ],
+          "p": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "r": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[4]"
+            }
+          ],
+          "ap": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[7]"
+            }
+          ],
+          "m_inv": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[8]"
+            }
+          ],
+          "z": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[5]"
+            }
+          ],
+          "metrics": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[9]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "向量更新阶段",
+        "summary": [
+          "这一层把与 alpha 绑定的一轮向量更新合并到一个 kernel 中。",
+          "包括 x / r / z 更新以及 rz_new / rr 的重新归约。",
+          "XO 能确定 alpha 是 control scalar、其余向量是 addressable 参数；内部阶段仍靠 JSON 注释表达。"
+        ],
+        "reads": [
+          "p",
+          "r",
+          "ap",
+          "m_inv",
+          "alpha"
+        ],
+        "writes": [
+          "x",
+          "r",
+          "z",
+          "metrics(rz_new, rr)"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "Kernel",
+          "memory": [
+            "state vectors",
+            "ap buffer",
+            "jacobi inverse"
+          ],
+          "ports": [
+            "AXI read/write x",
+            "AXI read p",
+            "AXI read/write r",
+            "AXI read ap",
+            "AXI read m_inv",
+            "AXI write z/metrics"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel",
+          "control_if": "AxiLiteIf",
+          "data_if": [
+            "AxiMasterIf(x)",
+            "AxiMasterIf(p)",
+            "AxiMasterIf(r)",
+            "AxiMasterIf(ap)",
+            "AxiMasterIf(m_inv)",
+            "AxiMasterIf(z/metrics)"
+          ],
+          "state_ports": [
+            "RegPort x_stage",
+            "RegPort r_stage",
+            "RegPort z_stage",
+            "RegPort metrics_stage"
+          ]
+        },
+        "components": [
+          {
+            "name": "update_x_component",
+            "role": "计算 x = x + alpha p",
+            "reads": [
+              "x",
+              "p",
+              "alpha"
+            ],
+            "writes": [
+              "x"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(x)",
+              "AxiMasterIf(p)",
+              "RegPort x_stage"
+            ]
+          },
+          {
+            "name": "update_r_component",
+            "role": "计算 r = r - alpha ap",
+            "reads": [
+              "r",
+              "ap",
+              "alpha"
+            ],
+            "writes": [
+              "r"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(r)",
+              "AxiMasterIf(ap)",
+              "RegPort r_stage"
+            ]
+          },
+          {
+            "name": "jacobi_apply_component",
+            "role": "根据新 r 计算 z = M^-1 r",
+            "reads": [
+              "r",
+              "m_inv"
+            ],
+            "writes": [
+              "z"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "RegPort r_stage",
+              "AxiMasterIf(m_inv)",
+              "RegPort z_stage"
+            ]
+          },
+          {
+            "name": "rz_rr_reduce_component",
+            "role": "根据新 r / z 归约 rz_new / rr",
+            "reads": [
+              "r",
+              "z"
+            ],
+            "writes": [
+              "metrics(rz_new, rr)"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "RegPort r_stage",
+              "RegPort z_stage",
+              "RegPort metrics_stage"
+            ]
+          }
+        ],
+        "component_edges": [
+          {
+            "upstream": "update_x_component",
+            "downstream": "update_r_component",
+            "description": "共享 alpha，同轮更新"
+          },
+          {
+            "upstream": "update_r_component",
+            "downstream": "jacobi_apply_component",
+            "description": "新 r 进入 Jacobi"
+          },
+          {
+            "upstream": "update_r_component",
+            "downstream": "rz_rr_reduce_component",
+            "description": "新 r 进入 reduction"
+          },
+          {
+            "upstream": "jacobi_apply_component",
+            "downstream": "rz_rr_reduce_component",
+            "description": "新 z 进入 reduction"
+          }
+        ]
+      }
+    },
+    {
+      "name": "update_p_kernel",
+      "input_index": 4,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_p_kernel.xo",
+        "kernel_name": "update_p_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:update_p_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_Z",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_P",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x3C"
+          }
+        ],
+        "args": [
+          {
+            "name": "z",
+            "id": "0",
+            "port": "M_AXI_GMEM_Z",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "p",
+            "id": "1",
+            "port": "M_AXI_GMEM_P",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "beta",
+            "id": "2",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "double"
+          },
+          {
+            "name": "n",
+            "id": "3",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x34",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "update_p_kernel",
+          "supported_flows": [
+            "CPU_EMU"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "vivado-log/csynth/update_p_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "vivado-log/csynth/update_p_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "update_p_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "11",
+          "FF": "4437",
+          "LUT": "5439",
+          "URAM": "0"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "vivado-log/sched/update_p_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "vivado-log/sched/update_p_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "73",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "vivado-log/sched/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt",
+            "pipeline_name": "update_p_kernel_Pipeline_update_p_loop",
+            "fsm_states": "157",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "157",
+            "loop_rows": [
+              {
+                "loop_name": "update_p_loop",
+                "latency_min": "?",
+                "latency_max": "?",
+                "iteration_latency": "157",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "update_p_kernel_Pipeline_update_p_loop",
+            "loop_name": "update_p_loop",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "157",
+            "trip_count": "?",
+            "pipelined": "yes",
+            "pipeline_depth": "157",
+            "report_path": "vivado-log/sched/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "connectivity_u55c.cfg",
+        "instances": [
+          "update_p_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "update_p_kernel_1",
+            "arg": "z",
+            "target": "HBM[5]",
+            "raw": "update_p_kernel_1.z:HBM[5]",
+            "kernel_name": "update_p_kernel"
+          },
+          {
+            "instance": "update_p_kernel_1",
+            "arg": "p",
+            "target": "HBM[6]",
+            "raw": "update_p_kernel_1.p:HBM[6]",
+            "kernel_name": "update_p_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "z": [
+            {
+              "instance": "update_p_kernel_1",
+              "target": "HBM[5]"
+            }
+          ],
+          "p": [
+            {
+              "instance": "update_p_kernel_1",
+              "target": "HBM[6]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "方向更新阶段",
+        "summary": [
+          "这一层只负责方向向量更新 p = z + beta p。",
+          "XO 能确定 beta 是 control scalar、z/p 是 addressable 参数。",
+          "在 XS 里它很适合被视为最轻量的一类 vector update 组件。"
+        ],
+        "reads": [
+          "z",
+          "p",
+          "beta"
+        ],
+        "writes": [
+          "p"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "KernelComponent or vector update Kernel",
+          "memory": [
+            "z buffer",
+            "p buffer"
+          ],
+          "ports": [
+            "AXI read z",
+            "AXI read/write p"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel or KernelComponent",
+          "control_if": "AxiLiteIf",
+          "data_if": [
+            "AxiMasterIf(z)",
+            "AxiMasterIf(p)"
+          ],
+          "state_ports": [
+            "RegPort p_stage"
+          ]
+        },
+        "components": [
+          {
+            "name": "direction_update_component",
+            "role": "计算 p = z + beta p",
+            "reads": [
+              "z",
+              "p",
+              "beta"
+            ],
+            "writes": [
+              "p"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(z)",
+              "AxiMasterIf(p)",
+              "RegPort p_stage"
+            ]
+          }
+        ],
+        "component_edges": []
+      }
+    }
+  ]
+}

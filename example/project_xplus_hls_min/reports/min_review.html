@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Project-XS XPlus HLS Minimal Review</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f6f4ee;
+      --panel: #fffdf8;
+      --line: #ddd7cc;
+      --ink: #1f2937;
+      --muted: #6b7280;
+    }
+    body {
+      background: linear-gradient(180deg, #f6f4ee 0%, #efebe2 100%);
+      color: var(--ink);
+      font-family: "Helvetica Neue", Arial, sans-serif;
+    }
+    .page {
+      max-width: 1680px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .report-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    }
+    .report-card .card-body {
+      padding: 20px 22px;
+    }
+    .report-title {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .report-subtitle {
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .section-note {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 12px;
+      word-break: break-all;
+    }
+    .sub-title {
+      font-weight: 700;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+    .pill-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #0c4a6e;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .pill.alt {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .pill.warn {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .kv-grid {
+      display: grid;
+      gap: 10px;
+    }
+    .kv-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 14px;
+      align-items: baseline;
+      font-size: 0.95rem;
+    }
+    .kv-key {
+      color: var(--muted);
+    }
+    .kv-value {
+      font-weight: 700;
+      word-break: break-word;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      scrollbar-color: #b9ad96 #efe8dc;
+    }
+    .table-wrap table {
+      min-width: 100%;
+      white-space: nowrap;
+    }
+    .table-wrap::-webkit-scrollbar {
+      height: 10px;
+      width: 10px;
+    }
+    .table-wrap::-webkit-scrollbar-track {
+      background: #efe8dc;
+      border-radius: 999px;
+    }
+    .table-wrap::-webkit-scrollbar-thumb {
+      background: #b9ad96;
+      border-radius: 999px;
+      border: 2px solid #efe8dc;
+    }
+    .table-wrap::-webkit-scrollbar-thumb:hover {
+      background: #9d8f77;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="mb-4">
+      <div class="report-title">Project-XS XPlus HLS Minimal Review</div>
+      <div class="report-subtitle">最小化渲染样例：保留全部 XO 与 CFG，弱化注释层，只审查接口、综合与实现报告接线是否正确。</div>
+      <div class="report-subtitle">example: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls_min</div>
+      <div class="report-subtitle">spec: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls_min/spec.json</div>
+      <div class="report-subtitle">cfg: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
+      
+      <div class="report-subtitle">这个 spec 只保留最少的渲染控制字段；XO、CFG、csynth 和 routed timing 都通过相对路径显式指定，并关闭自动发现。</div>
+    </div>
+
+    
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">执行顺序（来自 spec JSON）</div>
+          <div class="section-note">这部分完全来自 JSON spec，不从 xo 推导。</div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>#</th><th>kernel</th><th>说明</th></tr></thead>
+              <tbody><tr><td>1</td><td>spmv_csr_kernel</td><td></td></tr><tr><td>2</td><td>init_pcg_kernel</td><td></td></tr><tr><td>3</td><td>dot_kernel</td><td></td></tr><tr><td>4</td><td>update_xrz_kernel</td><td></td></tr><tr><td>5</td><td>update_p_kernel</td><td></td></tr></tbody>
+            </table>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    
+
+    
+
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">Connectivity 配置（来自 CFG）</div>
+          <div class="section-note">这部分来自 cfg，用来表达 kernel 实例数量以及端口到 HBM 的实际绑定。</div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>kernel</th><th>count</th><th>instances</th><th>sp bindings</th></tr></thead>
+              <tbody><tr><td>spmv_csr_kernel</td><td>1</td><td>spmv_csr_kernel_1</td><td>5</td></tr><tr><td>init_pcg_kernel</td><td>1</td><td>init_pcg_kernel_1</td><td>7</td></tr><tr><td>dot_kernel</td><td>1</td><td>dot_kernel_1</td><td>3</td></tr><tr><td>update_xrz_kernel</td><td>1</td><td>update_xrz_kernel_1</td><td>7</td></tr><tr><td>update_p_kernel</td><td>1</td><td>update_p_kernel_1</td><td>2</td></tr></tbody>
+            </table>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">实现时序（来自 routed timing summary）</div>
+          <div class="section-note">这部分来自 bitstream 对应的 routed timing summary，用来表达 implementation 阶段时序是否收敛，以及 kernel 时钟域的 WNS/WHS。</div>
+          <div class="section-note">requested: 未指定</div>
+          <div class="section-note">当前未提供。期望文件名通常为 impl_1_*timing_summary*_routed.rpt 或同类 routed timing summary，常见于 v++ link / Vivado implementation 的 reports/link/imp/ 或 impl report 目录中</div>
+          
+        </div></div>
+      </div>
+    </div>
+
+
+    
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">Pipeline 总览（来自 HLS schedule rpt）</div>
+          <div class="section-note">这部分把 kernel 顶层是否 pipeline，以及各子 pipeline / loop 的实际 II 情况拆开看。</div>
+          <div class="section-note">schedule_dir: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched</div>
+          <div class="section-note">`loop`：HLS 报告里的循环名。它通常能对应源码里的某个 loop label 或某个工具生成的内部循环；在 XS 视角里，它不自动等价于一个 `KernelComponent`，但常常可以作为你后续手工拆 component 的线索。</div>
+          <div class="section-note">`pipelined`：该 loop 在 HLS 报告里是否被认定为 pipeline。`yes` 表示形成了 pipeline；`no` 表示这条 loop 没形成 pipeline，或者只在更外层 / 更内层以别的方式体现。</div>
+          <div class="section-note">`II achieved`：实际综合达到的 initiation interval。数字表示隔多少拍才能再发起一轮新迭代；`1` 表示每拍都能启动一轮，`5` 表示每 5 拍才能启动一轮，`-` 表示报告没有给出可用值。</div>
+          <div class="section-note">`II target`：目标 initiation interval。通常来自源码里的 pipeline pragma 或工具目标设置；把它和 `II achieved` 对比，就能看出目标是否达成。</div>
+          <div class="section-note">`depth`：pipeline 深度，表示一条迭代被切分成多少个串行流水阶段；稳态时，不同迭代可以同时分布在这些阶段上。它不是总 latency，也不是并行 issue 宽度。</div>
+          <div class="section-note">`iter latency`：iteration latency。数字表示单次迭代穿过该 loop/pipeline 时在报告里的迭代级延迟；它描述的是“单迭代需要多长”，不直接等于整个 kernel 的总 latency。</div>
+          <div class="section-note">CPU 流水线类比：`II achieved` 更像发射间隔或必须插入的 bubble 间隔；`depth` 更像流水线级数；`iter latency` 更像一条指令/一次迭代从进入到结果出来需要的拍数。注意 `depth` 不是“某一级同时能执行多少条”。</div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>kernel</th><th>pipeline report</th><th>loop</th><th>pipelined</th><th>II achieved</th><th>II target</th><th>depth</th><th>iter latency</th></tr></thead>
+              <tbody><tr><td>spmv_csr_kernel</td><td>spmv_csr_kernel_Pipeline_load_x</td><td>load_x</td><td>yes</td><td>1</td><td>1</td><td>3</td><td>3</td></tr><tr><td>spmv_csr_kernel</td><td>top-level-loop</td><td>spmv_rows</td><td>no</td><td>-</td><td>-</td><td>-</td><td>?</td></tr><tr><td>spmv_csr_kernel</td><td>top-level-loop</td><td>VITIS_LOOP_54_1</td><td>no</td><td>-</td><td>-</td><td>-</td><td>20</td></tr><tr><td>init_pcg_kernel</td><td>init_pcg_kernel_Pipeline_init_loop</td><td>init_loop</td><td>yes</td><td>5</td><td>1</td><td>32</td><td>32</td></tr><tr><td>dot_kernel</td><td>dot_kernel_Pipeline_dot_loop</td><td>dot_loop</td><td>yes</td><td>5</td><td>1</td><td>16</td><td>16</td></tr><tr><td>update_xrz_kernel</td><td>update_xrz_kernel_Pipeline_update_loop</td><td>update_loop</td><td>yes</td><td>5</td><td>1</td><td>150</td><td>150</td></tr><tr><td>update_p_kernel</td><td>update_p_kernel_Pipeline_update_p_loop</td><td>update_p_loop</td><td>yes</td><td>1</td><td>1</td><td>157</td><td>157</td></tr></tbody>
+            </table>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+
+    
+
+    <div class="row g-4">
+      
+            <div class="col-12 col-xl-6">
+              <div class="report-card card h-100"><div class="card-body">
+                <div class="section-title">spmv_csr_kernel</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/spmv_csr_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/spmv_csr_kernel_csynth.xml</div>
+                
+                
+                
+                
+
+                <div class="sub-title">Kernel 元数据（来自 XO）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">kernel_name</div><div class="kv-value">spmv_csr_kernel</div></div>
+                  <div class="kv-row"><div class="kv-key">language</div><div class="kv-value">c</div></div>
+                  <div class="kv-row"><div class="kv-key">vlnv</div><div class="kv-value">xilinx.com:hls:spmv_csr_kernel:1.0</div></div>
+                  <div class="kv-row"><div class="kv-key">control_protocol</div><div class="kv-value">ap_ctrl_chain</div></div>
+                  <div class="kv-row"><div class="kv-key">cfg_instances</div><div class="kv-value">spmv_csr_kernel_1</div></div>
+                </div>
+
+                
+                <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
+                <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_fsm_states</div><div class="kv-value">306</div></div>
+                </div>
+                
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>pipeline report</th><th>loop</th><th>pipelined</th><th>II achieved</th><th>II target</th><th>depth</th><th>iter latency</th></tr></thead>
+                    <tbody><tr><td>top-level-loop</td><td>spmv_rows</td><td>no</td><td>-</td><td>-</td><td>-</td><td>?</td></tr><tr><td>top-level-loop</td><td>VITIS_LOOP_54_1</td><td>no</td><td>-</td><td>-</td><td>-</td><td>20</td></tr><tr><td>spmv_csr_kernel_Pipeline_load_x</td><td>load_x</td><td>yes</td><td>1</td><td>1</td><td>3</td><td>3</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                
+                <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/spmv_csr_kernel_csynth.xml</div>
+                <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">target_freq</div><div class="kv-value">300.300 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_clock</div><div class="kv-value">2.433 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_freq</div><div class="kv-value">411.015 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">clock_uncertainty</div><div class="kv-value">0.90 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">pipeline_type</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best time)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst time)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(min)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(max)</div><div class="kv-value">-</div></div>
+                </div>
+
+                <div class="sub-title">资源估计（来自 csynth.xml）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">BRAM_18K</div><div class="kv-value">4</div></div>
+                  <div class="kv-row"><div class="kv-key">DSP</div><div class="kv-value">11</div></div>
+                  <div class="kv-row"><div class="kv-key">FF</div><div class="kv-value">7583</div></div>
+                  <div class="kv-row"><div class="kv-key">LUT</div><div class="kv-value">11253</div></div>
+                  <div class="kv-row"><div class="kv-key">URAM</div><div class="kv-value">0</div></div>
+                </div>
+
+                <div class="sub-title">Loop 延迟（来自 csynth.xml）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>loop</th><th>latency(cycles)</th><th>latency(abs)</th><th>iter latency</th><th>trip count</th><th>slack(ns)</th></tr></thead>
+                    <tbody><tr><td>spmv_rows</td><td></td><td></td><td></td><td></td><td>2.43</td></tr><tr><td>spmv_rows/VITIS_LOOP_54_1</td><td></td><td></td><td>20</td><td></td><td>2.43</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                <div class="sub-title">Arguments（来自 XO + CFG + spec JSON）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>arg</th><th>type</th><th>port</th><th>aq</th><th>offset</th><th>HBM(CFG)</th></tr></thead>
+                    <tbody><tr><td>row_ptr</td><td>void*</td><td>M_AXI_GMEM_ROW</td><td>1</td><td>0x10</td><td>spmv_csr_kernel_1 -&gt; HBM[0]</td></tr><tr><td>col_idx</td><td>void*</td><td>M_AXI_GMEM_COL</td><td>1</td><td>0x1C</td><td>spmv_csr_kernel_1 -&gt; HBM[0]</td></tr><tr><td>values</td><td>void*</td><td>M_AXI_GMEM_VAL</td><td>1</td><td>0x28</td><td>spmv_csr_kernel_1 -&gt; HBM[1]</td></tr><tr><td>x</td><td>void*</td><td>M_AXI_GMEM_X</td><td>1</td><td>0x34</td><td>spmv_csr_kernel_1 -&gt; HBM[6]</td></tr><tr><td>y</td><td>void*</td><td>M_AXI_GMEM_Y</td><td>1</td><td>0x40</td><td>spmv_csr_kernel_1 -&gt; HBM[7]</td></tr><tr><td>n</td><td>unsigned int</td><td>S_AXI_CONTROL</td><td>0</td><td>0x4C</td><td>-</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">Ports（来自 XO）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>port</th><th>mode</th><th>width</th><th>type</th><th>range</th></tr></thead>
+                    <tbody><tr><td>M_AXI_GMEM_ROW</td><td>master</td><td>32</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_COL</td><td>master</td><td>32</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_VAL</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_X</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_Y</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x54</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">实例与端口绑定（来自 CFG）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>instance</th><th>arg</th><th>target</th></tr></thead>
+                    <tbody><tr><td>spmv_csr_kernel_1</td><td>row_ptr</td><td>HBM[0]</td></tr><tr><td>spmv_csr_kernel_1</td><td>col_idx</td><td>HBM[0]</td></tr><tr><td>spmv_csr_kernel_1</td><td>values</td><td>HBM[1]</td></tr><tr><td>spmv_csr_kernel_1</td><td>x</td><td>HBM[6]</td></tr><tr><td>spmv_csr_kernel_1</td><td>y</td><td>HBM[7]</td></tr></tbody>
+                  </table>
+                </div>
+
+                
+                
+                
+                
+              </div></div>
+            </div>
+            
+            <div class="col-12 col-xl-6">
+              <div class="report-card card h-100"><div class="card-body">
+                <div class="section-title">init_pcg_kernel</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/init_pcg_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/init_pcg_kernel_csynth.xml</div>
+                
+                
+                
+                
+
+                <div class="sub-title">Kernel 元数据（来自 XO）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">kernel_name</div><div class="kv-value">init_pcg_kernel</div></div>
+                  <div class="kv-row"><div class="kv-key">language</div><div class="kv-value">c</div></div>
+                  <div class="kv-row"><div class="kv-key">vlnv</div><div class="kv-value">xilinx.com:hls:init_pcg_kernel:1.0</div></div>
+                  <div class="kv-row"><div class="kv-key">control_protocol</div><div class="kv-value">ap_ctrl_chain</div></div>
+                  <div class="kv-row"><div class="kv-key">cfg_instances</div><div class="kv-value">init_pcg_kernel_1</div></div>
+                </div>
+
+                
+                <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
+                <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_fsm_states</div><div class="kv-value">210</div></div>
+                </div>
+                
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>pipeline report</th><th>loop</th><th>pipelined</th><th>II achieved</th><th>II target</th><th>depth</th><th>iter latency</th></tr></thead>
+                    <tbody><tr><td>init_pcg_kernel_Pipeline_init_loop</td><td>init_loop</td><td>yes</td><td>5</td><td>1</td><td>32</td><td>32</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                
+                <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/init_pcg_kernel_csynth.xml</div>
+                <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">target_freq</div><div class="kv-value">300.300 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_clock</div><div class="kv-value">2.433 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_freq</div><div class="kv-value">411.015 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">clock_uncertainty</div><div class="kv-value">0.90 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">pipeline_type</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best)</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best time)</div><div class="kv-value">3.333 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst time)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(min)</div><div class="kv-value">2</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(max)</div><div class="kv-value">-</div></div>
+                </div>
+
+                <div class="sub-title">资源估计（来自 csynth.xml）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">BRAM_18K</div><div class="kv-value">0</div></div>
+                  <div class="kv-row"><div class="kv-key">DSP</div><div class="kv-value">11</div></div>
+                  <div class="kv-row"><div class="kv-key">FF</div><div class="kv-value">11204</div></div>
+                  <div class="kv-row"><div class="kv-key">LUT</div><div class="kv-value">17306</div></div>
+                  <div class="kv-row"><div class="kv-key">URAM</div><div class="kv-value">0</div></div>
+                </div>
+
+                <div class="sub-title">Loop 延迟（来自 csynth.xml）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>loop</th><th>latency(cycles)</th><th>latency(abs)</th><th>iter latency</th><th>trip count</th><th>slack(ns)</th></tr></thead>
+                    <tbody><tr><td colspan="6">无</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                <div class="sub-title">Arguments（来自 XO + CFG + spec JSON）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>arg</th><th>type</th><th>port</th><th>aq</th><th>offset</th><th>HBM(CFG)</th></tr></thead>
+                    <tbody><tr><td>b</td><td>void*</td><td>M_AXI_GMEM_B</td><td>1</td><td>0x10</td><td>init_pcg_kernel_1 -&gt; HBM[2]</td></tr><tr><td>ax</td><td>void*</td><td>M_AXI_GMEM_AX</td><td>1</td><td>0x1C</td><td>init_pcg_kernel_1 -&gt; HBM[7]</td></tr><tr><td>m_inv</td><td>void*</td><td>M_AXI_GMEM_MINV</td><td>1</td><td>0x28</td><td>init_pcg_kernel_1 -&gt; HBM[8]</td></tr><tr><td>r</td><td>void*</td><td>M_AXI_GMEM_R</td><td>1</td><td>0x34</td><td>init_pcg_kernel_1 -&gt; HBM[4]</td></tr><tr><td>z</td><td>void*</td><td>M_AXI_GMEM_Z</td><td>1</td><td>0x40</td><td>init_pcg_kernel_1 -&gt; HBM[5]</td></tr><tr><td>p</td><td>void*</td><td>M_AXI_GMEM_P</td><td>1</td><td>0x4C</td><td>init_pcg_kernel_1 -&gt; HBM[6]</td></tr><tr><td>metrics</td><td>void*</td><td>M_AXI_GMEM_METRICS</td><td>1</td><td>0x58</td><td>init_pcg_kernel_1 -&gt; HBM[9]</td></tr><tr><td>n</td><td>unsigned int</td><td>S_AXI_CONTROL</td><td>0</td><td>0x64</td><td>-</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">Ports（来自 XO）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>port</th><th>mode</th><th>width</th><th>type</th><th>range</th></tr></thead>
+                    <tbody><tr><td>M_AXI_GMEM_B</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_AX</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_MINV</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_R</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_Z</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_P</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_METRICS</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x6C</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">实例与端口绑定（来自 CFG）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>instance</th><th>arg</th><th>target</th></tr></thead>
+                    <tbody><tr><td>init_pcg_kernel_1</td><td>b</td><td>HBM[2]</td></tr><tr><td>init_pcg_kernel_1</td><td>ax</td><td>HBM[7]</td></tr><tr><td>init_pcg_kernel_1</td><td>m_inv</td><td>HBM[8]</td></tr><tr><td>init_pcg_kernel_1</td><td>r</td><td>HBM[4]</td></tr><tr><td>init_pcg_kernel_1</td><td>z</td><td>HBM[5]</td></tr><tr><td>init_pcg_kernel_1</td><td>p</td><td>HBM[6]</td></tr><tr><td>init_pcg_kernel_1</td><td>metrics</td><td>HBM[9]</td></tr></tbody>
+                  </table>
+                </div>
+
+                
+                
+                
+                
+              </div></div>
+            </div>
+            
+            <div class="col-12 col-xl-6">
+              <div class="report-card card h-100"><div class="card-body">
+                <div class="section-title">dot_kernel</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/dot_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/dot_kernel_csynth.xml</div>
+                
+                
+                
+                
+
+                <div class="sub-title">Kernel 元数据（来自 XO）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">kernel_name</div><div class="kv-value">dot_kernel</div></div>
+                  <div class="kv-row"><div class="kv-key">language</div><div class="kv-value">c</div></div>
+                  <div class="kv-row"><div class="kv-key">vlnv</div><div class="kv-value">xilinx.com:hls:dot_kernel:1.0</div></div>
+                  <div class="kv-row"><div class="kv-key">control_protocol</div><div class="kv-value">ap_ctrl_chain</div></div>
+                  <div class="kv-row"><div class="kv-key">cfg_instances</div><div class="kv-value">dot_kernel_1</div></div>
+                </div>
+
+                
+                <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
+                <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_fsm_states</div><div class="kv-value">143</div></div>
+                </div>
+                
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>pipeline report</th><th>loop</th><th>pipelined</th><th>II achieved</th><th>II target</th><th>depth</th><th>iter latency</th></tr></thead>
+                    <tbody><tr><td>dot_kernel_Pipeline_dot_loop</td><td>dot_loop</td><td>yes</td><td>5</td><td>1</td><td>16</td><td>16</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                
+                <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/dot_kernel_csynth.xml</div>
+                <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">target_freq</div><div class="kv-value">300.300 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_clock</div><div class="kv-value">2.433 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_freq</div><div class="kv-value">411.015 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">clock_uncertainty</div><div class="kv-value">0.90 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">pipeline_type</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best)</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best time)</div><div class="kv-value">3.333 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst time)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(min)</div><div class="kv-value">2</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(max)</div><div class="kv-value">-</div></div>
+                </div>
+
+                <div class="sub-title">资源估计（来自 csynth.xml）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">BRAM_18K</div><div class="kv-value">0</div></div>
+                  <div class="kv-row"><div class="kv-key">DSP</div><div class="kv-value">8</div></div>
+                  <div class="kv-row"><div class="kv-key">FF</div><div class="kv-value">4936</div></div>
+                  <div class="kv-row"><div class="kv-key">LUT</div><div class="kv-value">7521</div></div>
+                  <div class="kv-row"><div class="kv-key">URAM</div><div class="kv-value">0</div></div>
+                </div>
+
+                <div class="sub-title">Loop 延迟（来自 csynth.xml）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>loop</th><th>latency(cycles)</th><th>latency(abs)</th><th>iter latency</th><th>trip count</th><th>slack(ns)</th></tr></thead>
+                    <tbody><tr><td colspan="6">无</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                <div class="sub-title">Arguments（来自 XO + CFG + spec JSON）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>arg</th><th>type</th><th>port</th><th>aq</th><th>offset</th><th>HBM(CFG)</th></tr></thead>
+                    <tbody><tr><td>a</td><td>void*</td><td>M_AXI_GMEM_A</td><td>1</td><td>0x10</td><td>dot_kernel_1 -&gt; HBM[6]</td></tr><tr><td>b</td><td>void*</td><td>M_AXI_GMEM_B</td><td>1</td><td>0x1C</td><td>dot_kernel_1 -&gt; HBM[7]</td></tr><tr><td>out</td><td>void*</td><td>M_AXI_GMEM_OUT</td><td>1</td><td>0x28</td><td>dot_kernel_1 -&gt; HBM[9]</td></tr><tr><td>n</td><td>unsigned int</td><td>S_AXI_CONTROL</td><td>0</td><td>0x34</td><td>-</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">Ports（来自 XO）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>port</th><th>mode</th><th>width</th><th>type</th><th>range</th></tr></thead>
+                    <tbody><tr><td>M_AXI_GMEM_A</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_B</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_OUT</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x3C</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">实例与端口绑定（来自 CFG）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>instance</th><th>arg</th><th>target</th></tr></thead>
+                    <tbody><tr><td>dot_kernel_1</td><td>a</td><td>HBM[6]</td></tr><tr><td>dot_kernel_1</td><td>b</td><td>HBM[7]</td></tr><tr><td>dot_kernel_1</td><td>out</td><td>HBM[9]</td></tr></tbody>
+                  </table>
+                </div>
+
+                
+                
+                
+                
+              </div></div>
+            </div>
+            
+            <div class="col-12 col-xl-6">
+              <div class="report-card card h-100"><div class="card-body">
+                <div class="section-title">update_xrz_kernel</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_xrz_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_xrz_kernel_csynth.xml</div>
+                
+                
+                
+                
+
+                <div class="sub-title">Kernel 元数据（来自 XO）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">kernel_name</div><div class="kv-value">update_xrz_kernel</div></div>
+                  <div class="kv-row"><div class="kv-key">language</div><div class="kv-value">c</div></div>
+                  <div class="kv-row"><div class="kv-key">vlnv</div><div class="kv-value">xilinx.com:hls:update_xrz_kernel:1.0</div></div>
+                  <div class="kv-row"><div class="kv-key">control_protocol</div><div class="kv-value">ap_ctrl_chain</div></div>
+                  <div class="kv-row"><div class="kv-key">cfg_instances</div><div class="kv-value">update_xrz_kernel_1</div></div>
+                </div>
+
+                
+                <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
+                <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_fsm_states</div><div class="kv-value">210</div></div>
+                </div>
+                
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>pipeline report</th><th>loop</th><th>pipelined</th><th>II achieved</th><th>II target</th><th>depth</th><th>iter latency</th></tr></thead>
+                    <tbody><tr><td>update_xrz_kernel_Pipeline_update_loop</td><td>update_loop</td><td>yes</td><td>5</td><td>1</td><td>150</td><td>150</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                
+                <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_xrz_kernel_csynth.xml</div>
+                <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">target_freq</div><div class="kv-value">300.300 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_clock</div><div class="kv-value">2.614 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_freq</div><div class="kv-value">382.555 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">clock_uncertainty</div><div class="kv-value">0.90 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">pipeline_type</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best)</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best time)</div><div class="kv-value">3.333 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst time)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(min)</div><div class="kv-value">2</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(max)</div><div class="kv-value">-</div></div>
+                </div>
+
+                <div class="sub-title">资源估计（来自 csynth.xml）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">BRAM_18K</div><div class="kv-value">0</div></div>
+                  <div class="kv-row"><div class="kv-key">DSP</div><div class="kv-value">11</div></div>
+                  <div class="kv-row"><div class="kv-key">FF</div><div class="kv-value">12152</div></div>
+                  <div class="kv-row"><div class="kv-key">LUT</div><div class="kv-value">17717</div></div>
+                  <div class="kv-row"><div class="kv-key">URAM</div><div class="kv-value">0</div></div>
+                </div>
+
+                <div class="sub-title">Loop 延迟（来自 csynth.xml）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>loop</th><th>latency(cycles)</th><th>latency(abs)</th><th>iter latency</th><th>trip count</th><th>slack(ns)</th></tr></thead>
+                    <tbody><tr><td colspan="6">无</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                <div class="sub-title">Arguments（来自 XO + CFG + spec JSON）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>arg</th><th>type</th><th>port</th><th>aq</th><th>offset</th><th>HBM(CFG)</th></tr></thead>
+                    <tbody><tr><td>x</td><td>void*</td><td>M_AXI_GMEM_X</td><td>1</td><td>0x10</td><td>update_xrz_kernel_1 -&gt; HBM[3]</td></tr><tr><td>p</td><td>void*</td><td>M_AXI_GMEM_P</td><td>1</td><td>0x1C</td><td>update_xrz_kernel_1 -&gt; HBM[6]</td></tr><tr><td>r</td><td>void*</td><td>M_AXI_GMEM_R</td><td>1</td><td>0x28</td><td>update_xrz_kernel_1 -&gt; HBM[4]</td></tr><tr><td>ap</td><td>void*</td><td>M_AXI_GMEM_AP</td><td>1</td><td>0x34</td><td>update_xrz_kernel_1 -&gt; HBM[7]</td></tr><tr><td>m_inv</td><td>void*</td><td>M_AXI_GMEM_MINV</td><td>1</td><td>0x40</td><td>update_xrz_kernel_1 -&gt; HBM[8]</td></tr><tr><td>z</td><td>void*</td><td>M_AXI_GMEM_Z</td><td>1</td><td>0x4C</td><td>update_xrz_kernel_1 -&gt; HBM[5]</td></tr><tr><td>metrics</td><td>void*</td><td>M_AXI_GMEM_METRICS</td><td>1</td><td>0x58</td><td>update_xrz_kernel_1 -&gt; HBM[9]</td></tr><tr><td>alpha</td><td>double</td><td>S_AXI_CONTROL</td><td>0</td><td>0x64</td><td>-</td></tr><tr><td>n</td><td>unsigned int</td><td>S_AXI_CONTROL</td><td>0</td><td>0x70</td><td>-</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">Ports（来自 XO）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>port</th><th>mode</th><th>width</th><th>type</th><th>range</th></tr></thead>
+                    <tbody><tr><td>M_AXI_GMEM_X</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_P</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_R</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_AP</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_MINV</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_Z</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_METRICS</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x78</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">实例与端口绑定（来自 CFG）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>instance</th><th>arg</th><th>target</th></tr></thead>
+                    <tbody><tr><td>update_xrz_kernel_1</td><td>x</td><td>HBM[3]</td></tr><tr><td>update_xrz_kernel_1</td><td>p</td><td>HBM[6]</td></tr><tr><td>update_xrz_kernel_1</td><td>r</td><td>HBM[4]</td></tr><tr><td>update_xrz_kernel_1</td><td>ap</td><td>HBM[7]</td></tr><tr><td>update_xrz_kernel_1</td><td>m_inv</td><td>HBM[8]</td></tr><tr><td>update_xrz_kernel_1</td><td>z</td><td>HBM[5]</td></tr><tr><td>update_xrz_kernel_1</td><td>metrics</td><td>HBM[9]</td></tr></tbody>
+                  </table>
+                </div>
+
+                
+                
+                
+                
+              </div></div>
+            </div>
+            
+            <div class="col-12 col-xl-6">
+              <div class="report-card card h-100"><div class="card-body">
+                <div class="section-title">update_p_kernel</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_p_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_p_kernel_csynth.xml</div>
+                
+                
+                
+                
+
+                <div class="sub-title">Kernel 元数据（来自 XO）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">kernel_name</div><div class="kv-value">update_p_kernel</div></div>
+                  <div class="kv-row"><div class="kv-key">language</div><div class="kv-value">c</div></div>
+                  <div class="kv-row"><div class="kv-key">vlnv</div><div class="kv-value">xilinx.com:hls:update_p_kernel:1.0</div></div>
+                  <div class="kv-row"><div class="kv-key">control_protocol</div><div class="kv-value">ap_ctrl_chain</div></div>
+                  <div class="kv-row"><div class="kv-key">cfg_instances</div><div class="kv-value">update_p_kernel_1</div></div>
+                </div>
+
+                
+                <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
+                <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_fsm_states</div><div class="kv-value">73</div></div>
+                </div>
+                
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>pipeline report</th><th>loop</th><th>pipelined</th><th>II achieved</th><th>II target</th><th>depth</th><th>iter latency</th></tr></thead>
+                    <tbody><tr><td>update_p_kernel_Pipeline_update_p_loop</td><td>update_p_loop</td><td>yes</td><td>1</td><td>1</td><td>157</td><td>157</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                
+                <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_p_kernel_csynth.xml</div>
+                <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">target_freq</div><div class="kv-value">300.300 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_clock</div><div class="kv-value">2.433 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_freq</div><div class="kv-value">411.015 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">clock_uncertainty</div><div class="kv-value">0.90 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">pipeline_type</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best time)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst time)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(min)</div><div class="kv-value">-</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(max)</div><div class="kv-value">-</div></div>
+                </div>
+
+                <div class="sub-title">资源估计（来自 csynth.xml）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">BRAM_18K</div><div class="kv-value">0</div></div>
+                  <div class="kv-row"><div class="kv-key">DSP</div><div class="kv-value">11</div></div>
+                  <div class="kv-row"><div class="kv-key">FF</div><div class="kv-value">4437</div></div>
+                  <div class="kv-row"><div class="kv-key">LUT</div><div class="kv-value">5439</div></div>
+                  <div class="kv-row"><div class="kv-key">URAM</div><div class="kv-value">0</div></div>
+                </div>
+
+                <div class="sub-title">Loop 延迟（来自 csynth.xml）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>loop</th><th>latency(cycles)</th><th>latency(abs)</th><th>iter latency</th><th>trip count</th><th>slack(ns)</th></tr></thead>
+                    <tbody><tr><td colspan="6">无</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                <div class="sub-title">Arguments（来自 XO + CFG + spec JSON）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>arg</th><th>type</th><th>port</th><th>aq</th><th>offset</th><th>HBM(CFG)</th></tr></thead>
+                    <tbody><tr><td>z</td><td>void*</td><td>M_AXI_GMEM_Z</td><td>1</td><td>0x10</td><td>update_p_kernel_1 -&gt; HBM[5]</td></tr><tr><td>p</td><td>void*</td><td>M_AXI_GMEM_P</td><td>1</td><td>0x1C</td><td>update_p_kernel_1 -&gt; HBM[6]</td></tr><tr><td>beta</td><td>double</td><td>S_AXI_CONTROL</td><td>0</td><td>0x28</td><td>-</td></tr><tr><td>n</td><td>unsigned int</td><td>S_AXI_CONTROL</td><td>0</td><td>0x34</td><td>-</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">Ports（来自 XO）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>port</th><th>mode</th><th>width</th><th>type</th><th>range</th></tr></thead>
+                    <tbody><tr><td>M_AXI_GMEM_Z</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_P</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x3C</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">实例与端口绑定（来自 CFG）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>instance</th><th>arg</th><th>target</th></tr></thead>
+                    <tbody><tr><td>update_p_kernel_1</td><td>z</td><td>HBM[5]</td></tr><tr><td>update_p_kernel_1</td><td>p</td><td>HBM[6]</td></tr></tbody>
+                  </table>
+                </div>
+
+                
+                
+                
+                
+              </div></div>
+            </div>
+            
+    </div>
+  </div>
+</body>
+</html>

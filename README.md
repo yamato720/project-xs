@@ -22,8 +22,8 @@
   一个最小周期仿真 demo，用来验证 wire/reg 端口时序行为与组件编排方式。
 - `script/generate_cg_dataset.py`
   生成 `CG` 验证数据集，同时输出矩阵可视化文件。
-- `script/render_xplus_hls_example.py`
-  读取 `example/project_xplus_hls/project_xplus_hls_spec.json` 和示例 `xo`，生成静态报告页面。
+- `script/parse_xo.py`
+  读取 example 目录下的 spec 和 `xo`，自动生成静态报告页面。
 - `example/project_xplus_hls/`
   从 `Project-XPlus` 抽取的 5 个 HLS kernel 示例、说明文件、`xo` 样本和预生成报告。
 - `docs/`
@@ -95,17 +95,18 @@ make render-xplus-hls-example
 或：
 
 ```bash
-python3 script/render_xplus_hls_example.py
+python3 script/parse_xo.py
 ```
 
 默认会更新：
 
 ```text
-example/project_xplus_hls/reports/project_xplus_hls_example.json
-example/project_xplus_hls/reports/project_xplus_hls_example.html
+example/project_xplus_hls/reports/xo_report.json
+example/project_xplus_hls/reports/xo_report.html
 ```
 
 这个报告站在 `XS` 的角度，把示例 kernel 的职责、顶层接口、参数端口、HBM 映射和组件关系整理成静态页面，方便做结构核对。
+其中 `.xo` 提供 kernel/arg/port 元数据，`.cfg` 额外提供 kernel 实例名和 `sp -> HBM` 绑定信息；spec 中这些路径默认都按 example 目录解析，也兼容绝对路径。
 
 ## CG 数据格式
 
