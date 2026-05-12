@@ -3,6 +3,7 @@
 
 #include "base/KernelComponent.h"
 #include "base/PortGroup.h"
+#include "base/State.h"
 
 #include <cstdint>
 #include <iosfwd>
@@ -29,6 +30,8 @@ class Kernel {
     // - name: kernel 名称
     // - latency: kernel 自身的周期窗口长度
     explicit Kernel(std::string name, std::uint64_t latency = 0);
+
+    // 虚析构，保证通过基类指针释放派生 kernel 时安全。
     virtual ~Kernel() = default;
 
     // 返回 kernel 名称。
@@ -40,15 +43,61 @@ class Kernel {
     // 返回 kernel 自带的默认普通端口组。
     // 这个端口组只承载无协议端口，适合作为统一的多输入/多输出插槽。
     PortGroup& ports() { return *port_groups_.front(); }
+
+    // 返回 kernel 自带的只读默认普通端口组。
     const PortGroup& ports() const { return *port_groups_.front(); }
+
+    // 返回 kernel 自带的只读状态表。
+    const StateSet& state_set() const { return state_set_; }
 
     // 创建并持有一个附加端口组。
     // 默认组永远是 port_groups_[0]；新创建的组会追加到后面。
     PortGroup& create_port_group(std::string name);
 
+    // 返回当前 kernel 持有的全部端口组。
+    // vector 顺序仍然保留执行/组织语义，同时支持按名字查找。
+    const std::vector<std::unique_ptr<PortGroup>>& port_groups() const { return port_groups_; }
+
     // 向当前 kernel 内注册一个子组件。
     // 在默认实现里，这些组件会按 vector 注册顺序逐个调用它们自己的 run()。
     void add_component(const std::shared_ptr<KernelComponent>& component);
+
+    // 返回当前 kernel 内已注册的全部组件。
+    // 这个 vector 既决定执行顺序，也可以被按名字查询。
+    const std::vector<std::shared_ptr<KernelComponent>>& components() const { return components_; }
+
+    // 按名字查找/获取子组件或附属端口组。
+    // find 找不到时返回空指针；get 找不到时抛异常。
+    // 这组接口是 kernel 层面对 components_ / port_groups_ 的统一命名访问口。
+    std::shared_ptr<KernelComponent> find_component(std::string_view name) const;
+
+    // 按名字获取一个子组件；找不到时报错。
+    const std::shared_ptr<KernelComponent>& get_component(std::string_view name) const;
+
+    // 按名字查找一个附属端口组。
+    PortGroup* find_port_group(std::string_view name);
+
+    // 只读按名字查找一个附属端口组。
+    const PortGroup* find_port_group(std::string_view name) const;
+
+    // 按名字获取一个附属端口组；找不到时报错。
+    PortGroup& get_port_group(std::string_view name);
+
+    // 只读按名字获取一个附属端口组；找不到时报错。
+    const PortGroup& get_port_group(std::string_view name) const;
+
+    // 返回指定子组件的摘要信息。
+    std::string component_info(std::string_view name) const;
+
+    // 返回全部子组件的摘要信息。
+    std::string all_components_info() const;
+
+    // 返回指定附属端口组的摘要信息。
+    std::string port_group_info(std::string_view name,
+                                PortValueBase base = PortValueBase::Decimal) const;
+
+    // 返回全部附属端口组的摘要信息。
+    std::string all_port_groups_info(PortValueBase base = PortValueBase::Decimal) const;
 
     // 复位 kernel 自身和所有内部组件。
     void reset();
@@ -83,6 +132,10 @@ class Kernel {
     // 返回该 kernel 是否请求终止整个周期模拟器。
     bool terminate_requested() const { return terminate_requested_; }
 
+    // 返回当前 kernel 的可读状态摘要。
+    // 输出会聚合 kernel 自身状态、全部 portgroup 和全部 component 的摘要。
+    virtual std::string info() const;
+
   protected:
     // kernel 的单拍业务逻辑入口。
     // 默认行为：
@@ -112,14 +165,27 @@ class Kernel {
     // 复制基类层的运行时状态，供派生类 clone() 使用。
     void copy_kernel_runtime_from(const Kernel& other);
 
+    // 返回 kernel 自带的可写状态表。
+    // 主要用于构造阶段注册状态项。
+    StateSet& mutable_state_set() { return state_set_; }
+
     // 非端口组类的额外状态钩子。
     virtual void reset_extra();
+
+    // 非端口组类的附加“可见 0 初始化”钩子。
     virtual void initialize_zero_extra();
+
+    // 非端口组类的拍末附加钩子。
     virtual void end_cycle_extra();
 
   private:
+    // 把一段文本安全输出到指定流；自动补换行。
     void write_text(std::ostream& os, const std::string& text) const;
+
+    // 输出当前拍的调试文本。
     void write_debug(std::ostream& os, std::uint64_t cycle) const;
+
+    // 发射当前 kernel 全部端口组中的输出端口。
     void emit_outputs();
 
     // 推进 kernel 自身的周期事件。
@@ -139,6 +205,9 @@ class Kernel {
 
     // 是否请求终止整个模拟器。
     bool terminate_requested_ = false;
+
+    // kernel 自身的状态收束表。
+    StateSet state_set_;
 
     // port_groups_[0] 永远是默认普通端口组，其余元素按创建顺序追加。
     std::vector<std::unique_ptr<PortGroup>> port_groups_;

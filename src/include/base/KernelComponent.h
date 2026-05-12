@@ -2,10 +2,14 @@
 #define PROJECT_XS_BASE_KERNEL_COMPONENT_H
 
 #include "base/PortGroup.h"
+#include "base/State.h"
 
 #include <cstdint>
+#include <iosfwd>
 #include <memory>
 #include <string>
+#include <string_view>
+#include <vector>
 
 namespace project_xs::sim {
 
@@ -32,6 +36,7 @@ class KernelComponent {
     explicit KernelComponent(std::string name,
                              std::uint64_t latency = 0,
                              std::uint64_t first_delay_align = 0);
+    // 虚析构，保证通过基类指针释放派生组件时安全。
     virtual ~KernelComponent() = default;
 
     // 返回组件名称。
@@ -46,11 +51,41 @@ class KernelComponent {
     // 返回组件自带的默认普通端口组。
     // 这个端口组只承载无协议端口，用来给组件内部自由组合多输入/多输出。
     PortGroup& ports() { return *port_groups_.front(); }
+
+    // 返回组件自带的只读默认普通端口组。
     const PortGroup& ports() const { return *port_groups_.front(); }
+
+    // 返回组件自带的只读状态表。
+    const StateSet& state_set() const { return state_set_; }
 
     // 创建并持有一个附加端口组。
     // 默认组永远是 port_groups_[0]；新创建的组会追加到后面。
     PortGroup& create_port_group(std::string name);
+
+    // 返回当前组件持有的全部端口组。
+    // 这个 vector 保留顺序语义，同时支持按名字查找。
+    const std::vector<std::unique_ptr<PortGroup>>& port_groups() const { return port_groups_; }
+
+    // 按名字查找/获取附属端口组。
+    // find 找不到时返回空指针；get 找不到时抛异常。
+    // 这组接口是组件层面对 vector<PortGroup> 的统一命名访问口。
+    PortGroup* find_port_group(std::string_view name);
+
+    // 只读按名字查找一个附属端口组。
+    const PortGroup* find_port_group(std::string_view name) const;
+
+    // 按名字获取一个附属端口组；找不到时报错。
+    PortGroup& get_port_group(std::string_view name);
+
+    // 只读按名字获取一个附属端口组；找不到时报错。
+    const PortGroup& get_port_group(std::string_view name) const;
+
+    // 返回指定附属端口组的摘要信息。
+    std::string port_group_info(std::string_view name,
+                                PortValueBase base = PortValueBase::Decimal) const;
+
+    // 返回当前组件全部附属端口组的摘要信息。
+    std::string all_port_groups_info(PortValueBase base = PortValueBase::Decimal) const;
 
     // 复位组件内部状态。
     // 默认会清空相位和端口状态。
@@ -72,6 +107,10 @@ class KernelComponent {
     // 深复制当前组件。
     virtual std::shared_ptr<KernelComponent> clone() const = 0;
 
+    // 返回当前组件的可读状态摘要。
+    // 输出会聚合组件相位信息、自身状态表和全部 portgroup。
+    virtual std::string info() const;
+
   protected:
     // 组件单拍业务逻辑入口。
     // 派生类一般在这里写“本拍该干什么”。
@@ -90,13 +129,23 @@ class KernelComponent {
     // 复制基类层的运行时状态，供派生类 clone() 使用。
     void copy_component_runtime_from(const KernelComponent& other);
 
+    // 返回组件自带的可写状态表。
+    // 主要用于构造阶段注册状态项。
+    StateSet& mutable_state_set() { return state_set_; }
+
     // 非端口组类的额外状态钩子。
     virtual void reset_extra();
+
+    // 非端口组类的附加“可见 0 初始化”钩子。
     virtual void initialize_zero_extra();
+
+    // 非端口组类的拍末附加钩子。
     virtual void end_cycle_extra();
 
   private:
+    // 发射当前组件全部端口组中的输出端口。
     void emit_outputs();
+
     // 推进组件内部相位状态。
     // 先消耗首对齐拍数，之后在 [0, latency) 内循环。
     void advance_phase();
@@ -115,6 +164,9 @@ class KernelComponent {
 
     // 当前处于哪个相位。
     std::uint64_t phase_ = 0;
+
+    // 组件自身的状态收束表。
+    StateSet state_set_;
 
     // port_groups_[0] 永远是默认普通端口组，其余元素按创建顺序追加。
     std::vector<std::unique_ptr<PortGroup>> port_groups_;

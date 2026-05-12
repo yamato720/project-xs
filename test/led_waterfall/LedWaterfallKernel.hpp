@@ -5,7 +5,7 @@
 #include "base/Kernel.h"
 #include "base/KernelComponent.h"
 #include "base/Port.h"
-#include "base/StateRegistry.h"
+#include "base/State.h"
 
 #include <cstdint>
 #include <memory>
@@ -37,65 +37,64 @@ class CounterComponent final : public project_xs::sim::KernelComponent {
   public:
     explicit CounterComponent(std::uint32_t cnt_max)
         : project_xs::sim::KernelComponent("counter"),
-          rst_n_(false),
-          wrap_pulse_(false),
-          count_(0),
-          cnt_max_(cnt_max) {
-        if (cnt_max_ == 0) {
+          rst_n_("rst_n", "异步低有效复位输入", false),
+          wrap_pulse_("wrap_pulse", "计数回卷脉冲输出", false),
+          count_("count", "当前计数值", 0, 25),
+          cnt_max_("cnt_max", "计数上限配置", cnt_max, 25) {
+        mutable_state_set().register_state(rst_n_);
+        mutable_state_set().register_state(wrap_pulse_);
+        mutable_state_set().register_state(count_);
+        mutable_state_set().register_state(cnt_max_);
+        if (cnt_max_.value() == 0) {
             throw std::runtime_error("CounterComponent cnt_max must be > 0");
         }
 
-        states_.add_state("rst_n", "异步低有效复位输入", &rst_n_);
-        states_.add_state("wrap_pulse", "计数回卷脉冲输出", &wrap_pulse_);
-        states_.add_state("count", "当前计数值", &count_, 25);
-        states_.add_state("cnt_max", "计数上限配置", &cnt_max_, 25);
-
-        ports().add_input(states_.make_wire_input_port("rst_n"));
-        ports().add_output(states_.make_wire_output_port("wrap_pulse"));
-        ports().add_output(states_.make_wire_output_port("count"));
+        ports().add_input(rst_n_.make_wire_input_port());
+        ports().add_output(wrap_pulse_.make_wire_output_port());
+        ports().add_output(count_.make_wire_output_port());
     }
 
     // clone() 让 fullcopy 这类操作可以深复制 component。
     // 这里保留当前 component 的运行时状态，但不共享同一个对象。
     std::shared_ptr<project_xs::sim::KernelComponent> clone() const override {
-        auto copy = std::make_shared<CounterComponent>(cnt_max_);
+        auto copy = std::make_shared<CounterComponent>(cnt_max_.value());
         copy->copy_component_runtime_from(*this);
         return copy;
     }
 
-    const project_xs::sim::StateRegistry& states() const { return states_; }
-    std::uint32_t cnt_max() const { return cnt_max_; }
+    std::uint32_t cnt_max() const { return cnt_max_.value(); }
 
   protected:
     void reset_extra() override {
-        rst_n_ = false;
-        wrap_pulse_ = false;
-        count_ = 0;
+        rst_n_.value() = false;
+        wrap_pulse_.value() = false;
+        count_.value() = 0;
     }
 
     void run_single(std::uint64_t cycle) override {
         (void)cycle;
-        if (!rst_n_) {
-            count_ = 0;
-            wrap_pulse_ = false;
+        if (!rst_n_.value()) {
+            count_.value() = 0;
+            wrap_pulse_.value() = false;
             return;
         }
 
-        if (count_ == cnt_max_ - 1) {
-            count_ = 0;
-            wrap_pulse_ = true;
+        if (count_.value() == cnt_max_.value() - 1) {
+            count_.value() = 0;
+            wrap_pulse_.value() = true;
         } else {
-            ++count_;
-            wrap_pulse_ = false;
+            ++count_.value();
+            wrap_pulse_.value() = false;
         }
     }
 
   private:
-    bool rst_n_;
-    bool wrap_pulse_;
-    std::uint32_t count_;
-    std::uint32_t cnt_max_;
-    project_xs::sim::StateRegistry states_;
+    friend class LedWaterfallKernel;
+
+    project_xs::sim::State<bool> rst_n_;
+    project_xs::sim::State<bool> wrap_pulse_;
+    project_xs::sim::State<std::uint32_t> count_;
+    project_xs::sim::State<std::uint32_t> cnt_max_;
 };
 
 // LED 组件：
@@ -105,16 +104,16 @@ class LedShiftComponent final : public project_xs::sim::KernelComponent {
   public:
     LedShiftComponent()
         : project_xs::sim::KernelComponent("led_shift"),
-          rst_n_(false),
-          wrap_pulse_(false),
-          led_(0x01) {
-        states_.add_state("rst_n", "异步低有效复位输入", &rst_n_);
-        states_.add_state("wrap_pulse", "来自计数器的回卷脉冲", &wrap_pulse_);
-        states_.add_state("led", "当前 LED 模式输出", &led_, 8);
+          rst_n_("rst_n", "异步低有效复位输入", false),
+          wrap_pulse_("wrap_pulse", "来自计数器的回卷脉冲", false),
+          led_("led", "当前 LED 模式输出", std::uint8_t{0x01}, 8) {
+        mutable_state_set().register_state(rst_n_);
+        mutable_state_set().register_state(wrap_pulse_);
+        mutable_state_set().register_state(led_);
 
-        ports().add_input(states_.make_wire_input_port("rst_n"));
-        ports().add_input(states_.make_wire_input_port("wrap_pulse"));
-        ports().add_output(states_.make_wire_output_port("led"));
+        ports().add_input(rst_n_.make_wire_input_port());
+        ports().add_input(wrap_pulse_.make_wire_input_port());
+        ports().add_output(led_.make_wire_output_port());
     }
 
     // 同样支持深复制，用于 simulator fullcopy / kernel clone。
@@ -124,38 +123,37 @@ class LedShiftComponent final : public project_xs::sim::KernelComponent {
         return copy;
     }
 
-    const project_xs::sim::StateRegistry& states() const { return states_; }
-
   protected:
     void reset_extra() override {
-        rst_n_ = false;
-        wrap_pulse_ = false;
-        led_ = 0x01;
+        rst_n_.value() = false;
+        wrap_pulse_.value() = false;
+        led_.value() = 0x01;
     }
 
     void run_single(std::uint64_t cycle) override {
         (void)cycle;
-        if (!rst_n_) {
-            led_ = 0x01;
+        if (!rst_n_.value()) {
+            led_.value() = 0x01;
             return;
         }
 
-        if (!wrap_pulse_) {
+        if (!wrap_pulse_.value()) {
             return;
         }
 
-        if (led_ == 0x80) {
-            led_ = 0x01;
+        if (led_.value() == 0x80) {
+            led_.value() = 0x01;
         } else {
-            led_ = static_cast<std::uint8_t>(led_ << 1);
+            led_.value() = static_cast<std::uint8_t>(led_.value() << 1);
         }
     }
 
   private:
-    bool rst_n_;
-    bool wrap_pulse_;
-    std::uint8_t led_;
-    project_xs::sim::StateRegistry states_;
+    friend class LedWaterfallKernel;
+
+    project_xs::sim::State<bool> rst_n_;
+    project_xs::sim::State<bool> wrap_pulse_;
+    project_xs::sim::State<std::uint8_t> led_;
 };
 
 // 顶层 kernel：
@@ -165,24 +163,9 @@ class LedShiftComponent final : public project_xs::sim::KernelComponent {
 class LedWaterfallKernel final : public project_xs::sim::Kernel {
   public:
     LedWaterfallKernel(std::string label, std::uint32_t cnt_max)
-        : project_xs::sim::Kernel(std::move(label)),
-          counter_(std::make_shared<CounterComponent>(cnt_max)),
-          shifter_(std::make_shared<LedShiftComponent>()),
-          led_output_(0x01) {
-        // 这里对应 Verilog 里“led <= ...”那个输出寄存器的可见观测面。
-        // kernel 自身不直接实现状态机，而是把内部 component 的结果汇总后对外输出。
-        shifter_->ports().get_input("wrap_pulse")->connect(
-            counter_->ports().get_output("wrap_pulse"));
-
-        states_.add_state("led", "顶层对外 LED 输出", &led_output_, 8);
-        ports().add_output(states_.make_wire_output_port("led"));
-
-        // 默认顺序是 counter 先更新，再 led_shift 更新。
-        // 由于当前框架已经恢复成“按 vector 顺序逐个执行完整 run()”，
-        // 这个顺序本身就是时序关系的一部分。
-        add_component(counter_);
-        add_component(shifter_);
-    }
+        : LedWaterfallKernel(std::move(label),
+                             std::make_shared<CounterComponent>(cnt_max),
+                             std::make_shared<LedShiftComponent>()) {}
 
     // 顶层 kernel 的深复制：
     // - 先各自 clone 两个 component
@@ -193,14 +176,8 @@ class LedWaterfallKernel final : public project_xs::sim::Kernel {
             std::dynamic_pointer_cast<CounterComponent>(counter_->clone());
         auto shifter_copy =
             std::dynamic_pointer_cast<LedShiftComponent>(shifter_->clone());
-
-        shifter_copy->ports().get_input("wrap_pulse")->connect(
-            counter_copy->ports().get_output("wrap_pulse"));
-
-        auto copy = std::make_shared<LedWaterfallKernel>(name(), counter_copy->cnt_max());
-        copy->counter_ = counter_copy;
-        copy->shifter_ = shifter_copy;
-        copy->led_output_ = led_output_;
+        auto copy = std::shared_ptr<LedWaterfallKernel>(
+            new LedWaterfallKernel(name(), counter_copy, shifter_copy));
         copy->copy_kernel_runtime_from(*this);
         return copy;
     }
@@ -214,7 +191,7 @@ class LedWaterfallKernel final : public project_xs::sim::Kernel {
     }
 
     void reset_extra() override {
-        led_output_ = 0x01;
+        led_output_.value() = 0x01;
     }
 
     void run_single(std::uint64_t cycle) override {
@@ -224,19 +201,41 @@ class LedWaterfallKernel final : public project_xs::sim::Kernel {
         project_xs::sim::Kernel::run_single(cycle);
 
         // 对外只暴露 led 的最终结果。
-        led_output_ = shifter_->states().value<std::uint8_t>("led");
+        led_output_.value() = shifter_->led_.value();
     }
 
     // 这个调试输出会在每拍自动打印，方便和 Verilog 里的内部寄存器语义对照。
     std::string debug_info(std::uint64_t cycle) const override {
         return "[" + name() + "][cycle " + std::to_string(cycle) + "] rst_n=" +
-               std::string(counter_->states().value<bool>("rst_n") ? "1" : "0") + " cnt=" +
-               std::to_string(counter_->states().value<std::uint32_t>("count")) + " wrap=" +
-               std::string(counter_->states().value<bool>("wrap_pulse") ? "1" : "0") + " led=0x" +
-               hex_byte(led_output_);
+               std::string(counter_->rst_n_.value() ? "1" : "0") + " cnt=" +
+               std::to_string(counter_->count_.value()) + " wrap=" +
+               std::string(counter_->wrap_pulse_.value() ? "1" : "0") + " led=0x" +
+               hex_byte(led_output_.value());
     }
 
   private:
+    LedWaterfallKernel(std::string label,
+                       std::shared_ptr<CounterComponent> counter,
+                       std::shared_ptr<LedShiftComponent> shifter)
+        : project_xs::sim::Kernel(std::move(label)),
+          counter_(std::move(counter)),
+          shifter_(std::move(shifter)),
+          led_output_("led", "顶层对外 LED 输出", std::uint8_t{0x01}, 8) {
+        mutable_state_set().register_state(led_output_);
+        // 这里对应 Verilog 里“led <= ...”那个输出寄存器的可见观测面。
+        // kernel 自身不直接实现状态机，而是把内部 component 的结果汇总后对外输出。
+        shifter_->ports().get_input("wrap_pulse")->connect(
+            counter_->ports().get_output("wrap_pulse"));
+
+        ports().add_output(led_output_.make_wire_output_port());
+
+        // 默认顺序是 counter 先更新，再 led_shift 更新。
+        // 由于当前框架已经恢复成“按 vector 顺序逐个执行完整 run()”，
+        // 这个顺序本身就是时序关系的一部分。
+        add_component(counter_);
+        add_component(shifter_);
+    }
+
     static std::string hex_byte(std::uint8_t value) {
         static constexpr char kDigits[] = "0123456789ABCDEF";
         std::string text = "00";
@@ -249,8 +248,7 @@ class LedWaterfallKernel final : public project_xs::sim::Kernel {
     // 是为了让 clone()/debug_info() 能直接访问它们的状态。
     std::shared_ptr<CounterComponent> counter_;
     std::shared_ptr<LedShiftComponent> shifter_;
-    std::uint8_t led_output_;
-    project_xs::sim::StateRegistry states_;
+    project_xs::sim::State<std::uint8_t> led_output_;
 };
 
 }  // namespace project_xs::sim::test::led_waterfall

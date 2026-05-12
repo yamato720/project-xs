@@ -3,6 +3,7 @@
 #include "base/CycleSimulator.h"
 #include "base/Port.h"
 #include "base/SimulationSession.h"
+#include "base/State.h"
 
 #include <cstdint>
 #include <iostream>
@@ -15,15 +16,16 @@ namespace {
 // 所以不再单独建一个 clk 端口，而是直接让 step() 本身代表时钟推进。
 class LedWaterfallSimulator final : public project_xs::sim::CycleSimulator {
   public:
-    LedWaterfallSimulator(std::int64_t max_cycles, long double frequency_hz)
-        : project_xs::sim::CycleSimulator(max_cycles, frequency_hz),
-          rst_n_(false) {
-        ports().add_output(project_xs::sim::WirePort::make_output<bool>("rst_n", &rst_n_));
+    LedWaterfallSimulator(std::string name, std::int64_t max_cycles, long double frequency_hz)
+        : project_xs::sim::CycleSimulator(std::move(name), max_cycles, frequency_hz),
+          rst_n_("rst_n", "外部复位输入", false) {
+        mutable_state_set().register_state(rst_n_);
+        ports().add_output(rst_n_.make_wire_output_port());
     }
 
   private:
     void reset_extra() override {
-        rst_n_ = false;
+        rst_n_.value() = false;
     }
 
     void run_single(std::uint64_t cycle) override {
@@ -34,10 +36,10 @@ class LedWaterfallSimulator final : public project_xs::sim::CycleSimulator {
         // 这样输出里能直观看到：
         // - 第 0 拍 led 被复位到 0x01
         // - 后续 cnt 正常累加
-        rst_n_ = (cycle != 0);
+        rst_n_.value() = (cycle != 0);
     }
 
-    bool rst_n_;
+    project_xs::sim::State<bool> rst_n_;
 };
 
 }  // namespace
@@ -50,7 +52,7 @@ int main() {
     // run_time = 12 秒，意味着总共跑 12 个周期。
     project_xs::sim::SimulationSession session(1.0L, 12.0L);
 
-    auto simulator = std::make_shared<LedWaterfallSimulator>(12, 1.0L);
+    auto simulator = std::make_shared<LedWaterfallSimulator>("led_waterfall_simulator", 12, 1.0L);
 
     // 这里把 CNT_MAX 设成 4，而不是 Verilog 里的 25_000_000，
     // 只是为了在短测试里更快看到 led 移动。

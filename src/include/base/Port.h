@@ -13,6 +13,9 @@
 
 namespace project_xs::sim {
 
+class StateBase;
+class StateArrayBase;
+
 // 端口方向。
 // 一个端口实例在构造完成后方向固定。
 enum class PortDirection {
@@ -37,12 +40,15 @@ enum class PortValueBase {
 // - RegPort : 当前拍写入，下一拍才可见
 class Port {
   public:
+    // 构造一个基础端口对象。
     Port(std::string name,
          PortDirection direction,
          std::size_t width_bits,
          const std::type_info& type_info,
          std::size_t data_size,
          void* bound_variable);
+
+    // 虚析构，保证通过基类指针释放派生端口时安全。
     virtual ~Port() = default;
 
     // 返回端口名称。
@@ -108,6 +114,8 @@ class Port {
     // 只读访问当前端口的可见值与有效位。
     // 主要供输入端口在同步上游值时使用。
     const std::vector<std::byte>& visible_storage() const { return visible_storage_; }
+
+    // 返回当前端口是否存在可见有效值。
     bool visible_valid() const { return valid_; }
 
     // 返回当前端口可见值的字符串表示。
@@ -147,11 +155,22 @@ class Port {
     // 获取当前输入端口连接到的输出端口。
     std::shared_ptr<Port> source_output() const;
 
+    // 当前端口的逻辑名称。
     std::string name_;
+
+    // 当前端口方向。
     PortDirection direction_;
+
+    // 当前端口位宽。
     std::size_t width_bits_ = 0;
+
+    // 当前端口底层值占用字节数。
     std::size_t data_size_ = 0;
+
+    // 当前端口绑定的数据类型索引。
     std::type_index type_index_;
+
+    // 当前端口绑定到的底层变量地址。
     void* bound_variable_ = nullptr;
 
     // 当前拍对外可见的值。
@@ -177,40 +196,38 @@ class Port {
 // 适合模拟组合直通、同拍传播的简化信号。
 class WirePort final : public Port {
   public:
-    using Port::Port;
-
-    // 构造一个 wire 型输入端口，并绑定到某个变量。
-    template <typename T>
-    static std::shared_ptr<WirePort> make_input(std::string name,
-                                                T* bound_variable,
-                                                std::size_t width_bits = sizeof(T) * 8) {
-        return std::make_shared<WirePort>(
-            std::move(name),
-            PortDirection::Input,
-            width_bits,
-            typeid(T),
-            sizeof(T),
-            static_cast<void*>(bound_variable));
-    }
-
-    // 构造一个 wire 型输出端口，并绑定到某个变量。
-    template <typename T>
-    static std::shared_ptr<WirePort> make_output(std::string name,
-                                                 T* bound_variable,
-                                                 std::size_t width_bits = sizeof(T) * 8) {
-        return std::make_shared<WirePort>(
-            std::move(name),
-            PortDirection::Output,
-            width_bits,
-            typeid(T),
-            sizeof(T),
-            static_cast<void*>(bound_variable));
-    }
-
+    // 同步一个 wire 输入端口的上游可见值。
     void sync_input() override;
+
+    // 发射一个 wire 输出端口当前绑定变量的值。
     void emit_bound_value() override;
+
+    // wire 端口的拍末提交；通常无额外动作。
     void end_cycle() override;
+
+    // 把 wire 端口初始化成可见 0。
     void initialize_zero() override;
+
+  private:
+    // 允许单状态对象直接创建 wire 端口。
+    friend class StateBase;
+
+    // 允许数组状态对象按元素创建 wire 端口。
+    friend class StateArrayBase;
+
+    // 仅允许通过状态对象内部辅助接口构造 wire 端口。
+    WirePort(std::string name,
+             PortDirection direction,
+             std::size_t width_bits,
+             const std::type_info& type_info,
+             std::size_t data_size,
+             void* bound_variable)
+        : Port(std::move(name),
+               direction,
+               width_bits,
+               type_info,
+               data_size,
+               bound_variable) {}
 };
 
 // 寄存器型端口。
@@ -221,40 +238,38 @@ class WirePort final : public Port {
 // 适合模拟 pipeline 寄存器、stage 边界、寄存一级的信号。
 class RegPort final : public Port {
   public:
-    using Port::Port;
-
-    // 构造一个 reg 型输入端口，并绑定到某个变量。
-    template <typename T>
-    static std::shared_ptr<RegPort> make_input(std::string name,
-                                               T* bound_variable,
-                                               std::size_t width_bits = sizeof(T) * 8) {
-        return std::make_shared<RegPort>(
-            std::move(name),
-            PortDirection::Input,
-            width_bits,
-            typeid(T),
-            sizeof(T),
-            static_cast<void*>(bound_variable));
-    }
-
-    // 构造一个 reg 型输出端口，并绑定到某个变量。
-    template <typename T>
-    static std::shared_ptr<RegPort> make_output(std::string name,
-                                                T* bound_variable,
-                                                std::size_t width_bits = sizeof(T) * 8) {
-        return std::make_shared<RegPort>(
-            std::move(name),
-            PortDirection::Output,
-            width_bits,
-            typeid(T),
-            sizeof(T),
-            static_cast<void*>(bound_variable));
-    }
-
+    // 同步一个 reg 输入端口的上游已提交值。
     void sync_input() override;
+
+    // 发射一个 reg 输出端口当前绑定变量的值到 pending。
     void emit_bound_value() override;
+
+    // 提交 reg 端口 pending 值，使其在下一拍可见。
     void end_cycle() override;
+
+    // 把 reg 端口初始化成可见 0。
     void initialize_zero() override;
+
+  private:
+    // 允许单状态对象直接创建 reg 端口。
+    friend class StateBase;
+
+    // 允许数组状态对象按元素创建 reg 端口。
+    friend class StateArrayBase;
+
+    // 仅允许通过状态对象内部辅助接口构造 reg 端口。
+    RegPort(std::string name,
+            PortDirection direction,
+            std::size_t width_bits,
+            const std::type_info& type_info,
+            std::size_t data_size,
+            void* bound_variable)
+        : Port(std::move(name),
+               direction,
+               width_bits,
+               type_info,
+               data_size,
+               bound_variable) {}
 };
 
 }  // namespace project_xs::sim

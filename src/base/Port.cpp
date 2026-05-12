@@ -1,4 +1,5 @@
 #include "base/Port.h"
+#include "base/Error.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -156,13 +157,22 @@ Port::Port(std::string name,
       visible_storage_(data_size),
       pending_storage_(data_size) {
     if (bound_variable_ == nullptr) {
-        throw std::runtime_error("Port requires a non-null bound variable");
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::InvalidArgument,
+                     "Port",
+                     "requires a non-null bound variable");
     }
     if (width_bits_ == 0) {
-        throw std::runtime_error("Port width_bits must be > 0");
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::InvalidArgument,
+                     "Port",
+                     "width_bits must be > 0");
     }
     if (data_size_ == 0) {
-        throw std::runtime_error("Port data_size must be > 0");
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::InvalidArgument,
+                     "Port",
+                     "data_size must be > 0");
     }
 }
 
@@ -170,16 +180,21 @@ void Port::connect(const std::shared_ptr<Port>& output_port) {
     ensure_direction(PortDirection::Input);
 
     if (!output_port) {
-        throw std::runtime_error("cannot connect input port to null output port");
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::ConnectionMismatch,
+                     "Port connect",
+                     "cannot connect input port to null output port");
     }
     output_port->ensure_direction(PortDirection::Output);
 
     if (width_bits_ != output_port->width_bits_ ||
         data_size_ != output_port->data_size_ ||
         type_index_ != output_port->type_index_) {
-        throw std::runtime_error(
-            "port connect failed between " + name_ + " and " + output_port->name_ +
-            ": type/width mismatch");
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::TypeMismatch,
+                     "Port connect",
+                     "port connect failed between " + name_ + " and " + output_port->name_ +
+                         ": type/width mismatch");
     }
 
     source_output_ = output_port;
@@ -262,7 +277,10 @@ void Port::copy_runtime_from(const Port& other) {
         width_bits_ != other.width_bits_ ||
         data_size_ != other.data_size_ ||
         type_index_ != other.type_index_) {
-        throw std::runtime_error("port runtime copy mismatch on " + name_);
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::LayoutMismatch,
+                     "Port",
+                     "runtime copy mismatch on " + name_);
     }
 
     visible_storage_ = other.visible_storage_;
@@ -274,7 +292,10 @@ void Port::copy_runtime_from(const Port& other) {
 
 void Port::ensure_direction(PortDirection expected) const {
     if (direction_ != expected) {
-        throw std::runtime_error("port direction mismatch on " + name_);
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::DirectionMismatch,
+                     "Port",
+                     "direction mismatch on " + name_);
     }
 }
 
@@ -285,7 +306,10 @@ void Port::ensure_type_match(const std::type_info& expected_type,
     if (type_index_ != expected_index ||
         data_size_ != expected_size ||
         width_bits_ != expected_width_bits) {
-        throw std::runtime_error("port type/width mismatch on " + name_);
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::TypeMismatch,
+                     "Port",
+                     "type/width mismatch on " + name_);
     }
 }
 

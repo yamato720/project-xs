@@ -1,4 +1,5 @@
 #include "base/Kernel.h"
+#include "base/Error.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -16,9 +17,111 @@ PortGroup& Kernel::create_port_group(std::string name) {
     return *port_groups_.back();
 }
 
+std::shared_ptr<KernelComponent> Kernel::find_component(std::string_view name) const {
+    for (const auto& component : components_) {
+        if (component->name() == name) {
+            return component;
+        }
+    }
+    return nullptr;
+}
+
+const std::shared_ptr<KernelComponent>& Kernel::get_component(std::string_view name) const {
+    for (const auto& component : components_) {
+        if (component->name() == name) {
+            return component;
+        }
+    }
+    error::raise(error::Stage::Elaboration,
+                 error::Kind::NotFound,
+                 "Kernel",
+                 "component not found: " + std::string(name));
+}
+
+PortGroup* Kernel::find_port_group(std::string_view name) {
+    for (const auto& group : port_groups_) {
+        if (group->name() == name) {
+            return group.get();
+        }
+    }
+    return nullptr;
+}
+
+const PortGroup* Kernel::find_port_group(std::string_view name) const {
+    for (const auto& group : port_groups_) {
+        if (group->name() == name) {
+            return group.get();
+        }
+    }
+    return nullptr;
+}
+
+PortGroup& Kernel::get_port_group(std::string_view name) {
+    PortGroup* group = find_port_group(name);
+    if (!group) {
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::NotFound,
+                     "Kernel",
+                     "PortGroup not found: " + std::string(name));
+    }
+    return *group;
+}
+
+const PortGroup& Kernel::get_port_group(std::string_view name) const {
+    const PortGroup* group = find_port_group(name);
+    if (!group) {
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::NotFound,
+                     "Kernel",
+                     "PortGroup not found: " + std::string(name));
+    }
+    return *group;
+}
+
+std::string Kernel::component_info(std::string_view name) const {
+    return get_component(name)->info();
+}
+
+std::string Kernel::all_components_info() const {
+    if (components_.empty()) {
+        return "(empty)";
+    }
+
+    std::string text;
+    for (std::size_t index = 0; index < components_.size(); ++index) {
+        if (index != 0) {
+            text += " | ";
+        }
+        text += components_[index]->info();
+    }
+    return text;
+}
+
+std::string Kernel::port_group_info(std::string_view name, PortValueBase base) const {
+    return get_port_group(name).info(base);
+}
+
+std::string Kernel::all_port_groups_info(PortValueBase base) const {
+    if (port_groups_.empty()) {
+        return "(empty)";
+    }
+
+    std::string text;
+    for (std::size_t index = 0; index < port_groups_.size(); ++index) {
+        if (index != 0) {
+            text += " | ";
+        }
+        text += port_groups_[index]->info(base);
+    }
+    return text;
+}
+
 void Kernel::add_component(const std::shared_ptr<KernelComponent>& component) {
     if (!component) {
-        throw std::runtime_error("cannot add null component to Kernel");
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::InvalidArgument,
+                     "Kernel",
+                     "cannot add null component");
     }
     components_.push_back(component);
 }
@@ -75,6 +178,17 @@ bool Kernel::remove_component(std::string_view name) {
     return false;
 }
 
+std::string Kernel::info() const {
+    std::string text = name_ + " {latency=" + std::to_string(latency_) +
+                       ", elapsed_cycles=" + std::to_string(elapsed_cycles_) +
+                       ", terminate_requested=" +
+                       std::string(terminate_requested_ ? "yes" : "no") +
+                       ", states=" + state_set_.all_states_info() +
+                       ", port_groups=" + all_port_groups_info() +
+                       ", components=" + all_components_info() + "}";
+    return text;
+}
+
 void Kernel::run_single(std::uint64_t cycle) {
     for (const auto& component : components_) {
         component->run(cycle);
@@ -107,8 +221,12 @@ void Kernel::on_attached_to_simulator(CycleSimulator& simulator) {
 void Kernel::copy_kernel_runtime_from(const Kernel& other) {
     elapsed_cycles_ = other.elapsed_cycles_;
     terminate_requested_ = other.terminate_requested_;
+    state_set_.copy_values_from(other.state_set_);
     if (port_groups_.size() != other.port_groups_.size()) {
-        throw std::runtime_error("Kernel PortGroup count mismatch on " + name_);
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::LayoutMismatch,
+                     "Kernel",
+                     "PortGroup count mismatch on " + name_);
     }
     for (std::size_t index = 0; index < port_groups_.size(); ++index) {
         port_groups_[index]->copy_runtime_from(*other.port_groups_[index]);

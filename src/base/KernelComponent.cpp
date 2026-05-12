@@ -1,4 +1,5 @@
 #include "base/KernelComponent.h"
+#include "base/Error.h"
 
 #include <stdexcept>
 #include <utility>
@@ -18,6 +19,65 @@ KernelComponent::KernelComponent(std::string name,
 PortGroup& KernelComponent::create_port_group(std::string name) {
     port_groups_.push_back(std::make_unique<PortGroup>(std::move(name)));
     return *port_groups_.back();
+}
+
+PortGroup* KernelComponent::find_port_group(std::string_view name) {
+    for (const auto& group : port_groups_) {
+        if (group->name() == name) {
+            return group.get();
+        }
+    }
+    return nullptr;
+}
+
+const PortGroup* KernelComponent::find_port_group(std::string_view name) const {
+    for (const auto& group : port_groups_) {
+        if (group->name() == name) {
+            return group.get();
+        }
+    }
+    return nullptr;
+}
+
+PortGroup& KernelComponent::get_port_group(std::string_view name) {
+    PortGroup* group = find_port_group(name);
+    if (!group) {
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::NotFound,
+                     "KernelComponent",
+                     "PortGroup not found: " + std::string(name));
+    }
+    return *group;
+}
+
+const PortGroup& KernelComponent::get_port_group(std::string_view name) const {
+    const PortGroup* group = find_port_group(name);
+    if (!group) {
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::NotFound,
+                     "KernelComponent",
+                     "PortGroup not found: " + std::string(name));
+    }
+    return *group;
+}
+
+std::string KernelComponent::port_group_info(std::string_view name, PortValueBase base) const {
+    return get_port_group(name).info(base);
+}
+
+std::string KernelComponent::all_port_groups_info(PortValueBase base) const {
+    if (port_groups_.empty()) {
+        return "(empty)";
+    }
+
+    std::string text;
+    for (std::size_t index = 0; index < port_groups_.size(); ++index) {
+        if (index != 0) {
+            text += " | ";
+        }
+        text += port_groups_[index]->info(base);
+    }
+    return text;
 }
 
 void KernelComponent::reset() {
@@ -53,6 +113,16 @@ void KernelComponent::end_cycle() {
     end_cycle_extra();
 }
 
+std::string KernelComponent::info() const {
+    std::string text = name_ + " {latency=" + std::to_string(latency_) +
+                       ", first_delay_align=" + std::to_string(first_delay_align_) +
+                       ", phase=" + std::to_string(phase_) +
+                       ", phase_valid=" + std::string(phase_valid() ? "yes" : "no") +
+                       ", states=" + state_set_.all_states_info() +
+                       ", port_groups=" + all_port_groups_info() + "}";
+    return text;
+}
+
 void KernelComponent::run_single(std::uint64_t cycle) {
     (void)cycle;
 }
@@ -64,8 +134,12 @@ void KernelComponent::after_outputs_emitted(std::uint64_t cycle) {
 void KernelComponent::copy_component_runtime_from(const KernelComponent& other) {
     align_remaining_ = other.align_remaining_;
     phase_ = other.phase_;
+    state_set_.copy_values_from(other.state_set_);
     if (port_groups_.size() != other.port_groups_.size()) {
-        throw std::runtime_error("KernelComponent PortGroup count mismatch on " + name_);
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::LayoutMismatch,
+                     "KernelComponent",
+                     "PortGroup count mismatch on " + name_);
     }
     for (std::size_t index = 0; index < port_groups_.size(); ++index) {
         port_groups_[index]->copy_runtime_from(*other.port_groups_[index]);

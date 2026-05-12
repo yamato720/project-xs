@@ -19,6 +19,7 @@ TEST_NAMES := $(sort $(notdir $(patsubst %/,%,$(dir $(TEST_MAIN_FILES)))))
 PORT_SRC := $(BASE_SRC_DIR)/Port.cpp
 PORT_GROUP_SRC := $(BASE_SRC_DIR)/PortGroup.cpp
 AXI_SRC := $(BASE_SRC_DIR)/Axi.cpp
+ERROR_SRC := $(BASE_SRC_DIR)/Error.cpp
 SIM_SRC := $(BASE_SRC_DIR)/CycleSimulator.cpp
 SESSION_SRC := $(BASE_SRC_DIR)/SimulationSession.cpp
 KERNEL_SRC := $(BASE_SRC_DIR)/Kernel.cpp
@@ -73,7 +74,7 @@ test:
 	mkdir -p $(TEST_BUILD_DIR); \
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(INCLUDE_DIR) \
 		$(TEST_ROOT_DIR)/$$test_name/main.cpp \
-		$(PORT_SRC) $(PORT_GROUP_SRC) $(AXI_SRC) $(SIM_SRC) $(SESSION_SRC) $(KERNEL_SRC) $(KERNEL_COMPONENT_SRC) \
+		$(PORT_SRC) $(PORT_GROUP_SRC) $(AXI_SRC) $(ERROR_SRC) $(SIM_SRC) $(SESSION_SRC) $(KERNEL_SRC) $(KERNEL_COMPONENT_SRC) \
 		-o $(TEST_BUILD_DIR)/$$test_name && \
 	$(TEST_BUILD_DIR)/$$test_name
 
@@ -86,8 +87,8 @@ render-xplus-hls-example:
 clean:
 	rm -rf $(BUILD_DIR)
 
-$(TARGET): $(MAIN_SRC) $(PORT_SRC) $(PORT_GROUP_SRC) $(AXI_SRC) $(SIM_SRC) $(SESSION_SRC) $(KERNEL_SRC) $(KERNEL_COMPONENT_SRC) $(SRC_DIR)/CgSolverGolden.hpp $(SRC_DIR)/CsrDataset.hpp $(BASE_INCLUDE_DIR)/CycleSimulator.h $(BASE_INCLUDE_DIR)/SimulationSession.h $(BASE_INCLUDE_DIR)/Kernel.h $(BASE_INCLUDE_DIR)/KernelComponent.h $(BASE_INCLUDE_DIR)/Port.h $(BASE_INCLUDE_DIR)/PortGroup.h $(BASE_INCLUDE_DIR)/Axi.h | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(INCLUDE_DIR) $(MAIN_SRC) $(PORT_SRC) $(PORT_GROUP_SRC) $(AXI_SRC) $(SIM_SRC) $(SESSION_SRC) $(KERNEL_SRC) $(KERNEL_COMPONENT_SRC) -o $(TARGET)
+$(TARGET): $(MAIN_SRC) $(PORT_SRC) $(PORT_GROUP_SRC) $(AXI_SRC) $(ERROR_SRC) $(SIM_SRC) $(SESSION_SRC) $(KERNEL_SRC) $(KERNEL_COMPONENT_SRC) $(SRC_DIR)/CgSolverGolden.hpp $(SRC_DIR)/CsrDataset.hpp $(BASE_INCLUDE_DIR)/CycleSimulator.h $(BASE_INCLUDE_DIR)/SimulationSession.h $(BASE_INCLUDE_DIR)/Kernel.h $(BASE_INCLUDE_DIR)/KernelComponent.h $(BASE_INCLUDE_DIR)/Port.h $(BASE_INCLUDE_DIR)/PortGroup.h $(BASE_INCLUDE_DIR)/Axi.h $(BASE_INCLUDE_DIR)/Error.h | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(INCLUDE_DIR) $(MAIN_SRC) $(PORT_SRC) $(PORT_GROUP_SRC) $(AXI_SRC) $(ERROR_SRC) $(SIM_SRC) $(SESSION_SRC) $(KERNEL_SRC) $(KERNEL_COMPONENT_SRC) -o $(TARGET)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)

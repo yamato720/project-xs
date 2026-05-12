@@ -18,6 +18,7 @@ namespace project_xs::sim {
 // - 提供统一的 sync / emit / end_cycle / clear 操作
 class PortGroup {
   public:
+    // 构造一个具名端口组。
     explicit PortGroup(std::string name);
 
     // 返回端口组名称。
@@ -39,10 +40,35 @@ class PortGroup {
 
     // 按名字查找输入/输出端口。
     // find_* 找不到时返回空指针；get_* 找不到时抛异常。
+    // 这是端口组层面的统一命名查询入口。
     std::shared_ptr<Port> find_input(std::string_view name) const;
+
+    // 按名字查找一个输出端口。
     std::shared_ptr<Port> find_output(std::string_view name) const;
+
+    // 按名字查找一个端口，不区分输入/输出。
+    std::shared_ptr<Port> find_port(std::string_view name) const;
+
+    // 按名字获取一个输入端口；找不到时报错。
     const std::shared_ptr<Port>& get_input(std::string_view name) const;
+
+    // 按名字获取一个输出端口；找不到时报错。
     const std::shared_ptr<Port>& get_output(std::string_view name) const;
+
+    // 按名字获取一个端口，不区分输入/输出；找不到时报错。
+    const std::shared_ptr<Port>& get_port(std::string_view name) const;
+
+    // 返回指定输入端口的信息字符串。
+    std::string input_info(std::string_view name,
+                           PortValueBase base = PortValueBase::Decimal) const;
+
+    // 返回指定输出端口的信息字符串。
+    std::string output_info(std::string_view name,
+                            PortValueBase base = PortValueBase::Decimal) const;
+
+    // 返回指定端口的信息字符串，不区分输入/输出。
+    std::string port_info(std::string_view name,
+                          PortValueBase base = PortValueBase::Decimal) const;
 
     // 统一同步所有输入端口。
     void sync_inputs();
@@ -61,19 +87,36 @@ class PortGroup {
 
     // 返回组内所有输入/输出端口的信息字符串。
     // 每个端口通过 Port::info() 生成，端口之间以 " | " 拼接。
+    // 这三个 all_*_info 是端口组层面的统一批量信息接口。
+    std::string all_inputs_info(PortValueBase base = PortValueBase::Decimal) const;
+    std::string all_outputs_info(PortValueBase base = PortValueBase::Decimal) const;
+    std::string all_ports_info(PortValueBase base = PortValueBase::Decimal) const;
+
+    // 兼容旧接口：返回全部输入端口的信息字符串。
     std::string info_inputs(PortValueBase base = PortValueBase::Decimal) const;
+
+    // 兼容旧接口：返回全部输出端口的信息字符串。
     std::string info_outputs(PortValueBase base = PortValueBase::Decimal) const;
+
+    // 返回整个端口组的摘要信息。
+    std::string info(PortValueBase base = PortValueBase::Decimal) const;
 
     // 复制另一个端口组的运行时状态。
     // 要求输入/输出端口数量、顺序和类型布局一致。
     void copy_runtime_from(const PortGroup& other);
 
   private:
+    // 把一组端口逐个转成信息字符串并拼接。
     static std::string info_ports(const std::vector<std::shared_ptr<Port>>& ports,
                                   PortValueBase base);
 
+    // 当前端口组的逻辑名称。
     std::string name_;
+
+    // 当前端口组内注册的全部输入端口。
     std::vector<std::shared_ptr<Port>> inputs_;
+
+    // 当前端口组内注册的全部输出端口。
     std::vector<std::shared_ptr<Port>> outputs_;
 };
 

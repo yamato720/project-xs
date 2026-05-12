@@ -1,4 +1,5 @@
 #include "base/SimulationSession.h"
+#include "base/Error.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -18,14 +19,20 @@ SimulationSession::SimulationSession(long double frequency_hz, long double run_t
 
 void SimulationSession::set_frequency_hz(long double frequency_hz) {
     if (frequency_hz <= 0.0L) {
-        throw std::runtime_error("SimulationSession frequency_hz must be > 0");
+        error::raise(error::Stage::Runtime,
+                     error::Kind::InvalidArgument,
+                     "SimulationSession",
+                     "frequency_hz must be > 0");
     }
     frequency_hz_ = frequency_hz;
 }
 
 void SimulationSession::set_run_time_seconds(long double run_time_seconds) {
     if (run_time_seconds < 0.0L) {
-        throw std::runtime_error("SimulationSession run_time_seconds must be >= 0");
+        error::raise(error::Stage::Runtime,
+                     error::Kind::InvalidArgument,
+                     "SimulationSession",
+                     "run_time_seconds must be >= 0");
     }
     run_time_seconds_ = run_time_seconds;
 }
@@ -44,15 +51,63 @@ bool SimulationSession::is_finished() const {
 
 void SimulationSession::add_simulator(const std::shared_ptr<CycleSimulator>& simulator) {
     if (!simulator) {
-        throw std::runtime_error("cannot add null simulator to SimulationSession");
+        error::raise(error::Stage::Elaboration,
+                     error::Kind::InvalidArgument,
+                     "SimulationSession",
+                     "cannot add null simulator");
     }
 
     scheduled_simulators_.push_back(ScheduledSimulator{simulator, 0.0L});
     simulator_views_.push_back(simulator);
 }
 
+std::shared_ptr<CycleSimulator> SimulationSession::find_simulator(std::string_view name) const {
+    for (const auto& simulator : simulator_views_) {
+        if (simulator->name() == name) {
+            return simulator;
+        }
+    }
+    return nullptr;
+}
+
+const std::shared_ptr<CycleSimulator>& SimulationSession::get_simulator(
+    std::string_view name) const {
+    for (const auto& simulator : simulator_views_) {
+        if (simulator->name() == name) {
+            return simulator;
+        }
+    }
+    error::raise(error::Stage::Elaboration,
+                 error::Kind::NotFound,
+                 "SimulationSession",
+                 "simulator not found: " + std::string(name));
+}
+
+std::string SimulationSession::simulator_info(std::string_view name) const {
+    return get_simulator(name)->info();
+}
+
 const std::vector<std::shared_ptr<CycleSimulator>>& SimulationSession::simulators() const {
     return simulator_views_;
+}
+
+std::string SimulationSession::simulators_info() const {
+    if (simulator_views_.empty()) {
+        return "(empty)";
+    }
+
+    std::string text;
+    for (std::size_t index = 0; index < simulator_views_.size(); ++index) {
+        if (index != 0) {
+            text += " | ";
+        }
+        text += simulator_views_[index]->info();
+    }
+    return text;
+}
+
+std::string SimulationSession::all_simulators_info() const {
+    return simulators_info();
 }
 
 std::string SimulationSession::start_info() const {
@@ -61,7 +116,10 @@ std::string SimulationSession::start_info() const {
         << "Hz, run_time=" << static_cast<double>(run_time_seconds_) << "s";
 
     for (std::size_t index = 0; index < simulator_views_.size(); ++index) {
-        oss << ", simulator[" << index << "]={" << simulator_views_[index]->info() << "}";
+        oss << ", simulator[" << index << "]={name=" << simulator_views_[index]->name()
+            << ", frequency=" << static_cast<double>(simulator_views_[index]->frequency_hz())
+            << "Hz, current_cycle=" << simulator_views_[index]->current_cycle()
+            << ", finished=" << (simulator_views_[index]->is_finished() ? "yes" : "no") << "}";
     }
     return oss.str();
 }
@@ -71,7 +129,10 @@ std::string SimulationSession::finish_info() const {
     oss << "simulation finished at time=" << static_cast<double>(current_time_seconds()) << "s";
 
     for (std::size_t index = 0; index < simulator_views_.size(); ++index) {
-        oss << ", simulator[" << index << "]={" << simulator_views_[index]->info() << "}";
+        oss << ", simulator[" << index << "]={name=" << simulator_views_[index]->name()
+            << ", frequency=" << static_cast<double>(simulator_views_[index]->frequency_hz())
+            << "Hz, current_cycle=" << simulator_views_[index]->current_cycle()
+            << ", finished=" << (simulator_views_[index]->is_finished() ? "yes" : "no") << "}";
     }
     return oss.str();
 }
