@@ -1,4 +1,4 @@
-#include "CgSolverGolden.hpp"
+#include "golden/CgSolverGolden.hpp"
 
 #include <algorithm>
 #include <filesystem>

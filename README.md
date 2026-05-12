@@ -12,12 +12,14 @@
 
 - `main.cpp`
   `CG solver` 的本地参考入口。读取数据集后运行 `Jacobi-PCG golden`，输出收敛信息与残差。
-- `src/CgSolverGolden.hpp`
+- `src/golden/CgSolverGolden.hpp`
   `Jacobi-PCG` 求解流程、收敛判定和残差计算。
-- `src/CsrDataset.hpp`
+- `src/golden/CsrDataset.hpp`
   CSR 数据集加载、合法性校验、`SpMV` 和 `Jacobi` 对角提取。
 - `src/base/` 与 `src/include/base/`
   周期级仿真基础设施，包括 `CycleSimulator`、`Kernel`、`KernelComponent`、`Port`、`PortGroup` 和 `Axi` 抽象。
+- `src/golden/`
+  当前仍保留的 `CG solver golden` 相关参考实现与数据集加载逻辑。
 - `test/abctest/`
   一个最小周期仿真 demo，用来验证 wire/reg 端口时序行为与组件编排方式。
 - `script/generate_cg_dataset.py`
@@ -154,6 +156,19 @@ example/project_xplus_hls/reports/xo_report.html
 当前不会把 `golden solution` 额外写回文件，它主要作为主机侧参考实现存在，方便后续和别的实现做结果比对。
 
 ## 当前定位
+
+## 版本记录
+
+当前仓库根目录新增了一个 `VERSION` 文件，用来记录：
+
+- 上一条基线分支的已定版本
+- 当前开发线目标版本
+- 该记录开始生效的时间
+
+当前记录为：
+
+- `release_base=1.0.0`
+- `development_target=1.1.0`
 
 如果一句话概括现在的 `Project-XS`，更准确的说法是：
 
