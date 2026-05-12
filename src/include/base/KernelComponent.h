@@ -45,12 +45,12 @@ class KernelComponent {
 
     // 返回组件自带的默认普通端口组。
     // 这个端口组只承载无协议端口，用来给组件内部自由组合多输入/多输出。
-    PortGroup& ports() { return ports_; }
-    const PortGroup& ports() const { return ports_; }
+    PortGroup& ports() { return *port_groups_.front(); }
+    const PortGroup& ports() const { return *port_groups_.front(); }
 
-    // 注册一个附加端口组。
-    // 默认 portgroup 永远具有最高优先级；附加组会按注册顺序在其后处理。
-    void add_port_group(PortGroup* group);
+    // 创建并持有一个附加端口组。
+    // 默认组永远是 port_groups_[0]；新创建的组会追加到后面。
+    PortGroup& create_port_group(std::string name);
 
     // 复位组件内部状态。
     // 默认会清空相位和端口状态。
@@ -116,11 +116,8 @@ class KernelComponent {
     // 当前处于哪个相位。
     std::uint64_t phase_ = 0;
 
-    // 默认普通端口组。
-    PortGroup ports_;
-
-    // 默认组之外的附加端口组。
-    std::vector<PortGroup*> extra_port_groups_;
+    // port_groups_[0] 永远是默认普通端口组，其余元素按创建顺序追加。
+    std::vector<std::unique_ptr<PortGroup>> port_groups_;
 };
 
 }  // namespace project_xs::sim

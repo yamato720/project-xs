@@ -18,15 +18,14 @@ std::uint64_t normalize_max_cycles(std::int64_t max_cycles) {
 }  // namespace
 
 CycleSimulator::CycleSimulator(std::int64_t max_cycles, long double frequency_hz) {
+    port_groups_.push_back(std::make_unique<PortGroup>("cycle_simulator_ports"));
     set_max_cycles(max_cycles);
     set_frequency_hz(frequency_hz);
 }
 
-void CycleSimulator::add_port_group(PortGroup* group) {
-    if (!group) {
-        throw std::runtime_error("cannot add null PortGroup to CycleSimulator");
-    }
-    extra_port_groups_.push_back(group);
+PortGroup& CycleSimulator::create_port_group(std::string name) {
+    port_groups_.push_back(std::make_unique<PortGroup>(std::move(name)));
+    return *port_groups_.back();
 }
 
 CycleSimulator& CycleSimulator::operator()(std::int64_t max_cycles, long double frequency_hz) {
@@ -42,12 +41,11 @@ void CycleSimulator::copy(const CycleSimulator& other) {
 
     current_cycle_ = other.current_cycle_;
     finished_ = other.finished_;
-    ports_.copy_runtime_from(other.ports_);
-    if (extra_port_groups_.size() != other.extra_port_groups_.size()) {
-        throw std::runtime_error("CycleSimulator extra PortGroup count mismatch");
+    if (port_groups_.size() != other.port_groups_.size()) {
+        throw std::runtime_error("CycleSimulator PortGroup count mismatch");
     }
-    for (std::size_t index = 0; index < extra_port_groups_.size(); ++index) {
-        extra_port_groups_[index]->copy_runtime_from(*other.extra_port_groups_[index]);
+    for (std::size_t index = 0; index < port_groups_.size(); ++index) {
+        port_groups_[index]->copy_runtime_from(*other.port_groups_[index]);
     }
     copy_runtime_extra_from(other);
 }
@@ -64,10 +62,13 @@ void CycleSimulator::fullcopy(const CycleSimulator& other) {
     set_frequency_hz(other.frequency_hz_);
     current_cycle_ = other.current_cycle_;
     finished_ = other.finished_;
-    ports_.copy_runtime_from(other.ports_);
-    if (!extra_port_groups_.empty()) {
-        throw std::runtime_error("fullcopy target simulator must not pre-register extra PortGroups");
+    if (port_groups_.size() != 1) {
+        throw std::runtime_error("fullcopy target simulator must only contain the default PortGroup");
     }
+    if (other.port_groups_.size() != 1) {
+        throw std::runtime_error("fullcopy source simulator PortGroup layout mismatch");
+    }
+    port_groups_[0]->copy_runtime_from(*other.port_groups_[0]);
     copy_runtime_extra_from(other);
 
     for (const auto& kernel : other.kernels_) {
@@ -117,8 +118,7 @@ bool CycleSimulator::remove_kernel(std::string_view name) {
 
 void CycleSimulator::clear() {
     kernels_.clear();
-    ports_.clear();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->clear();
     }
     current_cycle_ = 0;
@@ -128,8 +128,7 @@ void CycleSimulator::clear() {
 void CycleSimulator::reset() {
     current_cycle_ = 0;
     finished_ = false;
-    ports_.clear();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->clear();
     }
     for (const auto& kernel : kernels_) {
@@ -139,8 +138,7 @@ void CycleSimulator::reset() {
 }
 
 void CycleSimulator::initialize_zero() {
-    ports_.initialize_zero();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->initialize_zero();
     }
     for (const auto& kernel : kernels_) {
@@ -159,8 +157,7 @@ bool CycleSimulator::step() {
         return true;
     }
 
-    ports_.sync_inputs();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->sync_inputs();
     }
     run_single(current_cycle_);
@@ -173,8 +170,7 @@ bool CycleSimulator::step() {
         }
     }
 
-    ports_.end_cycle();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->end_cycle();
     }
     for (const auto& kernel : kernels_) {
@@ -228,8 +224,7 @@ void CycleSimulator::copy_runtime_extra_from(const CycleSimulator& other) {
 }
 
 void CycleSimulator::emit_outputs() {
-    ports_.emit_outputs();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->emit_outputs();
     }
 }

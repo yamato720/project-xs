@@ -11,37 +11,33 @@ KernelComponent::KernelComponent(std::string name,
     : name_(std::move(name)),
       latency_(latency),
       first_delay_align_(first_delay_align),
-      align_remaining_(first_delay_align),
-      ports_(name_ + "_ports") {}
+      align_remaining_(first_delay_align) {
+    port_groups_.push_back(std::make_unique<PortGroup>(name_ + "_ports"));
+}
 
-void KernelComponent::add_port_group(PortGroup* group) {
-    if (!group) {
-        throw std::runtime_error("cannot add null PortGroup to KernelComponent");
-    }
-    extra_port_groups_.push_back(group);
+PortGroup& KernelComponent::create_port_group(std::string name) {
+    port_groups_.push_back(std::make_unique<PortGroup>(std::move(name)));
+    return *port_groups_.back();
 }
 
 void KernelComponent::reset() {
     align_remaining_ = first_delay_align_;
     phase_ = 0;
-    ports_.clear();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->clear();
     }
     reset_extra();
 }
 
 void KernelComponent::initialize_zero() {
-    ports_.initialize_zero();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->initialize_zero();
     }
     initialize_zero_extra();
 }
 
 void KernelComponent::run(std::uint64_t cycle) {
-    ports_.sync_inputs();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->sync_inputs();
     }
     run_single(cycle);
@@ -51,8 +47,7 @@ void KernelComponent::run(std::uint64_t cycle) {
 }
 
 void KernelComponent::end_cycle() {
-    ports_.end_cycle();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->end_cycle();
     }
     end_cycle_extra();
@@ -69,12 +64,11 @@ void KernelComponent::after_outputs_emitted(std::uint64_t cycle) {
 void KernelComponent::copy_component_runtime_from(const KernelComponent& other) {
     align_remaining_ = other.align_remaining_;
     phase_ = other.phase_;
-    ports_.copy_runtime_from(other.ports_);
-    if (extra_port_groups_.size() != other.extra_port_groups_.size()) {
-        throw std::runtime_error("KernelComponent extra PortGroup count mismatch on " + name_);
+    if (port_groups_.size() != other.port_groups_.size()) {
+        throw std::runtime_error("KernelComponent PortGroup count mismatch on " + name_);
     }
-    for (std::size_t index = 0; index < extra_port_groups_.size(); ++index) {
-        extra_port_groups_[index]->copy_runtime_from(*other.extra_port_groups_[index]);
+    for (std::size_t index = 0; index < port_groups_.size(); ++index) {
+        port_groups_[index]->copy_runtime_from(*other.port_groups_[index]);
     }
 }
 
@@ -88,8 +82,7 @@ void KernelComponent::end_cycle_extra() {
 }
 
 void KernelComponent::emit_outputs() {
-    ports_.emit_outputs();
-    for (PortGroup* group : extra_port_groups_) {
+    for (const auto& group : port_groups_) {
         group->emit_outputs();
     }
 }

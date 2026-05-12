@@ -60,12 +60,12 @@ class CycleSimulator {
     std::uint64_t max_cycles() const { return max_cycles_; }
 
     // 返回 simulator 自带的默认普通端口组。
-    PortGroup& ports() { return ports_; }
-    const PortGroup& ports() const { return ports_; }
+    PortGroup& ports() { return *port_groups_.front(); }
+    const PortGroup& ports() const { return *port_groups_.front(); }
 
-    // 注册一个附加端口组。
-    // 默认 portgroup 永远具有最高优先级；附加组会按注册顺序在其后处理。
-    void add_port_group(PortGroup* group);
+    // 创建并持有一个附加端口组。
+    // 默认组永远是 port_groups_[0]；新创建的组会追加到后面。
+    PortGroup& create_port_group(std::string name);
 
     // 注册一个 kernel。
     // 每次 step() 时，会按注册顺序逐个调用它们自己的完整 run()。
@@ -130,11 +130,8 @@ class CycleSimulator {
     // 当前注册的所有 kernel。
     std::vector<std::shared_ptr<Kernel>> kernels_;
 
-    // 默认普通端口组。
-    PortGroup ports_{"cycle_simulator_ports"};
-
-    // 默认组之外的附加端口组。
-    std::vector<PortGroup*> extra_port_groups_;
+    // port_groups_[0] 永远是默认普通端口组，其余元素按创建顺序追加。
+    std::vector<std::unique_ptr<PortGroup>> port_groups_;
 
     // 下一次 step() 将要使用的周期号。
     std::uint64_t current_cycle_ = 0;

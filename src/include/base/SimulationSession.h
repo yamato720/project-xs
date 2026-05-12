@@ -49,8 +49,27 @@ class SimulationSession {
     // 返回所有已注册的 simulator。
     const std::vector<std::shared_ptr<CycleSimulator>>& simulators() const;
 
+    // 清空当前 session 持有的全部 simulator，并把 session 自己的运行状态回到初始值。
+    // clear() 之后：
+    // - 不再保留任何已注册 simulator
+    // - current_tick 回到 0
+    // - finished 回到 false
+    // 这一步不对 simulator 做 reset，因为它们已经从 session 中移除了。
     void clear();
+
+    // 保留当前已注册的 simulator，只把“本轮仿真进度”回到起点。
+    // reset() 之后：
+    // - session 的 current_tick 回到 0
+    // - session 的 finished 回到 false
+    // - 每个 simulator 自己也会执行 reset()
+    // - 调度累计器 accumulated_hz 清零
+    // 但不会删除任何已注册 simulator。
     void reset();
+
+    // 在当前已注册 simulator 上执行“可见 0 初始化”。
+    // 这一步通常接在 reset() 之后调用，用来让寄存器型端口在仿真起始拍就呈现确定的 0，
+    // 而不是保持无效 / 未定义可见态。
+    // initialize_zero() 不会改动 session 的 current_tick / finished，也不会删除 simulator。
     void initialize_zero();
 
     // 执行一个时间驱动步进。
