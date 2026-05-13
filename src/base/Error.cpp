@@ -52,16 +52,42 @@ std::string kind_name(Kind kind) {
     }
 }
 
+std::string severity_name(Severity severity) {
+    switch (severity) {
+        case Severity::Warning:
+            return "warning";
+        case Severity::Error:
+        default:
+            return "error";
+    }
+}
+
+std::string format(const Diagnostic& diagnostic) {
+    std::string text = "[" + severity_name(diagnostic.severity) + "][" +
+                       stage_name(diagnostic.stage) + "][" +
+                       kind_name(diagnostic.kind) + "]";
+    if (!diagnostic.scope.empty()) {
+        text += "[" + diagnostic.scope + "]";
+    }
+    text += " " + diagnostic.detail;
+    return text;
+}
+
 std::runtime_error make(Stage stage,
                         Kind kind,
                         std::string_view scope,
                         std::string detail) {
-    std::string text = "[" + stage_name(stage) + "][" + kind_name(kind) + "]";
-    if (!scope.empty()) {
-        text += "[" + std::string(scope) + "]";
-    }
-    text += " " + std::move(detail);
-    return std::runtime_error(text);
+    return make(Diagnostic{
+        Severity::Error,
+        stage,
+        kind,
+        std::string(scope),
+        std::move(detail),
+    });
+}
+
+std::runtime_error make(const Diagnostic& diagnostic) {
+    return std::runtime_error(format(diagnostic));
 }
 
 [[noreturn]] void raise(Stage stage,
@@ -69,6 +95,33 @@ std::runtime_error make(Stage stage,
                         std::string_view scope,
                         std::string detail) {
     throw make(stage, kind, scope, std::move(detail));
+}
+
+[[noreturn]] void raise(const Diagnostic& diagnostic) {
+    throw make(diagnostic);
+}
+
+void append(std::vector<Diagnostic>& diagnostics,
+            Severity severity,
+            Stage stage,
+            Kind kind,
+            std::string_view scope,
+            std::string detail) {
+    diagnostics.push_back(Diagnostic{
+        severity,
+        stage,
+        kind,
+        std::string(scope),
+        std::move(detail),
+    });
+}
+
+void throw_if_any_error(const std::vector<Diagnostic>& diagnostics) {
+    for (const auto& diagnostic : diagnostics) {
+        if (diagnostic.severity == Severity::Error) {
+            throw make(diagnostic);
+        }
+    }
 }
 
 }  // namespace project_xs::sim::error

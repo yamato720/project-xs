@@ -2,6 +2,7 @@
 #define PROJECT_XS_BASE_PORT_GROUP_H
 
 #include "base/Port.h"
+#include "base/Error.h"
 
 #include <memory>
 #include <string>
@@ -18,6 +19,9 @@ namespace project_xs::sim {
 // - 提供统一的 sync / emit / end_cycle / clear 操作
 class PortGroup {
   public:
+    // 端口组运行时快照。
+    using Snapshot = PortGroupSnapshot;
+
     // 构造一个具名端口组。
     explicit PortGroup(std::string name);
 
@@ -101,9 +105,20 @@ class PortGroup {
     // 返回整个端口组的摘要信息。
     std::string info(PortValueBase base = PortValueBase::Decimal) const;
 
-    // 复制另一个端口组的运行时状态。
-    // 要求输入/输出端口数量、顺序和类型布局一致。
-    void copy_runtime_from(const PortGroup& other);
+    // 收集当前端口组的结构化诊断。
+    void collect_diagnostics(std::vector<error::Diagnostic>& diagnostics) const;
+
+    // 校验当前端口组是否合法，并返回诊断列表。
+    std::vector<error::Diagnostic> validate() const;
+
+    // 校验当前端口组是否合法；若存在 Error 直接抛出第一条。
+    void validate_or_throw() const;
+
+    // 保存当前端口组运行态。
+    Snapshot snapshot() const;
+
+    // 恢复当前端口组运行态。
+    void restore(const Snapshot& snapshot);
 
   private:
     // 把一组端口逐个转成信息字符串并拼接。

@@ -205,20 +205,53 @@ std::string PortGroup::info(PortValueBase base) const {
     return name_ + " {inputs: " + info_inputs(base) + "; outputs: " + info_outputs(base) + "}";
 }
 
-void PortGroup::copy_runtime_from(const PortGroup& other) {
-    if (inputs_.size() != other.inputs_.size() || outputs_.size() != other.outputs_.size()) {
-        error::raise(error::Stage::Elaboration,
-                     error::Kind::LayoutMismatch,
-                     "PortGroup",
-                     "runtime copy size mismatch: " + name_);
+void PortGroup::collect_diagnostics(std::vector<error::Diagnostic>& diagnostics) const {
+    for (std::size_t index = 0; index < inputs_.size(); ++index) {
+        const auto& input = inputs_[index];
+        for (std::size_t other = index + 1; other < inputs_.size(); ++other) {
+            if (input->name() == inputs_[other]->name()) {
+                error::append(diagnostics,
+                              error::Severity::Error,
+                              error::Stage::Validate,
+                              error::Kind::DuplicateName,
+                              "PortGroup " + name_,
+                              "duplicate input name: " + input->name());
+            }
+        }
+        if (!input->connected()) {
+            error::append(diagnostics,
+                          error::Severity::Error,
+                          error::Stage::Validate,
+                          error::Kind::NotFound,
+                          "PortGroup " + name_,
+                          "unconnected input: " + input->name());
+        }
     }
 
-    for (std::size_t index = 0; index < inputs_.size(); ++index) {
-        inputs_[index]->copy_runtime_from(*other.inputs_[index]);
-    }
     for (std::size_t index = 0; index < outputs_.size(); ++index) {
-        outputs_[index]->copy_runtime_from(*other.outputs_[index]);
+        const auto& output = outputs_[index];
+        for (std::size_t other = index + 1; other < outputs_.size(); ++other) {
+            if (output->name() == outputs_[other]->name()) {
+                error::append(diagnostics,
+                              error::Severity::Error,
+                              error::Stage::Validate,
+                              error::Kind::DuplicateName,
+                              "PortGroup " + name_,
+                              "duplicate output name: " + output->name());
+            }
+        }
     }
+}
+
+std::vector<error::Diagnostic> PortGroup::validate() const {
+    std::vector<error::Diagnostic> diagnostics;
+    collect_diagnostics(diagnostics);
+    return diagnostics;
+}
+
+void PortGroup::validate_or_throw() const {
+    const auto diagnostics = validate();
+    error::throw_if_any_error(diagnostics);
 }
 
 std::string PortGroup::info_ports(const std::vector<std::shared_ptr<Port>>& ports,

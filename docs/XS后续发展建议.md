@@ -157,7 +157,7 @@
 - 拼 `KernelComponent`
 - 拼 `Kernel`
 - 拼 `CycleSimulator`
-- clone / fullcopy / remove
+- 构造期生成差异化结构 / remove
 
 这一层的重点是：
 
@@ -185,7 +185,7 @@
 - 端口方向不匹配
 - 端口类型/位宽不匹配
 - 查找失败
-- clone/fullcopy 布局不一致
+- snapshot/restore 布局不一致
 
 此外，这一层已经开始接入统一 `Error` 模块，是当前最核心的错误发现层。
 
@@ -420,7 +420,7 @@
 - `StateArray` 元素名/别名冲突
 - 端口方向不匹配
 - 端口位宽/类型不匹配
-- clone/fullcopy 后布局不一致
+- snapshot/restore 后布局不一致
 - kernel/component/portgroup 查找失败
 
 ### 3. Validate 层
@@ -544,8 +544,12 @@
 - 每个标准模块有稳定的组织方式
 - 输入输出定义清晰
 - 组件拆分方式稳定
-- 便于 Python 脚本自动生成同类结构
+- 便于 Python 脚本自动生成同类外部装配结构
 - 也便于以后反向导出
+
+这里暂时不把“kernel 构造函数内部直接生成 component”作为自动生成目标。
+在 private/protected 访问、标准组件观测接口和装配层边界都稳定之前，
+生成链路应优先生成外部 builder / assembly 代码，再把已经构造好的 component 交给 kernel 注册。
 
 ### 第三阶段：做局部编译期试点
 
@@ -594,6 +598,7 @@
 3. 不建议全仓库模板化静态名字系统
 4. 不建议过早引入复杂 DSL
 5. 不建议现在就为了导出 Verilog 把后端 IR 做得过重
+6. 不建议现在生成 kernel 内部构造 component 的代码；先让外部装配层稳定下来
 
 ## 一句话路线图
 
@@ -702,7 +707,7 @@
 - `State`
 - `StateSet`
 - `StateArray`
-- `state_set()/mutable_state_set()`
+- `state_set()/create_state()/create_state_array()`
 - test 组织方式
 
 的调整，其实已经带有明显 breaking change 味道。

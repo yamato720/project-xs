@@ -1,12 +1,12 @@
 #ifndef PROJECT_XS_BASE_PORT_H
 #define PROJECT_XS_BASE_PORT_H
 
-#include <cstddef>
+#include "base/RuntimeTrace.h"
+
 #include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
-#include <typeindex>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -15,23 +15,6 @@ namespace project_xs::sim {
 
 class StateBase;
 class StateArrayBase;
-
-// 端口方向。
-// 一个端口实例在构造完成后方向固定。
-enum class PortDirection {
-    Input,
-    Output,
-};
-
-// 端口值输出格式。
-// - Decimal: 按数值十进制输出
-// - Binary / Octal / Hexadecimal: 按端口位宽输出位模式
-enum class PortValueBase {
-    Decimal,
-    Binary,
-    Octal,
-    Hexadecimal,
-};
 
 // 端口抽象基类。
 // 这层只保留“单向端口 + 固定类型 + 固定宽度 + 绑定变量”的共同语义。
@@ -68,6 +51,12 @@ class Port {
 
     // 当前端口是否有一个可见的有效值。
     bool valid() const { return valid_; }
+
+    // 返回当前端口是否已经连接到上游输出。
+    // 对输出端口，这个值始终返回 true。
+    bool connected() const {
+        return direction_ == PortDirection::Output || !source_output_.expired();
+    }
 
     // 把当前输入端口连接到某个输出端口。
     // 连接时会严格检查：
@@ -130,9 +119,11 @@ class Port {
     // 返回端口信息字符串，包含名字、内容、类型。
     std::string info(PortValueBase base = PortValueBase::Decimal) const;
 
-    // 复制另一个端口的运行时状态。
-    // 要求双方方向、类型、位宽和字节数一致。
-    void copy_runtime_from(const Port& other);
+    // 保存当前端口运行态。
+    PortSnapshot snapshot() const;
+
+    // 恢复当前端口运行态。
+    void restore(const PortSnapshot& snapshot);
 
   protected:
     // 校验方向。

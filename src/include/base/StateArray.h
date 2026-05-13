@@ -55,6 +55,24 @@ inline std::size_t element_count(const std::vector<std::size_t>& shape) {
     return count;
 }
 
+// 把线性索引还原成多维索引。
+inline std::vector<std::size_t> unflatten_index(const std::vector<std::size_t>& shape,
+                                                std::size_t flat_index) {
+    const std::size_t total = element_count(shape);
+    if (flat_index >= total) {
+        throw std::runtime_error("StateArray flat index out of range");
+    }
+
+    std::vector<std::size_t> indices(shape.size(), 0);
+    for (std::size_t axis = shape.size(); axis > 0; --axis) {
+        const std::size_t current = axis - 1;
+        const std::size_t extent = shape[current];
+        indices[current] = flat_index % extent;
+        flat_index /= extent;
+    }
+    return indices;
+}
+
 // 把 shape 转成可读字符串。
 inline std::string shape_string(const std::vector<std::size_t>& shape) {
     if (shape.empty()) {
@@ -78,6 +96,9 @@ inline std::string shape_string(const std::vector<std::size_t>& shape) {
 // 用于表达“具名数组/高维数组状态块”。
 class StateArrayBase {
   public:
+    // 单个数组状态运行时快照。
+    using Snapshot = StateArraySnapshot;
+
     // 构造一个数组状态元信息对象。
     StateArrayBase(std::string name,
                    std::string type_name,
@@ -122,14 +143,40 @@ class StateArrayBase {
     // 返回数组形状。
     const std::vector<std::size_t>& shape() const { return shape_; }
 
+    // 返回数组维数。
+    std::size_t rank() const { return shape_.size(); }
+
+    // 返回某一维的长度；越界时报错。
+    std::size_t extent(std::size_t dim) const {
+        if (dim >= shape_.size()) {
+            throw std::runtime_error("StateArray extent dim out of range");
+        }
+        return shape_[dim];
+    }
+
     // 返回总元素数。
     std::size_t element_count() const { return state_array_detail::element_count(shape_); }
 
-    // 从另一个同布局数组状态对象拷贝全部值。
-    virtual void copy_values_from(const StateArrayBase& other) = 0;
+    // 把线性索引还原成多维坐标；越界时报错。
+    std::vector<std::size_t> flat_to_indices(std::size_t flat_index) const {
+        return state_array_detail::unflatten_index(shape_, flat_index);
+    }
 
     // 返回整个数组状态的摘要信息。
     virtual std::string info(PortValueBase base = PortValueBase::Decimal) const = 0;
+
+    // 返回某个线性索引元素的值字符串；用于通用波形采样。
+    virtual std::string element_value_string(std::size_t flat_index,
+                                             PortValueBase base = PortValueBase::Decimal) const = 0;
+
+    // 返回某个线性索引元素可用于显示的主名和别名。
+    virtual std::vector<std::string> element_name_options(std::size_t flat_index) const = 0;
+
+    // 保存整个数组状态值。
+    virtual Snapshot snapshot() const = 0;
+
+    // 恢复整个数组状态值。
+    virtual void restore(const Snapshot& snapshot) = 0;
 
   protected:
     // 把多维索引展平成线性索引。
@@ -200,6 +247,13 @@ class StateArray final : public StateArrayBase {
     // 这里故意不暴露可写 vector 引用，
     // 避免外部通过 push_back / resize 破坏固定 shape 约束。
     const std::vector<T>& values() const { return values_; }
+
+    // 将数组内全部元素重置为同一个值，但不改变 shape / 元素名 / 别名。
+    void fill(const T& value) {
+        for (auto& entry : values_) {
+            entry = value;
+        }
+    }
 
     // 给某个线性索引元素分配一个名字。
     void set_element_name(std::size_t index, std::string element_name) {
@@ -276,6 +330,76 @@ class StateArray final : public StateArrayBase {
     // 按名字只读访问一个元素。
     const T& at_name(std::string_view element_name) const {
         return values_.at(find_required_named_index(element_name));
+    }
+
+    // 判断某个元素名字或别名是否存在。
+    bool has_name(std::string_view element_name) const {
+        return find_named_index(element_name) != kNameNotFound;
+    }
+
+    // 返回当前数组所有已登记的主名字和别名。
+    std::vector<std::string> all_element_names() const {
+        std::vector<std::string> names;
+        for (const auto& name : element_names_) {
+            if (!name.empty()) {
+                names.push_back(name);
+            }
+        }
+        for (const auto& aliases : element_aliases_) {
+            for (const auto& alias : aliases) {
+                if (!alias.empty()) {
+                    names.push_back(alias);
+                }
+            }
+        }
+        return names;
+    }
+
+    // 返回某个线性索引元素的主名字；未命名时返回空串。
+    const std::string& element_name(std::size_t index) const {
+        static const std::string kEmpty;
+        if (index >= element_names_.size()) {
+            return kEmpty;
+        }
+        return element_names_[index];
+    }
+
+    // 返回某个线性索引元素的别名列表；没有别名时返回空列表。
+    const std::vector<std::string>& element_aliases(std::size_t index) const {
+        static const std::vector<std::string> kEmpty;
+        if (index >= element_aliases_.size()) {
+            return kEmpty;
+        }
+        return element_aliases_[index];
+    }
+
+    // 返回某个具名元素的可读摘要信息。
+    std::string element_info(std::string_view element_name,
+                             PortValueBase base = PortValueBase::Decimal) const {
+        const std::size_t index = find_required_named_index(element_name);
+        const auto indices = flat_to_indices(index);
+
+        std::string coords = "[";
+        for (std::size_t axis = 0; axis < indices.size(); ++axis) {
+            if (axis != 0) {
+                coords += ", ";
+            }
+            coords += std::to_string(indices[axis]);
+        }
+        coords += "]";
+
+        std::string value_text;
+        if (base == PortValueBase::Decimal ||
+            std::is_same_v<T, bool> ||
+            std::is_same_v<T, float> ||
+            std::is_same_v<T, double>) {
+            value_text = state_detail::decimal_string(values_[index]);
+        } else {
+            value_text = state_detail::bit_pattern_string(values_[index], width_bits(), base);
+        }
+
+        return std::string(element_name) + ": index=" + std::to_string(index) +
+               ", coords=" + coords + ", value=" + value_text;
     }
 
     // 通过线性索引访问一个元素。
@@ -360,20 +484,39 @@ class StateArray final : public StateArrayBase {
             std::move(final_name));
     }
 
-    // 从另一个同布局数组状态对象拷贝全部值。
-    void copy_values_from(const StateArrayBase& other) override {
-        if (other.type_index() != typeid(T) ||
-            other.data_size() != sizeof(T) ||
-            other.width_bits() != width_bits() ||
-            other.shape() != shape()) {
+    // 保存整个数组状态值。
+    Snapshot snapshot() const override {
+        Snapshot shot;
+        shot.name = name();
+        shot.type_name = type_name();
+        shot.type_index = type_index();
+        shot.data_size = data_size();
+        shot.width_bits = width_bits();
+        shot.shape = shape();
+        shot.value_storage.resize(values_.size() * sizeof(T));
+        if (!shot.value_storage.empty()) {
+            std::memcpy(shot.value_storage.data(), values_.data(), shot.value_storage.size());
+        }
+        return shot;
+    }
+
+    // 恢复整个数组状态值。
+    void restore(const Snapshot& snapshot) override {
+        if (name() != snapshot.name ||
+            type_index() != snapshot.type_index ||
+            data_size() != snapshot.data_size ||
+            width_bits() != snapshot.width_bits ||
+            shape() != snapshot.shape ||
+            snapshot.value_storage.size() != values_.size() * sizeof(T)) {
             error::raise(error::Stage::Elaboration,
-                         error::Kind::TypeMismatch,
+                         error::Kind::LayoutMismatch,
                          "StateArray",
-                         "copy type mismatch on " + name());
+                         "snapshot layout mismatch on " + name());
         }
 
-        const auto& other_typed = static_cast<const StateArray<T>&>(other);
-        values_ = other_typed.values_;
+        if (!snapshot.value_storage.empty()) {
+            std::memcpy(values_.data(), snapshot.value_storage.data(), snapshot.value_storage.size());
+        }
     }
 
     // 返回整个数组状态的摘要信息。
@@ -400,6 +543,43 @@ class StateArray final : public StateArrayBase {
             }
         }
         return text;
+    }
+
+    // 返回某个线性索引元素的值字符串；用于通用波形采样。
+    std::string element_value_string(std::size_t flat_index,
+                                     PortValueBase base = PortValueBase::Decimal) const override {
+        const T& value = values_.at(flat_index);
+        if (base == PortValueBase::Decimal ||
+            std::is_same_v<T, bool> ||
+            std::is_same_v<T, float> ||
+            std::is_same_v<T, double>) {
+            return state_detail::decimal_string(value);
+        }
+        return state_detail::bit_pattern_string(value, width_bits(), base);
+    }
+
+    // 返回某个线性索引元素可用于显示的主名和别名。
+    std::vector<std::string> element_name_options(std::size_t flat_index) const override {
+        if (flat_index >= values_.size()) {
+            error::raise(error::Stage::Elaboration,
+                         error::Kind::NotFound,
+                         "StateArray",
+                         "element index out of range on " + name());
+        }
+
+        std::vector<std::string> options;
+        if (flat_index < element_names_.size() && !element_names_[flat_index].empty()) {
+            options.push_back(element_names_[flat_index]);
+        }
+        if (flat_index < element_aliases_.size()) {
+            for (const auto& alias : element_aliases_[flat_index]) {
+                if (!alias.empty()) {
+                    options.push_back(alias);
+                }
+            }
+        }
+        options.push_back(std::to_string(flat_index));
+        return options;
     }
 
   private:
@@ -444,8 +624,32 @@ class StateArray final : public StateArrayBase {
 };
 
 // 高维数组状态目录。
+// 新代码优先通过 create_array<T>() 让目录统一创建并持有数组状态；
+// register_array() 保留给旧代码或外部已经拥有生命周期的数组状态。
 class StateArrayRegistry {
   public:
+    // 数组状态目录运行时快照。
+    using Snapshot = StateArrayRegistrySnapshot;
+
+    // 创建一个由当前目录拥有的数组状态对象，并自动注册。
+    template <typename T>
+    StateArray<T>& create_array(std::string name,
+                                std::string description,
+                                std::vector<std::size_t> shape,
+                                T initial_value = T{},
+                                std::size_t width_bits = sizeof(T) * 8) {
+        auto array = std::make_unique<StateArray<T>>(
+            std::move(name),
+            std::move(description),
+            std::move(shape),
+            std::move(initial_value),
+            width_bits);
+        StateArray<T>& ref = *array;
+        register_array(ref);
+        owned_arrays_.push_back(std::move(array));
+        return ref;
+    }
+
     // 注册一个已经存在的数组状态对象。
     template <typename T>
     StateArray<T>& register_array(StateArray<T>& array) {
@@ -521,31 +725,11 @@ class StateArrayRegistry {
         return all_info(base);
     }
 
-    // 按顺序复制另一个数组状态目录中的全部值。
-    void copy_values_from(const StateArrayRegistry& other) {
-        if (entries_.size() != other.entries_.size()) {
-            error::raise(error::Stage::Elaboration,
-                         error::Kind::LayoutMismatch,
-                         "StateArrayRegistry",
-                         "entry count mismatch");
-        }
+    // 保存当前目录中全部数组状态值。
+    Snapshot snapshot() const;
 
-        for (std::size_t index = 0; index < entries_.size(); ++index) {
-            StateArrayBase& lhs = *entries_[index];
-            const StateArrayBase& rhs = *other.entries_[index];
-            if (lhs.name() != rhs.name() ||
-                lhs.type_index() != rhs.type_index() ||
-                lhs.data_size() != rhs.data_size() ||
-                lhs.width_bits() != rhs.width_bits() ||
-                lhs.shape() != rhs.shape()) {
-                error::raise(error::Stage::Elaboration,
-                             error::Kind::LayoutMismatch,
-                             "StateArrayRegistry",
-                             "layout mismatch on " + lhs.name());
-            }
-            lhs.copy_values_from(rhs);
-        }
-    }
+    // 恢复当前目录中全部数组状态值。
+    void restore(const Snapshot& snapshot);
 
   private:
     // 按名字查找一个数组状态；找不到时报错。
@@ -587,6 +771,10 @@ class StateArrayRegistry {
     }
 
     // 当前目录内注册的全部数组状态对象。
+    // 由当前目录直接拥有的数组状态对象。
+    std::vector<std::unique_ptr<StateArrayBase>> owned_arrays_;
+
+    // 当前目录内登记的全部数组状态对象。
     std::vector<StateArrayBase*> entries_;
 };
 

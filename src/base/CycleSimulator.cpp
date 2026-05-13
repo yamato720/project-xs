@@ -1,9 +1,11 @@
 #include "base/CycleSimulator.h"
 #include "base/Error.h"
 
+#include <fstream>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 namespace project_xs::sim {
 
@@ -35,67 +37,6 @@ PortGroup& CycleSimulator::create_port_group(std::string name) {
     return *port_groups_.back();
 }
 
-CycleSimulator& CycleSimulator::operator()(std::int64_t max_cycles, long double frequency_hz) {
-    set_max_cycles(max_cycles);
-    set_frequency_hz(frequency_hz);
-    return *this;
-}
-
-void CycleSimulator::copy(const CycleSimulator& other) {
-    if (this == &other) {
-        return;
-    }
-
-    current_cycle_ = other.current_cycle_;
-    finished_ = other.finished_;
-    state_set_.copy_values_from(other.state_set_);
-    if (port_groups_.size() != other.port_groups_.size()) {
-        error::raise(error::Stage::Elaboration,
-                     error::Kind::LayoutMismatch,
-                     "CycleSimulator",
-                     "PortGroup count mismatch");
-    }
-    for (std::size_t index = 0; index < port_groups_.size(); ++index) {
-        port_groups_[index]->copy_runtime_from(*other.port_groups_[index]);
-    }
-    copy_runtime_extra_from(other);
-}
-
-void CycleSimulator::fullcopy(const CycleSimulator& other) {
-    if (this == &other) {
-        return;
-    }
-
-    clear();
-    set_max_cycles(other.max_cycles_ == std::numeric_limits<std::uint64_t>::max()
-                       ? -1
-                       : static_cast<std::int64_t>(other.max_cycles_));
-    set_frequency_hz(other.frequency_hz_);
-    current_cycle_ = other.current_cycle_;
-    finished_ = other.finished_;
-    state_set_.copy_values_from(other.state_set_);
-    if (port_groups_.size() != 1) {
-        error::raise(error::Stage::Elaboration,
-                     error::Kind::ConstraintViolation,
-                     "CycleSimulator fullcopy",
-                     "target simulator must only contain the default PortGroup");
-    }
-    if (other.port_groups_.size() != 1) {
-        error::raise(error::Stage::Elaboration,
-                     error::Kind::LayoutMismatch,
-                     "CycleSimulator fullcopy",
-                     "source simulator PortGroup layout mismatch");
-    }
-    port_groups_[0]->copy_runtime_from(*other.port_groups_[0]);
-    copy_runtime_extra_from(other);
-
-    for (const auto& kernel : other.kernels_) {
-        auto cloned = kernel->clone();
-        cloned->on_attached_to_simulator(*this);
-        kernels_.push_back(cloned);
-    }
-}
-
 void CycleSimulator::set_max_cycles(std::int64_t max_cycles) {
     max_cycles_ = normalize_max_cycles(max_cycles);
 }
@@ -108,6 +49,9 @@ void CycleSimulator::set_frequency_hz(long double frequency_hz) {
                      "frequency_hz must be > 0");
     }
     frequency_hz_ = frequency_hz;
+    for (const auto& kernel : kernels_) {
+        kernel->set_frequency_hz_from_parent(frequency_hz_);
+    }
 }
 
 void CycleSimulator::add_kernel(const std::shared_ptr<Kernel>& kernel) {
@@ -118,6 +62,8 @@ void CycleSimulator::add_kernel(const std::shared_ptr<Kernel>& kernel) {
                      "cannot add null kernel");
     }
     kernel->on_attached_to_simulator(*this);
+    kernel->set_frequency_hz_from_parent(frequency_hz_);
+    kernel->set_current_cycle_from_parent(current_cycle_);
     kernels_.push_back(kernel);
 }
 
@@ -266,16 +212,24 @@ bool CycleSimulator::step() {
         return true;
     }
 
+    if (current_cycle_ == 0) {
+        validate_or_throw();
+    }
+
     if (current_cycle_ >= max_cycles_) {
         finished_ = true;
         return true;
     }
 
+    capture_snapshot_if_automatic(SnapshotCaptureStage::CycleStepBegin);
     for (const auto& group : port_groups_) {
         group->sync_inputs();
     }
+    capture_snapshot_if_automatic(SnapshotCaptureStage::CycleAfterInputSync);
     run_single(current_cycle_);
+    capture_snapshot_if_automatic(SnapshotCaptureStage::CycleAfterRunSingle);
     emit_outputs();
+    capture_snapshot_if_automatic(SnapshotCaptureStage::CycleAfterEmitOutputs);
 
     for (const auto& kernel : kernels_) {
         kernel->run(current_cycle_);
@@ -283,20 +237,27 @@ bool CycleSimulator::step() {
             finished_ = true;
         }
     }
+    capture_snapshot_if_automatic(SnapshotCaptureStage::CycleAfterKernelRun);
 
     for (const auto& group : port_groups_) {
         group->end_cycle();
     }
+    capture_snapshot_if_automatic(SnapshotCaptureStage::CycleAfterPortGroupEndCycle);
     for (const auto& kernel : kernels_) {
         kernel->end_cycle();
     }
+    capture_snapshot_if_automatic(SnapshotCaptureStage::CycleAfterKernelEndCycle);
 
     ++current_cycle_;
+    for (const auto& kernel : kernels_) {
+        kernel->set_current_cycle_from_parent(current_cycle_);
+    }
 
     if (current_cycle_ >= max_cycles_) {
         finished_ = true;
     }
 
+    capture_snapshot_if_automatic(SnapshotCaptureStage::CycleStepEnd);
     return finished_;
 }
 
@@ -322,9 +283,117 @@ std::string CycleSimulator::info() const {
     oss << ", current_cycle=" << current_cycle_;
     oss << ", finished=" << (finished_ ? "yes" : "no");
     oss << ", states=" << state_set_.all_states_info();
+    oss << ", state_arrays=" << state_array_registry_.all_arrays_info();
     oss << ", port_groups=" << all_port_groups_info();
     oss << ", kernels=" << all_kernels_info();
     return oss.str();
+}
+
+void CycleSimulator::collect_diagnostics(std::vector<error::Diagnostic>& diagnostics) const {
+    if (port_groups_.empty()) {
+        error::append(diagnostics,
+                      error::Severity::Error,
+                      error::Stage::Validate,
+                      error::Kind::ConstraintViolation,
+                      "CycleSimulator " + name_,
+                      "no PortGroup registered");
+    }
+
+    for (std::size_t index = 0; index < port_groups_.size(); ++index) {
+        for (std::size_t other = index + 1; other < port_groups_.size(); ++other) {
+            if (port_groups_[index]->name() == port_groups_[other]->name()) {
+                error::append(diagnostics,
+                              error::Severity::Error,
+                              error::Stage::Validate,
+                              error::Kind::DuplicateName,
+                              "CycleSimulator " + name_,
+                              "duplicate PortGroup name: " + port_groups_[index]->name());
+            }
+        }
+    }
+
+    for (std::size_t index = 0; index < kernels_.size(); ++index) {
+        for (std::size_t other = index + 1; other < kernels_.size(); ++other) {
+            if (kernels_[index]->name() == kernels_[other]->name()) {
+                error::append(diagnostics,
+                              error::Severity::Error,
+                              error::Stage::Validate,
+                              error::Kind::DuplicateName,
+                              "CycleSimulator " + name_,
+                              "duplicate kernel name: " + kernels_[index]->name());
+            }
+        }
+    }
+
+    for (const auto& group : port_groups_) {
+        group->collect_diagnostics(diagnostics);
+    }
+    for (const auto& kernel : kernels_) {
+        kernel->collect_diagnostics(diagnostics);
+    }
+}
+
+std::vector<error::Diagnostic> CycleSimulator::validate() const {
+    std::vector<error::Diagnostic> diagnostics;
+    collect_diagnostics(diagnostics);
+    return diagnostics;
+}
+
+void CycleSimulator::validate_or_throw() const {
+    const auto diagnostics = validate();
+    error::throw_if_any_error(diagnostics);
+}
+
+void CycleSimulator::save_checkpoint(const std::string& path) const {
+    project_xs::sim::save_checkpoint(path, snapshot());
+}
+
+void CycleSimulator::restore_checkpoint(const std::string& path) {
+    restore(load_cycle_simulator_checkpoint(path, snapshot()));
+}
+
+void CycleSimulator::set_snapshot_capture_directory(std::string directory) {
+    snapshot_capture_root_directory_ = std::move(directory);
+}
+
+void CycleSimulator::start_snapshot_capture(SnapshotCaptureMode mode) {
+    if (snapshot_capture_segment_active_) {
+        finish_snapshot_capture_segment();
+    }
+    snapshot_capture_mode_ = mode;
+    snapshot_capture_active_ = true;
+    if (snapshot_capture_mode_ == SnapshotCaptureMode::Automatic) {
+        begin_snapshot_capture_segment();
+        capture_snapshot(SnapshotCaptureStage::AutomaticSegmentBegin);
+    }
+}
+
+void CycleSimulator::stop_snapshot_capture() {
+    if (snapshot_capture_active_ &&
+        snapshot_capture_mode_ == SnapshotCaptureMode::Automatic) {
+        capture_snapshot(SnapshotCaptureStage::AutomaticSegmentEnd);
+        finish_snapshot_capture_segment();
+    }
+    snapshot_capture_active_ = false;
+}
+
+const CycleSimulatorSnapshotRecord& CycleSimulator::capture_snapshot(
+    SnapshotCaptureStage stage) {
+    CycleSimulatorSnapshotRecord record;
+    record.sequence = snapshot_capture_sequence_++;
+    record.stage = stage;
+    record.snapshot = snapshot();
+    snapshot_history_.push_back(std::move(record));
+    if (snapshot_capture_active_) {
+        store_snapshot_capture_record(snapshot_history_.back());
+    }
+    return snapshot_history_.back();
+}
+
+void CycleSimulator::clear_snapshot_history() {
+    snapshot_history_.clear();
+    snapshot_capture_sequence_ = 0;
+    snapshot_capture_segment_index_ = 0;
 }
 
 void CycleSimulator::run_single(std::uint64_t cycle) {
@@ -337,14 +406,87 @@ void CycleSimulator::reset_extra() {
 void CycleSimulator::initialize_zero_extra() {
 }
 
-void CycleSimulator::copy_runtime_extra_from(const CycleSimulator& other) {
-    (void)other;
-}
-
 void CycleSimulator::emit_outputs() {
     for (const auto& group : port_groups_) {
         group->emit_outputs();
     }
+}
+
+void CycleSimulator::capture_snapshot_if_automatic(SnapshotCaptureStage stage) {
+    if (snapshot_capture_active_ &&
+        snapshot_capture_mode_ == SnapshotCaptureMode::Automatic) {
+        capture_snapshot(stage);
+    }
+}
+
+void CycleSimulator::begin_snapshot_capture_segment() {
+    snapshot_capture_segment_directory_ = prepare_snapshot_capture_segment_directory(
+        snapshot_capture_root_directory_,
+        "cycle_simulator",
+        name_,
+        current_cycle_,
+        snapshot_capture_segment_index_++);
+    snapshot_capture_waveform_path_ =
+        snapshot_capture_waveform_path(snapshot_capture_segment_directory_);
+    std::ofstream(snapshot_capture_waveform_path_, std::ios::out | std::ios::trunc).close();
+    snapshot_capture_segment_frame_count_ = 0;
+    snapshot_capture_segment_active_ = true;
+    write_snapshot_capture_manifest(snapshot_capture_segment_directory_,
+                                    "cycle_simulator",
+                                    name_,
+                                    snapshot_capture_segment_index_ - 1,
+                                    snapshot_capture_segment_frame_count_,
+                                    false);
+}
+
+void CycleSimulator::finish_snapshot_capture_segment() {
+    if (!snapshot_capture_segment_active_) {
+        return;
+    }
+    if (snapshot_capture_segment_frame_count_ != 0 && !snapshot_history_.empty()) {
+        auto& last_record = snapshot_history_[snapshot_capture_segment_last_record_index_];
+        last_record.checkpoint_path =
+            snapshot_capture_last_checkpoint_path(snapshot_capture_segment_directory_);
+        last_record.checkpoint_role = "segment_last";
+        project_xs::sim::save_checkpoint(last_record.checkpoint_path, last_record.snapshot);
+    }
+    write_snapshot_capture_manifest(snapshot_capture_segment_directory_,
+                                    "cycle_simulator",
+                                    name_,
+                                    snapshot_capture_segment_index_ - 1,
+                                    snapshot_capture_segment_frame_count_,
+                                    true);
+    render_snapshot_capture_html(snapshot_capture_segment_directory_);
+    snapshot_capture_segment_active_ = false;
+}
+
+void CycleSimulator::store_snapshot_capture_record(CycleSimulatorSnapshotRecord& record) {
+    if (snapshot_capture_mode_ == SnapshotCaptureMode::Automatic) {
+        if (!snapshot_capture_segment_active_) {
+            begin_snapshot_capture_segment();
+        }
+        const std::size_t record_index = snapshot_history_.size() - 1;
+        append_waveform_jsonl_frame(snapshot_capture_waveform_path_, record.sequence, record.stage, *this);
+        if (snapshot_capture_segment_frame_count_ == 0) {
+            snapshot_capture_segment_first_record_index_ = record_index;
+            record.checkpoint_path =
+                snapshot_capture_first_checkpoint_path(snapshot_capture_segment_directory_);
+            record.checkpoint_role = "segment_first";
+            project_xs::sim::save_checkpoint(record.checkpoint_path, record.snapshot);
+        }
+        snapshot_capture_segment_last_record_index_ = record_index;
+        ++snapshot_capture_segment_frame_count_;
+        return;
+    }
+
+    const std::string path = prepare_manual_checkpoint_path(
+        snapshot_capture_root_directory_,
+        "cycle_simulator",
+        name_,
+        record.sequence);
+    record.checkpoint_path = path;
+    record.checkpoint_role = "manual";
+    project_xs::sim::save_checkpoint(path, record.snapshot);
 }
 
 }  // namespace project_xs::sim

@@ -272,24 +272,6 @@ std::string Port::info(PortValueBase base) const {
     return name_ + ": value=" + value_string(base) + ", type=" + type_string();
 }
 
-void Port::copy_runtime_from(const Port& other) {
-    if (direction_ != other.direction_ ||
-        width_bits_ != other.width_bits_ ||
-        data_size_ != other.data_size_ ||
-        type_index_ != other.type_index_) {
-        error::raise(error::Stage::Elaboration,
-                     error::Kind::LayoutMismatch,
-                     "Port",
-                     "runtime copy mismatch on " + name_);
-    }
-
-    visible_storage_ = other.visible_storage_;
-    pending_storage_ = other.pending_storage_;
-    valid_ = other.valid_;
-    pending_valid_ = other.pending_valid_;
-    std::memcpy(bound_variable_, other.bound_variable_, data_size_);
-}
-
 void Port::ensure_direction(PortDirection expected) const {
     if (direction_ != expected) {
         error::raise(error::Stage::Elaboration,

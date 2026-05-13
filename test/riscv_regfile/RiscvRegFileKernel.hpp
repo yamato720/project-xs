@@ -2,16 +2,17 @@
 #define PROJECT_XS_TEST_RISCV_REGFILE_KERNEL_HPP
 
 #include "base/CycleSimulator.h"
+#include "base/Error.h"
 #include "base/Kernel.h"
 #include "base/KernelComponent.h"
 #include "base/Port.h"
 #include "base/State.h"
 #include "base/StateArray.h"
 
-#include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace project_xs::sim::test::riscv_regfile {
 
@@ -21,9 +22,6 @@ namespace project_xs::sim::test::riscv_regfile {
 // - t0~t6：temporary，临时寄存器
 // - s0~s11：saved，需由被调用者保存
 // - a0~a7：argument / return，参数与返回值寄存器
-//
-// 所以在汇编、反汇编和大多数工具链输出里，通常优先看到的是这些 ABI 名，
-// 而不是纯硬件编号 x0~x31。
 inline constexpr const char* kRiscvAbiNames[32] = {
     "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
     "s0",   "s1", "a0", "a1", "a2", "a3", "a4", "a5",
@@ -38,6 +36,10 @@ inline std::string riscv_reg_name(std::uint8_t index) {
     return "x?";
 }
 
+inline std::string riscv_reg_label(std::uint8_t index) {
+    return riscv_reg_name(index) + "(x" + std::to_string(index) + ")";
+}
+
 inline std::size_t riscv_row(std::uint8_t index) {
     return static_cast<std::size_t>(index / 8U);
 }
@@ -46,154 +48,195 @@ inline std::size_t riscv_col(std::uint8_t index) {
     return static_cast<std::size_t>(index % 8U);
 }
 
-// 共享寄存器组状态块。
-// 真正的寄存器阵列现在用二维 4x8 的 StateArray<uint64_t> 表达：
-// - 第一维：行，共 4 行
-// - 第二维：列，每行 8 个
-//
-// 逻辑上仍然对应标准 32 个整数寄存器，只是存储体改成二维布局，
-// 便于验证当前高维数组能力。
-struct RegFileSharedState {
-    RegFileSharedState() : regs("gpr", "RISC-V 32 个通用整数寄存器，按 4x8 二维组织", {4, 8}, 0ULL) {
-        for (std::uint8_t index = 0; index < 32; ++index) {
-            regs.set_element_name({riscv_row(index), riscv_col(index)}, kRiscvAbiNames[index]);
-            regs.add_element_alias({riscv_row(index), riscv_col(index)}, "x" + std::to_string(index));
-        }
-    }
-
-    // 32 个通用寄存器，按二维 4x8 存储。
-    StateArray<std::uint64_t> regs;
-
-    // 三段流水共享的输入采样结果。
-    std::uint8_t rs1_addr = 0;
-    std::uint8_t rs2_addr = 0;
-    std::uint8_t rd_addr = 0;
-    std::uint64_t rd_wdata = 0;
-    bool rd_we = false;
-
-    // 三段流水共享的两个读口结果。
-    std::uint64_t rs1_rdata = 0;
-    std::uint64_t rs2_rdata = 0;
-};
-
 // 第一段：输入采样。
-// 只负责把外部端口上的 rs1/rs2/rd 输入采样进共享状态。
+// 只负责把外部输入采样后，经端口继续传给后面的访问段。
 class RegFileInputStage final : public project_xs::sim::KernelComponent {
   public:
-    explicit RegFileInputStage(RegFileSharedState& shared_state)
-        : project_xs::sim::KernelComponent("regfile_input_stage"),
-          shared_state_(shared_state),
-          rs1_addr_("rs1_addr", "读端口 1 地址", std::uint8_t{0}, 5),
-          rs2_addr_("rs2_addr", "读端口 2 地址", std::uint8_t{0}, 5),
-          rd_addr_("rd_addr", "写回地址", std::uint8_t{0}, 5),
-          rd_wdata_("rd_wdata", "写回数据", 0),
-          rd_we_("rd_we", "写回使能", false) {
-        mutable_state_set().register_state(rs1_addr_);
-        mutable_state_set().register_state(rs2_addr_);
-        mutable_state_set().register_state(rd_addr_);
-        mutable_state_set().register_state(rd_wdata_);
-        mutable_state_set().register_state(rd_we_);
+    RegFileInputStage()
+        : project_xs::sim::KernelComponent("regfile_input_stage", 1, 0) {
+        set_description("输入采样段：从 simulator 接收 rs1/rs2/rd/rd_wdata/rd_we，并在本拍采样后送入访问段。");
+        add_name_alias("input");
+        add_name_alias("输入采样段");
+        add_name_alias("IF");
+        create_state<std::uint8_t>("rs1_addr", "读端口 1 地址", std::uint8_t{0}, 5);
+        create_state<std::uint8_t>("rs2_addr", "读端口 2 地址", std::uint8_t{0}, 5);
+        create_state<std::uint8_t>("rd_addr", "写回地址", std::uint8_t{0}, 5);
+        create_state<std::uint64_t>("rd_wdata", "写回数据", 0);
+        create_state<bool>("rd_we", "写回使能", false);
+        create_state<std::uint8_t>(
+            "sampled_rs1_addr",
+            "采样后的读端口 1 地址",
+            std::uint8_t{0},
+            5);
+        create_state<std::uint8_t>(
+            "sampled_rs2_addr",
+            "采样后的读端口 2 地址",
+            std::uint8_t{0},
+            5);
+        create_state<std::uint8_t>(
+            "sampled_rd_addr",
+            "采样后的写回地址",
+            std::uint8_t{0},
+            5);
+        create_state<std::uint64_t>("sampled_rd_wdata", "采样后的写回数据", 0);
+        create_state<bool>("sampled_rd_we", "采样后的写回使能", false);
 
-        ports().add_input(rs1_addr_.make_wire_input_port());
-        ports().add_input(rs2_addr_.make_wire_input_port());
-        ports().add_input(rd_addr_.make_wire_input_port());
-        ports().add_input(rd_wdata_.make_wire_input_port());
-        ports().add_input(rd_we_.make_wire_input_port());
-    }
-
-    std::shared_ptr<project_xs::sim::KernelComponent> clone() const override {
-        return nullptr;
+        ports().add_input(state<std::uint8_t>("rs1_addr").make_wire_input_port());
+        ports().add_input(state<std::uint8_t>("rs2_addr").make_wire_input_port());
+        ports().add_input(state<std::uint8_t>("rd_addr").make_wire_input_port());
+        ports().add_input(state<std::uint64_t>("rd_wdata").make_wire_input_port());
+        ports().add_input(state<bool>("rd_we").make_wire_input_port());
+        ports().add_output(state<std::uint8_t>("sampled_rs1_addr").make_wire_output_port("rs1_addr"));
+        ports().add_output(state<std::uint8_t>("sampled_rs2_addr").make_wire_output_port("rs2_addr"));
+        ports().add_output(state<std::uint8_t>("sampled_rd_addr").make_wire_output_port("rd_addr"));
+        ports().add_output(state<std::uint64_t>("sampled_rd_wdata").make_wire_output_port("rd_wdata"));
+        ports().add_output(state<bool>("sampled_rd_we").make_wire_output_port("rd_we"));
     }
 
   protected:
     void reset_extra() override {
-        rs1_addr_ = std::uint8_t{0};
-        rs2_addr_ = std::uint8_t{0};
-        rd_addr_ = std::uint8_t{0};
-        rd_wdata_ = 0;
-        rd_we_ = false;
+        state<std::uint8_t>("rs1_addr") = std::uint8_t{0};
+        state<std::uint8_t>("rs2_addr") = std::uint8_t{0};
+        state<std::uint8_t>("rd_addr") = std::uint8_t{0};
+        state<std::uint64_t>("rd_wdata") = 0;
+        state<bool>("rd_we") = false;
+        state<std::uint8_t>("sampled_rs1_addr") = std::uint8_t{0};
+        state<std::uint8_t>("sampled_rs2_addr") = std::uint8_t{0};
+        state<std::uint8_t>("sampled_rd_addr") = std::uint8_t{0};
+        state<std::uint64_t>("sampled_rd_wdata") = 0;
+        state<bool>("sampled_rd_we") = false;
     }
 
     void run_single(std::uint64_t cycle) override {
         (void)cycle;
-        shared_state_.rs1_addr = rs1_addr_.value();
-        shared_state_.rs2_addr = rs2_addr_.value();
-        shared_state_.rd_addr = rd_addr_.value();
-        shared_state_.rd_wdata = rd_wdata_.value();
-        shared_state_.rd_we = rd_we_.value();
+        state<std::uint8_t>("sampled_rs1_addr") = state<std::uint8_t>("rs1_addr").value();
+        state<std::uint8_t>("sampled_rs2_addr") = state<std::uint8_t>("rs2_addr").value();
+        state<std::uint8_t>("sampled_rd_addr") = state<std::uint8_t>("rd_addr").value();
+        state<std::uint64_t>("sampled_rd_wdata") = state<std::uint64_t>("rd_wdata").value();
+        state<bool>("sampled_rd_we") = state<bool>("rd_we").value();
     }
 
-  private:
-    RegFileSharedState& shared_state_;
-    project_xs::sim::State<std::uint8_t> rs1_addr_;
-    project_xs::sim::State<std::uint8_t> rs2_addr_;
-    project_xs::sim::State<std::uint8_t> rd_addr_;
-    project_xs::sim::State<std::uint64_t> rd_wdata_;
-    project_xs::sim::State<bool> rd_we_;
+    std::string debug_info(std::uint64_t cycle) const override {
+        return "[regfile_input_stage][cycle " + std::to_string(cycle) + "] "
+               "sample rs1=" + riscv_reg_label(state<std::uint8_t>("rs1_addr").value()) +
+               ", rs2=" + riscv_reg_label(state<std::uint8_t>("rs2_addr").value()) +
+               ", rd=" + riscv_reg_label(state<std::uint8_t>("rd_addr").value()) +
+               ", rd_wdata=" + std::to_string(state<std::uint64_t>("rd_wdata").value()) +
+               ", rd_we=" + std::string(state<bool>("rd_we").value() ? "1" : "0");
+    }
 };
 
-// 第二段：写回执行。
-// 只负责处理 rd 写回，并维持 zero/x0 恒为 0。
-class RegFileWriteStage final : public project_xs::sim::KernelComponent {
+// 第二段：寄存器访问。
+// 它独占持有真正的寄存器存储体，所有阶段信号都通过端口进入，不共享控制状态。
+class RegFileAccessStage final : public project_xs::sim::KernelComponent {
   public:
-    explicit RegFileWriteStage(RegFileSharedState& shared_state)
-        : project_xs::sim::KernelComponent("regfile_write_stage"), shared_state_(shared_state) {}
+    RegFileAccessStage()
+        : project_xs::sim::KernelComponent("regfile_access_stage", 1, 1) {
+        set_description("寄存器访问段：持有 32 个 RISC-V GPR，处理写回、x0 恒 0 约束和两个读口输出。");
+        add_name_alias("access");
+        add_name_alias("寄存器访问段");
+        add_name_alias("RF");
+        create_state<std::uint8_t>(
+            "rs1_addr",
+            "访问段输入的读端口 1 地址",
+            std::uint8_t{0},
+            5);
+        create_state<std::uint8_t>(
+            "rs2_addr",
+            "访问段输入的读端口 2 地址",
+            std::uint8_t{0},
+            5);
+        create_state<std::uint8_t>(
+            "rd_addr",
+            "访问段输入的写回地址",
+            std::uint8_t{0},
+            5);
+        create_state<std::uint64_t>("rd_wdata", "访问段输入的写回数据", 0);
+        create_state<bool>("rd_we", "访问段输入的写回使能", false);
+        create_state<std::uint64_t>("rs1_rdata", "访问段输出的读端口 1 数据", 0);
+        create_state<std::uint64_t>("rs2_rdata", "访问段输出的读端口 2 数据", 0);
+        create_state_array<std::uint64_t>(
+            "gpr",
+            "RISC-V 32 个通用整数寄存器，按 4x8 二维组织",
+            {4, 8},
+            0ULL);
+        for (std::uint8_t index = 0; index < 32; ++index) {
+            state_array<std::uint64_t>("gpr").set_element_name(
+                {riscv_row(index), riscv_col(index)},
+                kRiscvAbiNames[index]);
+            state_array<std::uint64_t>("gpr").add_element_alias(
+                {riscv_row(index), riscv_col(index)},
+                "x" + std::to_string(index));
+        }
+        require_state_array_shape(state_array<std::uint64_t>("gpr"), {4, 8}, "gpr");
 
-    std::shared_ptr<project_xs::sim::KernelComponent> clone() const override {
-        return nullptr;
+        ports().add_input(state<std::uint8_t>("rs1_addr").make_reg_input_port());
+        ports().add_input(state<std::uint8_t>("rs2_addr").make_reg_input_port());
+        ports().add_input(state<std::uint8_t>("rd_addr").make_reg_input_port());
+        ports().add_input(state<std::uint64_t>("rd_wdata").make_reg_input_port());
+        ports().add_input(state<bool>("rd_we").make_reg_input_port());
+        ports().add_output(state<std::uint64_t>("rs1_rdata").make_wire_output_port());
+        ports().add_output(state<std::uint64_t>("rs2_rdata").make_wire_output_port());
+    }
+
+    std::uint64_t reg_value(std::uint8_t index) const {
+        if (index == 0U || index >= 32U) {
+            return 0;
+        }
+        return state_array<std::uint64_t>("gpr").at({riscv_row(index), riscv_col(index)});
     }
 
   protected:
+    void reset_extra() override {
+        state_array<std::uint64_t>("gpr").fill(0ULL);
+        state<std::uint8_t>("rs1_addr") = std::uint8_t{0};
+        state<std::uint8_t>("rs2_addr") = std::uint8_t{0};
+        state<std::uint8_t>("rd_addr") = std::uint8_t{0};
+        state<std::uint64_t>("rd_wdata") = 0;
+        state<bool>("rd_we") = false;
+        state<std::uint64_t>("rs1_rdata") = 0;
+        state<std::uint64_t>("rs2_rdata") = 0;
+    }
+
     void run_single(std::uint64_t cycle) override {
         (void)cycle;
 
-        // 标准 RISC-V 约束：zero / x0 永远为 0。
-        shared_state_.regs.at_name("zero") = 0;
-
-        if (shared_state_.rd_we && shared_state_.rd_addr != 0U && shared_state_.rd_addr < 32U) {
-            shared_state_.regs.at({riscv_row(shared_state_.rd_addr), riscv_col(shared_state_.rd_addr)}) =
-                shared_state_.rd_wdata;
+        if (!phase_valid()) {
+            return;
         }
 
-        shared_state_.regs.at_name("zero") = 0;
+        state_array<std::uint64_t>("gpr").at_name("zero") = 0;
+
+        if (state<bool>("rd_we").value() &&
+            state<std::uint8_t>("rd_addr").value() != 0U &&
+            state<std::uint8_t>("rd_addr").value() < 32U) {
+            state_array<std::uint64_t>("gpr").at({
+                riscv_row(state<std::uint8_t>("rd_addr").value()),
+                riscv_col(state<std::uint8_t>("rd_addr").value()),
+            }) = state<std::uint64_t>("rd_wdata").value();
+        }
+
+        state_array<std::uint64_t>("gpr").at_name("zero") = 0;
+        state<std::uint64_t>("rs1_rdata") = read_reg(state<std::uint8_t>("rs1_addr").value());
+        state<std::uint64_t>("rs2_rdata") = read_reg(state<std::uint8_t>("rs2_addr").value());
     }
 
-  private:
-    RegFileSharedState& shared_state_;
-};
-
-// 第三段：读口输出。
-// 根据共享状态中的 rs1/rs2 地址，从二维寄存器存储体里给出两个读口数据。
-class RegFileReadStage final : public project_xs::sim::KernelComponent {
-  public:
-    explicit RegFileReadStage(RegFileSharedState& shared_state)
-        : project_xs::sim::KernelComponent("regfile_read_stage"),
-          shared_state_(shared_state),
-          rs1_rdata_("rs1_rdata", "读端口 1 数据", 0),
-          rs2_rdata_("rs2_rdata", "读端口 2 数据", 0) {
-        mutable_state_set().register_state(rs1_rdata_);
-        mutable_state_set().register_state(rs2_rdata_);
-
-        ports().add_output(rs1_rdata_.make_wire_output_port());
-        ports().add_output(rs2_rdata_.make_wire_output_port());
-    }
-
-    std::shared_ptr<project_xs::sim::KernelComponent> clone() const override {
-        return nullptr;
-    }
-
-  protected:
-    void reset_extra() override {
-        rs1_rdata_ = 0;
-        rs2_rdata_ = 0;
-    }
-
-    void run_single(std::uint64_t cycle) override {
-        (void)cycle;
-        shared_state_.rs1_rdata = read_reg(shared_state_.rs1_addr);
-        shared_state_.rs2_rdata = read_reg(shared_state_.rs2_addr);
-        rs1_rdata_ = shared_state_.rs1_rdata;
-        rs2_rdata_ = shared_state_.rs2_rdata;
+    std::string debug_info(std::uint64_t cycle) const override {
+        if (!phase_valid()) {
+            return "[regfile_access_stage][cycle " + std::to_string(cycle) + "] waiting for align";
+        }
+        return "[regfile_access_stage][cycle " + std::to_string(cycle) + "] "
+               "write " + std::string(state<bool>("rd_we").value() ? "enable " : "disable ") +
+               riscv_reg_label(state<std::uint8_t>("rd_addr").value()) + " <= " +
+               std::to_string(state<std::uint64_t>("rd_wdata").value()) + ", read rs1=" +
+               riscv_reg_label(state<std::uint8_t>("rs1_addr").value()) + " -> " +
+               std::to_string(state<std::uint64_t>("rs1_rdata").value()) + ", rs2=" +
+               riscv_reg_label(state<std::uint8_t>("rs2_addr").value()) + " -> " +
+               std::to_string(state<std::uint64_t>("rs2_rdata").value()) + ", t0=" +
+               std::to_string(state_array<std::uint64_t>("gpr").at_name("t0")) + ", a0=" +
+               std::to_string(state_array<std::uint64_t>("gpr").at_name("a0")) + ", a1=" +
+               std::to_string(state_array<std::uint64_t>("gpr").at_name("a1")) + ", a2=" +
+               std::to_string(state_array<std::uint64_t>("gpr").at_name("a2"));
     }
 
   private:
@@ -201,55 +244,113 @@ class RegFileReadStage final : public project_xs::sim::KernelComponent {
         if (addr == 0U || addr >= 32U) {
             return 0;
         }
-        return shared_state_.regs.at({riscv_row(addr), riscv_col(addr)});
+        return state_array<std::uint64_t>("gpr").at({riscv_row(addr), riscv_col(addr)});
+    }
+};
+
+// 第三段：读口输出。
+// 只负责把访问段给出的两个读口结果继续对外转发。
+class RegFileReadStage final : public project_xs::sim::KernelComponent {
+  public:
+    RegFileReadStage()
+        : project_xs::sim::KernelComponent("regfile_read_stage", 1, 2) {
+        set_description("读口输出段：接收访问段的两个读口结果，并转发到顶层 kernel 输出。");
+        add_name_alias("read");
+        add_name_alias("读口输出段");
+        add_name_alias("WB");
+        create_state<std::uint64_t>("forwarded_rs1_rdata", "转发输入的读端口 1 数据", 0);
+        create_state<std::uint64_t>("forwarded_rs2_rdata", "转发输入的读端口 2 数据", 0);
+        create_state<std::uint64_t>("rs1_rdata", "读端口 1 数据", 0);
+        create_state<std::uint64_t>("rs2_rdata", "读端口 2 数据", 0);
+        ports().add_input(state<std::uint64_t>("forwarded_rs1_rdata").make_reg_input_port("rs1_rdata"));
+        ports().add_input(state<std::uint64_t>("forwarded_rs2_rdata").make_reg_input_port("rs2_rdata"));
+        ports().add_output(state<std::uint64_t>("rs1_rdata").make_wire_output_port());
+        ports().add_output(state<std::uint64_t>("rs2_rdata").make_wire_output_port());
     }
 
-    RegFileSharedState& shared_state_;
-    project_xs::sim::State<std::uint64_t> rs1_rdata_;
-    project_xs::sim::State<std::uint64_t> rs2_rdata_;
+    std::uint64_t rs1_rdata_value() const {
+        return state<std::uint64_t>("rs1_rdata").value();
+    }
+
+    std::uint64_t rs2_rdata_value() const {
+        return state<std::uint64_t>("rs2_rdata").value();
+    }
+
+  protected:
+    void reset_extra() override {
+        state<std::uint64_t>("forwarded_rs1_rdata") = 0;
+        state<std::uint64_t>("forwarded_rs2_rdata") = 0;
+        state<std::uint64_t>("rs1_rdata") = 0;
+        state<std::uint64_t>("rs2_rdata") = 0;
+    }
+
+    void run_single(std::uint64_t cycle) override {
+        (void)cycle;
+        if (!phase_valid()) {
+            return;
+        }
+        state<std::uint64_t>("rs1_rdata") =
+            state<std::uint64_t>("forwarded_rs1_rdata").value();
+        state<std::uint64_t>("rs2_rdata") =
+            state<std::uint64_t>("forwarded_rs2_rdata").value();
+    }
+
+    std::string debug_info(std::uint64_t cycle) const override {
+        if (!phase_valid()) {
+            return "[regfile_read_stage][cycle " + std::to_string(cycle) + "] waiting for align";
+        }
+        return "[regfile_read_stage][cycle " + std::to_string(cycle) + "] "
+               "forward rs1_rdata=" + std::to_string(state<std::uint64_t>("rs1_rdata").value()) +
+               ", rs2_rdata=" + std::to_string(state<std::uint64_t>("rs2_rdata").value());
+    }
 };
 
 // 顶层 kernel。
-// 把寄存器组拆成三段：
+// 三段结构：
 // 1. 输入采样
-// 2. 写回执行
+// 2. 寄存器访问
 // 3. 读口输出
 //
-// 三个 component 会按 vector 注册顺序依次运行，
-// 所以时序关系就是：
-// 输入先进共享状态 -> 再写二维寄存器阵列 -> 再从二维阵列读两个读口。
+// 除了真正的寄存器存储体在访问段内部持有外，
+// 其余阶段信号全部通过 ports 传递，不共享运行时控制状态。
 class RiscvRegFileKernel final : public project_xs::sim::Kernel {
   public:
-    explicit RiscvRegFileKernel(std::string name)
+    RiscvRegFileKernel(std::string name,
+                       std::shared_ptr<RegFileInputStage> input_stage,
+                       std::shared_ptr<RegFileAccessStage> access_stage,
+                       std::shared_ptr<RegFileReadStage> read_stage)
         : project_xs::sim::Kernel(std::move(name)),
-          input_stage_(std::make_shared<RegFileInputStage>(shared_state_)),
-          write_stage_(std::make_shared<RegFileWriteStage>(shared_state_)),
-          read_stage_(std::make_shared<RegFileReadStage>(shared_state_)),
-          rs1_rdata_("rs1_rdata", "顶层读端口 1 数据", 0),
-          rs2_rdata_("rs2_rdata", "顶层读端口 2 数据", 0) {
-        mutable_state_set().register_state(rs1_rdata_);
-        mutable_state_set().register_state(rs2_rdata_);
+          input_stage_(std::move(input_stage)),
+          access_stage_(std::move(access_stage)),
+          read_stage_(std::move(read_stage)) {
+        set_description("RISC-V 整数寄存器堆顶层 kernel：由输入采样、寄存器访问、读口输出三段组成。");
+        add_name_alias("riscv_regfile");
+        add_name_alias("RISC-V RegFile");
+        add_name_alias("寄存器堆");
+        if (!input_stage_ || !access_stage_ || !read_stage_) {
+            project_xs::sim::error::raise(
+                project_xs::sim::error::Stage::Elaboration,
+                project_xs::sim::error::Kind::InvalidArgument,
+                "RiscvRegFileKernel",
+                "requires prebuilt input, access and read stages");
+        }
 
-        ports().add_output(rs1_rdata_.make_wire_output_port());
-        ports().add_output(rs2_rdata_.make_wire_output_port());
+        create_state<std::uint64_t>("rs1_rdata", "顶层读端口 1 数据", 0);
+        create_state<std::uint64_t>("rs2_rdata", "顶层读端口 2 数据", 0);
+        ports().add_output(state<std::uint64_t>("rs1_rdata").make_wire_output_port());
+        ports().add_output(state<std::uint64_t>("rs2_rdata").make_wire_output_port());
+
+        require_component("regfile_input_stage");
+        require_component("regfile_access_stage");
+        require_component("regfile_read_stage");
 
         add_component(input_stage_);
-        add_component(write_stage_);
+        add_component(access_stage_);
         add_component(read_stage_);
     }
 
-    std::shared_ptr<project_xs::sim::Kernel> clone() const override {
-        auto copy = std::make_shared<RiscvRegFileKernel>(name());
-        copy->copy_kernel_runtime_from(*this);
-        copy->shared_state_.regs.copy_values_from(shared_state_.regs);
-        copy->shared_state_.rs1_addr = shared_state_.rs1_addr;
-        copy->shared_state_.rs2_addr = shared_state_.rs2_addr;
-        copy->shared_state_.rd_addr = shared_state_.rd_addr;
-        copy->shared_state_.rd_wdata = shared_state_.rd_wdata;
-        copy->shared_state_.rd_we = shared_state_.rd_we;
-        copy->shared_state_.rs1_rdata = shared_state_.rs1_rdata;
-        copy->shared_state_.rs2_rdata = shared_state_.rs2_rdata;
-        return copy;
+    std::uint64_t reg_value(std::uint8_t index) const {
+        return access_stage_->reg_value(index);
     }
 
   protected:
@@ -264,43 +365,53 @@ class RiscvRegFileKernel final : public project_xs::sim::Kernel {
             simulator.ports().get_output("rd_wdata"));
         input_stage_->ports().get_input("rd_we")->connect(
             simulator.ports().get_output("rd_we"));
+
     }
 
     void reset_extra() override {
-        shared_state_ = RegFileSharedState{};
-        rs1_rdata_ = 0;
-        rs2_rdata_ = 0;
+        state<std::uint64_t>("rs1_rdata") = 0;
+        state<std::uint64_t>("rs2_rdata") = 0;
     }
 
     void run_single(std::uint64_t cycle) override {
         project_xs::sim::Kernel::run_single(cycle);
-        rs1_rdata_ = shared_state_.rs1_rdata;
-        rs2_rdata_ = shared_state_.rs2_rdata;
-    }
-
-    std::string debug_info(std::uint64_t cycle) const override {
-        return "[" + name() + "][cycle " + std::to_string(cycle) + "] " +
-               "rs1=" + riscv_reg_name(shared_state_.rs1_addr) + " -> " +
-               std::to_string(shared_state_.rs1_rdata) + ", rs2=" +
-               riscv_reg_name(shared_state_.rs2_addr) + " -> " +
-               std::to_string(shared_state_.rs2_rdata) + ", rd=" +
-               std::string(shared_state_.rd_we ? "we " : "no-we ") +
-               riscv_reg_name(shared_state_.rd_addr) + " <= " +
-               std::to_string(shared_state_.rd_wdata) + ", t0=" +
-               std::to_string(shared_state_.regs.at_name("t0")) + ", a0=" +
-               std::to_string(shared_state_.regs.at_name("a0")) + ", a1=" +
-               std::to_string(shared_state_.regs.at_name("a1")) + ", a2=" +
-               std::to_string(shared_state_.regs.at_name("a2"));
+        state<std::uint64_t>("rs1_rdata") = read_stage_->rs1_rdata_value();
+        state<std::uint64_t>("rs2_rdata") = read_stage_->rs2_rdata_value();
     }
 
   private:
-    RegFileSharedState shared_state_;
     std::shared_ptr<RegFileInputStage> input_stage_;
-    std::shared_ptr<RegFileWriteStage> write_stage_;
+    std::shared_ptr<RegFileAccessStage> access_stage_;
     std::shared_ptr<RegFileReadStage> read_stage_;
-    project_xs::sim::State<std::uint64_t> rs1_rdata_;
-    project_xs::sim::State<std::uint64_t> rs2_rdata_;
 };
+
+inline std::shared_ptr<RiscvRegFileKernel> build_riscv_regfile_kernel(std::string name) {
+    auto input_stage = std::make_shared<RegFileInputStage>();
+    auto access_stage = std::make_shared<RegFileAccessStage>();
+    auto read_stage = std::make_shared<RegFileReadStage>();
+
+    access_stage->ports().get_input("rs1_addr")->connect(
+        input_stage->ports().get_output("rs1_addr"));
+    access_stage->ports().get_input("rs2_addr")->connect(
+        input_stage->ports().get_output("rs2_addr"));
+    access_stage->ports().get_input("rd_addr")->connect(
+        input_stage->ports().get_output("rd_addr"));
+    access_stage->ports().get_input("rd_wdata")->connect(
+        input_stage->ports().get_output("rd_wdata"));
+    access_stage->ports().get_input("rd_we")->connect(
+        input_stage->ports().get_output("rd_we"));
+
+    read_stage->ports().get_input("rs1_rdata")->connect(
+        access_stage->ports().get_output("rs1_rdata"));
+    read_stage->ports().get_input("rs2_rdata")->connect(
+        access_stage->ports().get_output("rs2_rdata"));
+
+    return std::make_shared<RiscvRegFileKernel>(
+        std::move(name),
+        std::move(input_stage),
+        std::move(access_stage),
+        std::move(read_stage));
+}
 
 }  // namespace project_xs::sim::test::riscv_regfile
 

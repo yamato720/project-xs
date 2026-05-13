@@ -53,7 +53,7 @@ XS 当前也可以按同样思路演进。
 - 端口方向不匹配
 - 端口类型/位宽不匹配
 - 组件 / kernel / portgroup 按名字查找失败
-- clone / fullcopy 后布局不一致
+- snapshot/restore 后布局不一致
 
 适合的实现：
 

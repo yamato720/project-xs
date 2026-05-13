@@ -2,6 +2,7 @@
 #define PROJECT_XS_BASE_SIMULATION_SESSION_H
 
 #include "base/CycleSimulator.h"
+#include "base/Error.h"
 
 #include <cstdint>
 #include <memory>
@@ -20,6 +21,9 @@ namespace project_xs::sim {
 // 4. session 按自己的时间步推动所有 simulator，并根据频率比决定谁该前进一步
 class SimulationSession {
   public:
+    // session 运行时快照。
+    using Snapshot = SimulationSessionSnapshot;
+
     // 构造一个时间驱动会话。
     SimulationSession(long double frequency_hz, long double run_time_seconds);
 
@@ -56,6 +60,53 @@ class SimulationSession {
 
     // 注册一个被当前 session 调度的 CycleSimulator。
     void add_simulator(const std::shared_ptr<CycleSimulator>& simulator);
+
+    // 保存当前 session 运行态。
+    // 只保存 session 调度状态和各 simulator 运行态，不保存 simulator 构造方式。
+    Snapshot snapshot() const;
+
+    // 恢复当前 session 运行态。
+    // 目标 session 必须已经注册了同构、同名、同顺序的 simulator 对象图。
+    void restore(const Snapshot& snapshot);
+
+    // 把当前 session checkpoint 保存到本地文件。
+    void save_checkpoint(const std::string& path) const;
+
+    // 从本地 checkpoint 恢复当前 session 运行态。
+    void restore_checkpoint(const std::string& path);
+
+    // 设置快照/波形采集根目录。
+    void set_snapshot_capture_directory(std::string directory);
+
+    // 返回当前快照/波形采集根目录。
+    const std::string& snapshot_capture_directory() const {
+        return snapshot_capture_root_directory_;
+    }
+
+    // 开始记录 session 快照。Manual 只响应显式 capture_snapshot()；
+    // Automatic 会在当前 session step 的关键阶段自动采样。
+    void start_snapshot_capture(SnapshotCaptureMode mode = SnapshotCaptureMode::Automatic);
+
+    // 停止记录 session 快照。
+    void stop_snapshot_capture();
+
+    // 返回当前 session 快照采集是否处于开启状态。
+    bool snapshot_capture_active() const { return snapshot_capture_active_; }
+
+    // 返回当前 session 快照采集模式。
+    SnapshotCaptureMode snapshot_capture_mode() const { return snapshot_capture_mode_; }
+
+    // 手动采集一条 session 快照。
+    const SimulationSessionSnapshotRecord& capture_snapshot(
+        SnapshotCaptureStage stage = SnapshotCaptureStage::Manual);
+
+    // 返回当前 session 已采集的快照历史。
+    const std::vector<SimulationSessionSnapshotRecord>& snapshot_history() const {
+        return snapshot_history_;
+    }
+
+    // 清空当前 session 快照历史。
+    void clear_snapshot_history();
 
     // 按名字查找/获取 session 内的 simulator。
     // find 找不到时返回空指针；get 找不到时抛异常。
@@ -112,6 +163,15 @@ class SimulationSession {
     // 返回当前已经执行了多少个 session 自己的时间步。
     std::uint64_t current_tick() const { return current_tick_; }
 
+    // 收集当前 session 的结构化诊断。
+    virtual void collect_diagnostics(std::vector<error::Diagnostic>& diagnostics) const;
+
+    // 校验当前 session 合法性，并返回诊断列表。
+    std::vector<error::Diagnostic> validate() const;
+
+    // 校验当前 session 合法性；若存在 Error 直接抛出第一条。
+    void validate_or_throw() const;
+
   private:
     // session 内部使用的调度单元。
     struct ScheduledSimulator {
@@ -124,6 +184,18 @@ class SimulationSession {
 
     // 判断当前 session 内是否所有 simulator 都已经结束。
     bool all_simulators_finished() const;
+
+    // 自动模式下按阶段采集 session 快照。
+    void capture_snapshot_if_automatic(SnapshotCaptureStage stage);
+
+    // 开始一个自动采集 segment。
+    void begin_snapshot_capture_segment();
+
+    // 结束当前自动采集 segment，并写入末尾 checkpoint / manifest。
+    void finish_snapshot_capture_segment();
+
+    // 自动/手动采集开启时，把记录写入本地文件。
+    void store_snapshot_capture_record(SimulationSessionSnapshotRecord& record);
 
     // session 调度层真正持有的 simulator 与其累计器。
     std::vector<ScheduledSimulator> scheduled_simulators_;
@@ -142,6 +214,40 @@ class SimulationSession {
 
     // 当前 session 是否已经结束。
     bool finished_ = false;
+
+    // session 快照采集模式。
+    SnapshotCaptureMode snapshot_capture_mode_ = SnapshotCaptureMode::Manual;
+
+    // session 快照采集是否开启。
+    bool snapshot_capture_active_ = false;
+
+    // 当前 session 快照采集序号。
+    std::uint64_t snapshot_capture_sequence_ = 0;
+
+    // 当前 session 快照采集历史。
+    std::vector<SimulationSessionSnapshotRecord> snapshot_history_;
+
+    // 快照/波形采集根目录。
+    std::string snapshot_capture_root_directory_ = default_snapshot_capture_directory();
+
+    // 当前自动采集 segment 目录。
+    std::string snapshot_capture_segment_directory_;
+
+    // 当前自动采集 segment 的 waveform.jsonl 路径。
+    std::string snapshot_capture_waveform_path_;
+
+    // 下一个自动采集 segment 序号。
+    std::uint64_t snapshot_capture_segment_index_ = 0;
+
+    // 当前自动采集 segment 已写入帧数。
+    std::uint64_t snapshot_capture_segment_frame_count_ = 0;
+
+    // 当前自动采集 segment 是否已开启。
+    bool snapshot_capture_segment_active_ = false;
+
+    // 当前自动采集 segment 的首尾记录位置。
+    std::size_t snapshot_capture_segment_first_record_index_ = 0;
+    std::size_t snapshot_capture_segment_last_record_index_ = 0;
 };
 
 }  // namespace project_xs::sim

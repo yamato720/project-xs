@@ -17,15 +17,14 @@ namespace {
 class LedWaterfallSimulator final : public project_xs::sim::CycleSimulator {
   public:
     LedWaterfallSimulator(std::string name, std::int64_t max_cycles, long double frequency_hz)
-        : project_xs::sim::CycleSimulator(std::move(name), max_cycles, frequency_hz),
-          rst_n_("rst_n", "外部复位输入", false) {
-        mutable_state_set().register_state(rst_n_);
-        ports().add_output(rst_n_.make_wire_output_port());
+        : project_xs::sim::CycleSimulator(std::move(name), max_cycles, frequency_hz) {
+        create_state<bool>("rst_n", "外部复位输入", false);
+        ports().add_output(state<bool>("rst_n").make_wire_output_port());
     }
 
   private:
     void reset_extra() override {
-        rst_n_.value() = false;
+        state<bool>("rst_n") = false;
     }
 
     void run_single(std::uint64_t cycle) override {
@@ -36,10 +35,8 @@ class LedWaterfallSimulator final : public project_xs::sim::CycleSimulator {
         // 这样输出里能直观看到：
         // - 第 0 拍 led 被复位到 0x01
         // - 后续 cnt 正常累加
-        rst_n_.value() = (cycle != 0);
+        state<bool>("rst_n") = (cycle != 0);
     }
-
-    project_xs::sim::State<bool> rst_n_;
 };
 
 }  // namespace
@@ -60,7 +57,7 @@ int main() {
     // cycle 4 -> led 从 0x01 变成 0x02
     // cycle 8 -> led 从 0x02 变成 0x04
     simulator->add_kernel(
-        std::make_shared<project_xs::sim::test::led_waterfall::LedWaterfallKernel>(
+        project_xs::sim::test::led_waterfall::build_led_waterfall_kernel(
             "led_waterfall",
             4));
 

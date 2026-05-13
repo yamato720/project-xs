@@ -1,8 +1,9 @@
 #ifndef PROJECT_XS_BASE_STATE_H
 #define PROJECT_XS_BASE_STATE_H
 
-#include "base/Port.h"
 #include "base/Error.h"
+#include "base/Port.h"
+#include "base/RuntimeTrace.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -19,6 +20,8 @@
 #include <vector>
 
 namespace project_xs::sim {
+
+class StateSet;
 
 namespace state_detail {
 
@@ -115,7 +118,7 @@ inline std::string bit_pattern_string(T value,
 }  // namespace state_detail
 
 // 单个状态对象的共同抽象底座。
-// 这层用于“直接挂在 private 里的单个 State<T>”。
+// 这层既支持 StateSet 统一持有，也保留外部对象注册的兼容能力。
 class StateBase {
   public:
     // 构造一个单状态元信息对象。
@@ -162,9 +165,6 @@ class StateBase {
 
     // 返回底层值的只读地址。
     virtual const void* value_ptr() const = 0;
-
-    // 从另一个单状态对象拷贝值。
-    virtual void copy_value_from(const StateBase& other) = 0;
 
     // 按指定进制返回值字符串。
     virtual std::string value_string(PortValueBase base) const = 0;
@@ -234,7 +234,7 @@ class StateBase {
 
 template <typename T>
 // 单个状态对象。
-// 让单独状态直接作为类私有成员存在，而不是被迫塞进统一 vector。
+// 可以由 StateSet 统一创建并持有，也可以作为兼容路径直接挂在类成员里。
 class State final : public StateBase {
   public:
     // 构造一个真正持有值的单状态对象。
@@ -249,6 +249,13 @@ class State final : public StateBase {
                     sizeof(T),
                     width_bits),
           value_(std::move(initial_value)) {}
+
+    // 构造一个单状态对象，并在构造完成时自动注册到给定 StateSet。
+    State(StateSet& state_set,
+          std::string name,
+          std::string description,
+          T initial_value,
+          std::size_t width_bits = sizeof(T) * 8);
 
     // 返回底层值的可写引用。
     T& value() { return value_; }
@@ -357,19 +364,6 @@ class State final : public StateBase {
     // 返回底层值的只读地址。
     const void* value_ptr() const override { return static_cast<const void*>(&value_); }
 
-    // 从另一个同布局单状态对象拷贝值。
-    void copy_value_from(const StateBase& other) override {
-        if (other.type_index() != typeid(T) ||
-            other.data_size() != sizeof(T) ||
-            other.width_bits() != width_bits()) {
-            error::raise(error::Stage::Elaboration,
-                         error::Kind::TypeMismatch,
-                         "State",
-                         "copy type mismatch on " + name());
-        }
-        value_ = *static_cast<const T*>(other.value_ptr());
-    }
-
     // 按指定进制返回当前状态值字符串。
     std::string value_string(PortValueBase base) const override {
         if (base == PortValueBase::Decimal ||
@@ -416,9 +410,31 @@ class StateHandle final : public StateHandleBase {
 };
 
 // 单状态目录。
-// 提供按名字查询、摘要输出和运行时复制，但不拥有状态值本体。
+// 提供按名字查询、摘要输出和运行时复制。
+// 新代码优先通过 create_state<T>() 让目录统一创建并持有状态值本体；
+// register_state() 保留给旧代码或外部已经拥有生命周期的状态对象。
 class StateSet {
   public:
+    // 单状态目录运行时快照。
+    using Snapshot = StateSetSnapshot;
+
+    // 创建一个由当前目录拥有的单状态对象，并自动注册。
+    template <typename T>
+    State<T>& create_state(std::string name,
+                           std::string description,
+                           T initial_value = T{},
+                           std::size_t width_bits = sizeof(T) * 8) {
+        auto state = std::make_unique<State<T>>(
+            std::move(name),
+            std::move(description),
+            std::move(initial_value),
+            width_bits);
+        State<T>& ref = *state;
+        register_state(ref);
+        owned_states_.push_back(std::move(state));
+        return ref;
+    }
+
     // 注册一个已经存在的单状态对象。
     template <typename T>
     State<T>& register_state(State<T>& state) {
@@ -506,30 +522,11 @@ class StateSet {
         return all_info(base);
     }
 
-    // 按顺序复制另一个目录中的全部值。
-    void copy_values_from(const StateSet& other) {
-        if (entries_.size() != other.entries_.size()) {
-            error::raise(error::Stage::Elaboration,
-                         error::Kind::LayoutMismatch,
-                         "StateSet",
-                         "entry count mismatch");
-        }
+    // 保存当前目录中全部单状态值。
+    Snapshot snapshot() const;
 
-        for (std::size_t index = 0; index < entries_.size(); ++index) {
-            StateBase& lhs = entries_[index]->state();
-            const StateBase& rhs = other.entries_[index]->state();
-            if (lhs.name() != rhs.name() ||
-                lhs.type_index() != rhs.type_index() ||
-                lhs.data_size() != rhs.data_size() ||
-                lhs.width_bits() != rhs.width_bits()) {
-                error::raise(error::Stage::Elaboration,
-                             error::Kind::LayoutMismatch,
-                             "StateSet",
-                             "layout mismatch on " + lhs.name());
-            }
-            lhs.copy_value_from(rhs);
-        }
-    }
+    // 恢复当前目录中全部单状态值。
+    void restore(const Snapshot& snapshot);
 
   private:
     // 按名字查找一个状态；找不到时报错。
@@ -570,9 +567,22 @@ class StateSet {
         }
     }
 
+    // 由当前目录直接拥有的状态对象。
+    std::vector<std::unique_ptr<StateBase>> owned_states_;
+
     // 当前目录内持有的全部单状态句柄。
     std::vector<std::unique_ptr<StateHandleBase>> entries_;
 };
+
+template <typename T>
+inline State<T>::State(StateSet& state_set,
+                       std::string name,
+                       std::string description,
+                       T initial_value,
+                       std::size_t width_bits)
+    : State(std::move(name), std::move(description), std::move(initial_value), width_bits) {
+    state_set.register_state(*this);
+}
 
 }  // namespace project_xs::sim
 
