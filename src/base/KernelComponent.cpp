@@ -204,7 +204,7 @@ void KernelComponent::restore_checkpoint(const std::string& path) {
 }
 
 void KernelComponent::set_snapshot_capture_directory(std::string directory) {
-    snapshot_capture_root_directory_ = std::move(directory);
+    snapshot_capture_root_directory_ = normalize_snapshot_capture_directory(directory);
 }
 
 void KernelComponent::start_snapshot_capture(SnapshotCaptureMode mode) {

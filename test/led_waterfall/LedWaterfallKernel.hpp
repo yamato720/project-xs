@@ -39,10 +39,14 @@ class CounterComponent final : public project_xs::sim::KernelComponent {
   public:
     explicit CounterComponent(std::uint32_t cnt_max)
         : project_xs::sim::KernelComponent("counter") {
-        create_state<bool>("rst_n", "异步低有效复位输入", false);
-        create_state<bool>("wrap_pulse", "计数回卷脉冲输出", false);
-        create_state<std::uint32_t>("count", "当前计数值", 0, 25);
-        create_state<std::uint32_t>("cnt_max", "计数上限配置", cnt_max, 25);
+        set_description("流水灯分频计数组件；对应 Verilog 内部 cnt 寄存器和 cnt==CNT_MAX-1 的回卷判断");
+        add_name_alias("cnt_block");
+        add_name_alias("verilog_cnt");
+
+        create_state<bool>("rst_n", "来自外部环境的低有效复位；0 时清零 count 并取消 wrap_pulse", false);
+        create_state<bool>("wrap_pulse", "count 到达 cnt_max-1 时产生的一拍脉冲；驱动 led_shift 更新 LED", false);
+        create_state<std::uint32_t>("count", "当前分频计数值；对应 Verilog reg [24:0] cnt", 0, 25);
+        create_state<std::uint32_t>("cnt_max", "计数回卷阈值；测试中设为 4，对应 Verilator 参数 CNT_MAX=4", cnt_max, 25);
         if (state<std::uint32_t>("cnt_max").value() == 0) {
             project_xs::sim::error::raise(
                 project_xs::sim::error::Stage::Elaboration,
@@ -51,9 +55,9 @@ class CounterComponent final : public project_xs::sim::KernelComponent {
                 "cnt_max must be > 0");
         }
 
-        ports().add_input(state<bool>("rst_n").make_wire_input_port());
-        ports().add_output(state<bool>("wrap_pulse").make_wire_output_port());
-        ports().add_output(state<std::uint32_t>("count").make_wire_output_port());
+        ports().add_input(state<bool>("rst_n").make_wire_input_port("rst_n"));
+        ports().add_output(state<bool>("wrap_pulse").make_wire_output_port("wrap_pulse"));
+        ports().add_output(state<std::uint32_t>("count").make_wire_output_port("cnt"));
 
     }
     std::uint32_t cnt_max() const { return state<std::uint32_t>("cnt_max").value(); }
@@ -97,13 +101,17 @@ class LedShiftComponent final : public project_xs::sim::KernelComponent {
   public:
     LedShiftComponent()
         : project_xs::sim::KernelComponent("led_shift") {
-        create_state<bool>("rst_n", "异步低有效复位输入", false);
-        create_state<bool>("wrap_pulse", "来自计数器的回卷脉冲", false);
-        create_state<std::uint8_t>("led", "当前 LED 模式输出", std::uint8_t{0x01}, 8);
+        set_description("流水灯移位组件；对应 Verilog 中 led 寄存器在 wrap 时左移或回到 0x01 的逻辑");
+        add_name_alias("led_block");
+        add_name_alias("verilog_led");
 
-        ports().add_input(state<bool>("rst_n").make_wire_input_port());
-        ports().add_input(state<bool>("wrap_pulse").make_wire_input_port());
-        ports().add_output(state<std::uint8_t>("led").make_wire_output_port());
+        create_state<bool>("rst_n", "来自外部环境的低有效复位；0 时 led 强制为 0x01", false);
+        create_state<bool>("wrap_pulse", "来自 counter 的一拍回卷脉冲；为 1 时 led 左移", false);
+        create_state<std::uint8_t>("led", "当前 LED 8 位显示模式；对应 Verilog output reg [7:0] led", std::uint8_t{0x01}, 8);
+
+        ports().add_input(state<bool>("rst_n").make_wire_input_port("rst_n"));
+        ports().add_input(state<bool>("wrap_pulse").make_wire_input_port("wrap_pulse"));
+        ports().add_output(state<std::uint8_t>("led").make_wire_output_port("led"));
 
     }
 
@@ -156,8 +164,12 @@ class LedWaterfallKernel final : public project_xs::sim::Kernel {
                 "requires prebuilt counter and led_shift components");
         }
 
-        create_state<std::uint8_t>("led", "顶层对外 LED 输出", std::uint8_t{0x01}, 8);
-        ports().add_output(state<std::uint8_t>("led").make_wire_output_port());
+        set_description("流水灯顶层 kernel；组合 counter 和 led_shift，行为用于对照 test/led_waterfall/verilator_sim 的 Verilog/VCD");
+        add_name_alias("led_waterfall_top");
+        add_name_alias("verilog_led_waterfall");
+
+        create_state<std::uint8_t>("led", "顶层对外 LED 输出；从 led_shift.led 汇总得到，对照 Verilog 顶层 led", std::uint8_t{0x01}, 8);
+        ports().add_output(state<std::uint8_t>("led").make_wire_output_port("led"));
 
         require_component("counter");
         require_component("led_shift");

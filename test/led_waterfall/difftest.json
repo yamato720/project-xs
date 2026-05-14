@@ -1,0 +1,26 @@
+{
+  "name": "led_waterfall session-vs-verilator",
+  "xs_trace_root": "trace/simulation_session_session",
+  "xs_waveform": "waveform.jsonl",
+  "verilog_samples": "verilator_sim/samples.jsonl",
+  "simulator": "led_waterfall_simulator",
+  "cycle_offset": 1,
+  "signals": [
+    {
+      "verilog": "rst_n",
+      "xs": "led_waterfall_simulator.cycle_simulator_ports.output.rst_n"
+    },
+    {
+      "verilog": "cnt",
+      "xs": "led_waterfall_simulator.led_waterfall.counter.counter_ports.output.cnt"
+    },
+    {
+      "verilog": "wrap_pulse",
+      "xs": "led_waterfall_simulator.led_waterfall.counter.counter_ports.output.wrap_pulse"
+    },
+    {
+      "verilog": "led",
+      "xs": "led_waterfall_simulator.led_waterfall.led_waterfall_ports.output.led"
+    }
+  ]
+}

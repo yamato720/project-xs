@@ -39,12 +39,12 @@ DATASET_DIR ?= $(ROOT_DIR)/data/generated/cgsolver/n$(SIZE)
 
 TEST_GOALS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
-ifneq ($(filter test,$(MAKECMDGOALS)),)
+ifneq ($(filter test test-clean,$(MAKECMDGOALS)),)
 $(foreach goal,$(TEST_GOALS),$(eval .PHONY: $(goal)))
 $(foreach goal,$(TEST_GOALS),$(eval $(goal): ; @:))
 endif
 
-.PHONY: all build generate run run-cycle-sim render-xplus-hls-example test clean
+.PHONY: all build generate run run-cycle-sim render-xplus-hls-example test test-clean test-all test-all-clean clean
 
 all: run
 
@@ -80,8 +80,67 @@ test:
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(INCLUDE_DIR) \
 		$(TEST_ROOT_DIR)/$$test_name/main.cpp \
 		$(PORT_SRC) $(PORT_GROUP_SRC) $(AXI_SRC) $(ERROR_SRC) $(RUNTIME_TRACE_SRC) $(SIM_SRC) $(SESSION_SRC) $(KERNEL_SRC) $(KERNEL_COMPONENT_SRC) \
-		-o $(TEST_BUILD_DIR)/$$test_name && \
-	$(TEST_BUILD_DIR)/$$test_name
+		-o $(TEST_BUILD_DIR)/$$test_name || exit $$?; \
+	$(TEST_BUILD_DIR)/$$test_name || exit $$?; \
+	if [ -f "$(TEST_ROOT_DIR)/$$test_name/verilator_sim/Makefile" ]; then \
+		echo "==> Running Verilator test '$$test_name'"; \
+		$(MAKE) --no-print-directory -C "$(TEST_ROOT_DIR)/$$test_name/verilator_sim" || exit $$?; \
+	fi; \
+	if [ -f "$(TEST_ROOT_DIR)/$$test_name/difftest.json" ]; then \
+		echo "==> Running Verilator/XS difftest '$$test_name'"; \
+		$(PYTHON) "$(ROOT_DIR)/script/difftest_verilator_session.py" "$(TEST_ROOT_DIR)/$$test_name/difftest.json" || exit $$?; \
+	fi
+
+test-clean:
+	@test_name="$(word 2,$(MAKECMDGOALS))"; \
+	if [ -z "$$test_name" ]; then \
+		echo "Usage: make test-clean <test_name>"; \
+		echo "Available tests: $(TEST_NAMES)"; \
+		exit 1; \
+	fi; \
+	if [ "$(words $(MAKECMDGOALS))" -ne 2 ]; then \
+		echo "Usage: make test-clean <test_name>"; \
+		echo "Only one test name is supported at a time."; \
+		exit 1; \
+	fi; \
+	case " $(TEST_NAMES) " in \
+		*" $$test_name "*) ;; \
+		*) \
+			echo "Unknown test: $$test_name"; \
+			echo "Available tests: $(TEST_NAMES)"; \
+			exit 1; \
+			;; \
+	esac; \
+	echo "Cleaning trace artifacts for test '$$test_name'"; \
+	rm -rf "$(TEST_ROOT_DIR)/$$test_name/trace"; \
+	if [ -f "$(TEST_ROOT_DIR)/$$test_name/verilator_sim/Makefile" ]; then \
+		echo "Cleaning Verilator artifacts for test '$$test_name'"; \
+		$(MAKE) --no-print-directory -C "$(TEST_ROOT_DIR)/$$test_name/verilator_sim" clean; \
+	fi
+
+test-all:
+	@if [ -z "$(TEST_NAMES)" ]; then \
+		echo "No tests found under $(TEST_ROOT_DIR)"; \
+		exit 1; \
+	fi; \
+	for test_name in $(TEST_NAMES); do \
+		echo "==> Running test '$$test_name'"; \
+		$(MAKE) --no-print-directory test "$$test_name" || exit $$?; \
+	done
+
+test-all-clean:
+	@if [ -z "$(TEST_NAMES)" ]; then \
+		echo "No tests found under $(TEST_ROOT_DIR)"; \
+		exit 1; \
+	fi; \
+	for test_name in $(TEST_NAMES); do \
+		echo "==> Cleaning trace artifacts for test '$$test_name'"; \
+		rm -rf "$(TEST_ROOT_DIR)/$$test_name/trace"; \
+		if [ -f "$(TEST_ROOT_DIR)/$$test_name/verilator_sim/Makefile" ]; then \
+			echo "==> Cleaning Verilator artifacts for test '$$test_name'"; \
+			$(MAKE) --no-print-directory -C "$(TEST_ROOT_DIR)/$$test_name/verilator_sim" clean || exit $$?; \
+		fi; \
+	done
 
 run-cycle-sim:
 	@$(MAKE) test abctest
@@ -91,6 +150,12 @@ render-xplus-hls-example:
 
 clean:
 	rm -rf $(BUILD_DIR)
+	@for test_name in $(TEST_NAMES); do \
+		if [ -f "$(TEST_ROOT_DIR)/$$test_name/verilator_sim/Makefile" ]; then \
+			echo "Cleaning Verilator artifacts for test '$$test_name'"; \
+			$(MAKE) --no-print-directory -C "$(TEST_ROOT_DIR)/$$test_name/verilator_sim" clean || exit $$?; \
+		fi; \
+	done
 
 $(TARGET): $(GOLDEN_MAIN_SRC) $(PORT_SRC) $(PORT_GROUP_SRC) $(AXI_SRC) $(ERROR_SRC) $(RUNTIME_TRACE_SRC) $(SIM_SRC) $(SESSION_SRC) $(KERNEL_SRC) $(KERNEL_COMPONENT_SRC) $(GOLDEN_SOLVER_SRC) $(GOLDEN_DATASET_SRC) $(BASE_INCLUDE_DIR)/CycleSimulator.h $(BASE_INCLUDE_DIR)/SimulationSession.h $(BASE_INCLUDE_DIR)/Kernel.h $(BASE_INCLUDE_DIR)/KernelComponent.h $(BASE_INCLUDE_DIR)/Port.h $(BASE_INCLUDE_DIR)/PortGroup.h $(BASE_INCLUDE_DIR)/RuntimeTrace.h $(BASE_INCLUDE_DIR)/Axi.h $(BASE_INCLUDE_DIR)/Error.h | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(INCLUDE_DIR) $(GOLDEN_MAIN_SRC) $(PORT_SRC) $(PORT_GROUP_SRC) $(AXI_SRC) $(ERROR_SRC) $(RUNTIME_TRACE_SRC) $(SIM_SRC) $(SESSION_SRC) $(KERNEL_SRC) $(KERNEL_COMPONENT_SRC) -o $(TARGET)

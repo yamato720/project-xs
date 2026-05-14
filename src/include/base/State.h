@@ -200,13 +200,15 @@ class StateBase {
     template <typename PortT>
     std::shared_ptr<PortT> make_port(PortDirection direction, std::string port_name) const {
         const std::string final_name = port_name.empty() ? name_ : port_name;
-        return std::shared_ptr<PortT>(new PortT(
+        auto port = std::shared_ptr<PortT>(new PortT(
             final_name,
             direction,
             width_bits_,
             *type_info_,
             data_size_,
             const_cast<void*>(value_ptr())));
+        port->set_bound_state_path(name_);
+        return port;
     }
 
   private:

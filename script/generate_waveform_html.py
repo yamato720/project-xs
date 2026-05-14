@@ -65,6 +65,14 @@ def normalize_options_path(raw_options: Any, path: List[str]) -> List[List[str]]
     return options_path[:len(path)]
 
 
+def preferred_display_name(path_item: str, options: List[str]) -> str:
+    if path_item == "input" and "输入" in options:
+        return "输入"
+    if path_item == "output" and "输出" in options:
+        return "输出"
+    return options[0] if options else path_item
+
+
 def normalize_description_path(raw_descriptions: Any, path: List[str]) -> List[str]:
     descriptions = normalize_string_list(raw_descriptions)
     while len(descriptions) < len(path):
@@ -194,11 +202,14 @@ def normalize_trace(manifest: Dict[str, Any], frames: List[Dict[str, Any]]) -> D
                     path = label.split(".")
                 display_name = path[-1] if path else str(signal.get("name", ""))
                 options_path = normalize_options_path(signal.get("name_options_path"), path)
+                if path:
+                    display_name = preferred_display_name(path[-1], options_path[-1])
                 description_path = normalize_description_path(
                     signal.get("description_path"),
                     path,
                 )
                 timing_path = normalize_timing_path(signal, path)
+                const_kind = str(signal.get("kind", ""))
                 signal_meta[key] = {
                     "key": key,
                     "label": label,
@@ -209,10 +220,11 @@ def normalize_trace(manifest: Dict[str, Any], frames: List[Dict[str, Any]]) -> D
                     "display_name": display_name,
                     "scope": signal.get("scope", ""),
                     "name": signal.get("name", ""),
-                    "kind": signal.get("kind", ""),
+                    "kind": const_kind,
                     "type": signal.get("type", ""),
                     "width_bits": signal.get("width_bits", 0),
                     "simulator": simulator_name,
+                    "draw_style": "bus" if const_kind == "RuntimeCycle" else "auto",
                 }
                 signal_order.append(key)
 
@@ -260,7 +272,7 @@ HTML_TEMPLATE = r"""<!doctype html>
       --text: #d8dee9;
       --muted: #8b96a5;
       --green: #6bd17a;
-      --yellow: #d7c761;
+      --yellow: #9eb3c7;
       --red: #e06c75;
       --blue: #65a7e8;
       --orange: #d99a5f;
@@ -340,9 +352,15 @@ HTML_TEMPLATE = r"""<!doctype html>
       position: relative;
       overflow: hidden;
     }
+    .content.left-collapsed {
+      grid-template-columns: 0 0 minmax(0, 1fr);
+    }
+    .content.left-collapsed .wave-wrap {
+      grid-column: 3;
+    }
     .left {
       display: grid;
-      grid-template-rows: 30px 1fr;
+      grid-template-rows: 30px auto minmax(0, 1fr);
       min-width: 0;
       width: 100%;
       background: var(--panel);
@@ -350,11 +368,19 @@ HTML_TEMPLATE = r"""<!doctype html>
       position: relative;
       overflow: hidden;
     }
+    .content.left-collapsed .left {
+      border-right: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
     .splitter {
       width: 5px;
       background: #11151a;
       cursor: col-resize;
       z-index: 10;
+    }
+    .content.left-collapsed .splitter {
+      display: none;
     }
     .splitter:hover { background: var(--blue); opacity: .35; }
     .left-head {
@@ -366,8 +392,31 @@ HTML_TEMPLATE = r"""<!doctype html>
       background: var(--panel2);
       min-width: 0;
     }
-    .head-name { padding-left: 8px; }
+    .head-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-left: 6px;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
     .head-value { padding-left: 8px; }
+    .pane-toggle {
+      width: 42px;
+      height: 20px;
+      padding: 0;
+    }
+    .left-expander {
+      position: absolute;
+      left: 8px;
+      top: 6px;
+      z-index: 20;
+      display: none;
+    }
+    .content.left-collapsed .left-expander {
+      display: block;
+    }
     .value-splitter {
       width: 7px;
       align-self: stretch;
@@ -375,6 +424,15 @@ HTML_TEMPLATE = r"""<!doctype html>
       border-right: 1px solid #11151a;
       cursor: col-resize;
       background: #15191f;
+    }
+    .cycle-list {
+      overflow: hidden;
+      min-height: 0;
+      background: var(--panel);
+      box-shadow: inset 0 -1px 0 var(--line);
+    }
+    .cycle-list:empty {
+      box-shadow: none;
     }
     .signal-list { overflow: auto; min-height: 0; }
     .row {
@@ -422,31 +480,42 @@ HTML_TEMPLATE = r"""<!doctype html>
     .kind { color: var(--muted); font-weight: 400; }
     .wave-wrap {
       display: grid;
-      grid-template-rows: 30px 1fr;
+      grid-template-rows: 30px auto minmax(0, 1fr);
       min-width: 0;
       min-height: 0;
       overflow: hidden;
       background: #090b0e;
       position: relative;
     }
-    .ruler {
-      position: relative;
-      overflow: hidden;
+    .wave-head {
       border-bottom: 1px solid var(--line);
-      background: #11161b;
+      background: #090b0e;
+    }
+    .cycle-wave {
+      overflow: hidden;
+      min-height: 0;
+      background: #090b0e;
+      position: relative;
+      box-shadow: inset 0 -1px 0 var(--line);
+    }
+    .cycle-wave:empty {
+      box-shadow: none;
+    }
+    .cycle-wave canvas {
+      transform-origin: 0 0;
     }
     .scroll {
       overflow: auto;
       min-width: 0;
       min-height: 0;
       position: relative;
-      scrollbar-gutter: stable both-edges;
     }
     canvas { display: block; image-rendering: crisp-edges; }
     .cursor-line {
       position: absolute;
+      left: 0;
       top: 0;
-      bottom: 0;
+      height: 100%;
       width: 1px;
       background: var(--red);
       pointer-events: none;
@@ -528,6 +597,8 @@ HTML_TEMPLATE = r"""<!doctype html>
     <button id="zoomIn">放大</button>
     <button id="zoomOut">缩小</button>
     <button id="fit">适配</button>
+    <button id="prevChange">上个变化</button>
+    <button id="nextChange">下个变化</button>
     <button id="hideSelected">隐藏选中</button>
     <button id="showAll">全部显示</button>
     <label>搜索 <input id="search" type="search" placeholder="scope 或信号名"></label>
@@ -535,14 +606,16 @@ HTML_TEMPLATE = r"""<!doctype html>
   </div>
   <div class="content" id="content">
     <section class="left" id="leftPane">
-      <div class="left-head" id="leftHead"><span class="head-name">信号</span><span class="value-splitter" id="valueSplitter"></span><span class="head-value">当前值</span></div>
+      <div class="left-head" id="leftHead"><span class="head-name"><button id="toggleLeftPane" class="pane-toggle" title="收起信号列表">收起</button><span>信号</span></span><span class="value-splitter" id="valueSplitter"></span><span class="head-value">当前值</span></div>
+      <div id="cycleList" class="cycle-list"></div>
       <div id="signalList" class="signal-list"></div>
     </section>
     <div class="splitter" id="panelSplitter"></div>
+    <button id="leftPaneExpander" class="left-expander" title="展开信号列表">展开左侧</button>
     <section class="wave-wrap">
-      <div class="ruler"><canvas id="ruler"></canvas></div>
-      <div id="scroll" class="scroll"><canvas id="wave"></canvas></div>
-      <div id="cursorLine" class="cursor-line"></div>
+      <div class="wave-head"></div>
+      <div id="cycleWave" class="cycle-wave"><canvas id="cycleCanvas"></canvas><div id="cycleCursorLine" class="cursor-line"></div></div>
+      <div id="scroll" class="scroll"><canvas id="wave"></canvas><div id="waveCursorLine" class="cursor-line"></div></div>
     </section>
   </div>
   <div class="status" id="status"></div>
@@ -570,11 +643,13 @@ const frames = TRACE.frames;
 const rawSignals = TRACE.signals;
 let px = 42;
 const lane = 22;
-let cursor = Math.max(0, frames.length - 1);
+let cursorX = Math.max(0, frames.length - 1) * px;
 let panelWidth = 0;
 let panelRatio = 0;
 let nameWidth = 0;
 let valueWidth = 0;
+let leftPaneCollapsed = false;
+let leftPaneRestoreState = null;
 let selected = new Set();
 let selectedValues = new Set();
 let nameOptionIndices = new Map();
@@ -587,14 +662,19 @@ let dropAfter = false;
 let lastSelectedKey = null;
 
 const signalList = document.getElementById('signalList');
+const cycleList = document.getElementById('cycleList');
 const wave = document.getElementById('wave');
-const ruler = document.getElementById('ruler');
+const cycleWave = document.getElementById('cycleWave');
+const cycleCanvas = document.getElementById('cycleCanvas');
 const scroll = document.getElementById('scroll');
-const cursorLine = document.getElementById('cursorLine');
+const cycleCursorLine = document.getElementById('cycleCursorLine');
+const waveCursorLine = document.getElementById('waveCursorLine');
 const statusEl = document.getElementById('status');
 const summary = document.getElementById('summary');
 const content = document.getElementById('content');
 const leftPane = document.getElementById('leftPane');
+const toggleLeftPane = document.getElementById('toggleLeftPane');
+const leftPaneExpander = document.getElementById('leftPaneExpander');
 const menu = document.getElementById('menu');
 const nameMenu = document.getElementById('nameMenu');
 const radixMenu = document.getElementById('radixMenu');
@@ -651,8 +731,23 @@ function normalizeValueColumns() {
   }
 }
 
+function rememberLeftPaneState() {
+  leftPaneRestoreState = {
+    panelWidth: panelWidth || defaultPanelWidth(),
+    panelRatio,
+    nameWidth,
+    valueWidth,
+    signalScrollTop: signalList.scrollTop,
+    waveScrollTop: scroll.scrollTop,
+    waveScrollLeft: scroll.scrollLeft,
+  };
+}
+
 function waveContentWidth() {
   return Math.max(1, scroll.clientWidth, frames.length * px + 20);
+}
+function waveContentHeight(rows) {
+  return Math.max(scroll.clientHeight, rows.length * lane + 2);
 }
 
 function scheduleWaveRender() {
@@ -695,7 +790,7 @@ function kindLabel(kind) {
   return labels[kind] || kind || '层级';
 }
 
-function timingForNodeAt(node, frameIndex = cursor) {
+function timingForNodeAt(node, frameIndex = currentFrameIndex()) {
   if (!node) return null;
   if (node.type === 'signal') {
     const sampleTiming = frames[frameIndex]?.values?.[node.key]?.timing_path;
@@ -706,7 +801,7 @@ function timingForNodeAt(node, frameIndex = cursor) {
   return node.timing || null;
 }
 
-function parentTimingFor(node, frameIndex = cursor) {
+function parentTimingFor(node, frameIndex = currentFrameIndex()) {
   if (!node) return TRACE.root_timing || null;
   if (!node.parent || node.parent.key === 'group:root') return TRACE.root_timing || null;
   return timingForNodeAt(node.parent, frameIndex) || TRACE.root_timing || null;
@@ -743,6 +838,12 @@ function groupPathFor(sig) {
 function optionsFor(node) {
   if (!node) return [''];
   if (node.type === 'signal') {
+    if (node.signal.kind === 'RuntimeCycle') {
+      const parent = node.parent && node.parent.key !== 'group:root'
+        ? baseDisplayNameFor(node.parent)
+        : (node.signal.simulator || node.signal.scope || 'simulator');
+      return [`${parent}.cycle`];
+    }
     const last = node.signal.name_options_path?.[node.signal.name_options_path.length - 1] || [];
     return last.length ? last : [node.signal.display_name || node.signal.name || node.label];
   }
@@ -753,10 +854,14 @@ function defaultNameFor(node) {
   return optionsFor(node)[0] || '';
 }
 
-function displayNameFor(node) {
+function baseDisplayNameFor(node) {
   const options = optionsFor(node);
   const index = nameOptionIndices.get(node.key) || 0;
-  const name = options[Math.min(index, options.length - 1)] || defaultNameFor(node);
+  return options[Math.min(index, options.length - 1)] || defaultNameFor(node);
+}
+
+function displayNameFor(node) {
+  const name = baseDisplayNameFor(node);
   if (node.type === 'group') {
     const relation = timingRelationText(node);
     return relation ? `${name} (${relation})` : name;
@@ -785,9 +890,12 @@ function buildModel() {
       const key = `group:${accum}`;
       if (!groupMap.has(key)) {
         const nameOptions = sig.name_options_path?.[index] || [part];
+        const displayName = (part === 'input' && nameOptions.includes('输入')) ? '输入'
+          : (part === 'output' && nameOptions.includes('输出')) ? '输出'
+          : part;
         const description = sig.description_path?.[index] || '';
         const timing = sig.timing_path?.[index] || null;
-        const node = {key, type: 'group', name: part, originalName: part, nameOptions, description, timing, label: accum, depth: index + 1, children: [], parent};
+        const node = {key, type: 'group', name: displayName, originalName: part, nameOptions, description, timing, label: accum, depth: index + 1, children: [], parent};
         groupMap.set(key, node);
         parent.children.push(node);
       } else {
@@ -825,6 +933,7 @@ function formatInt(value, radix) {
 
 function radixFor(sig) { return signalRadix.get(sig.key) || 'auto'; }
 function valueAt(sig, index) {
+  index = clampFrameIndex(index);
   const item = frames[index]?.values?.[sig.key];
   if (!item) return '';
   if (!item.valid) return 'z';
@@ -837,7 +946,67 @@ function rawValueAt(sig, index) {
   if (!item) return '';
   return item.valid ? item.value : 'z';
 }
+function changeIndicesForSignal(sig) {
+  const indices = [0];
+  let previous = rawValueAt(sig, 0);
+  for (let index = 1; index < frames.length; ++index) {
+    const current = rawValueAt(sig, index);
+    if (current !== previous) {
+      indices.push(index);
+      previous = current;
+    }
+  }
+  return indices;
+}
+function collectChangeSignalNodes(node, out = []) {
+  if (!node) return out;
+  if (node.type === 'signal') {
+    out.push(node);
+    return out;
+  }
+  for (const child of node.children || []) collectChangeSignalNodes(child, out);
+  return out;
+}
+function selectedChangeNodes() {
+  const nodes = [...selected].map(key => findNode(key)).filter(Boolean);
+  if (!nodes.length) return visibleRows().filter(node => node.type === 'signal');
+  const out = [];
+  for (const node of nodes) collectChangeSignalNodes(node, out);
+  return out;
+}
+function changeIndicesForNodes(nodes) {
+  const indices = new Set();
+  for (const node of nodes) {
+    for (const signalNode of collectChangeSignalNodes(node)) {
+      for (const index of changeIndicesForSignal(signalNode.signal)) indices.add(index);
+    }
+  }
+  return [...indices].sort((a, b) => a - b);
+}
+function snapXForSignal(sig, x) {
+  if (!sig) return x;
+  const snapDistance = Math.max(5, Math.min(14, px * 0.35));
+  let bestX = x;
+  let bestDistance = snapDistance + 1;
+  for (const index of changeIndicesForSignal(sig)) {
+    const candidateX = index * px;
+    const distance = Math.abs(candidateX - x);
+    if (distance <= snapDistance && distance < bestDistance) {
+      bestX = candidateX;
+      bestDistance = distance;
+    }
+  }
+  return bestX;
+}
 function isBit(value) { return value === '0' || value === '1'; }
+function isSingleBitSignal(sig) {
+  if (Number(sig.width_bits) === 1) return true;
+  const type = String(sig.type || '').toLowerCase();
+  return type === 'bool' || type === 'boolean' || type === 'bit';
+}
+function drawsAsBit(sig, value) {
+  return sig.draw_style !== 'bus' && isSingleBitSignal(sig) && isBit(value);
+}
 function isDescendantGroup(node, groupKey) {
   let cur = node.parent;
   while (cur) { if (cur.key === groupKey) return true; cur = cur.parent; }
@@ -850,23 +1019,42 @@ function flatten(nodes = root.children, out = []) {
   }
   return out;
 }
-function visibleRows() {
+function matchesQuery(node, query) {
+  if (!query) return true;
+  return displayNameFor(node).toLowerCase().includes(query) ||
+         node.label.toLowerCase().includes(query) ||
+         (node.signal?.kind || '').toLowerCase().includes(query);
+}
+function isRuntimeCycleNode(node) {
+  return node?.type === 'signal' && node.signal?.kind === 'RuntimeCycle';
+}
+function filteredRows() {
   const query = document.getElementById('search').value.trim().toLowerCase();
   return flatten().filter(node => {
     if (node.type === 'signal' && hidden.has(node.key)) return false;
-    if (!query) return true;
-    return displayNameFor(node).toLowerCase().includes(query) ||
-           node.label.toLowerCase().includes(query) ||
-           (node.signal?.kind || '').toLowerCase().includes(query);
+    return matchesQuery(node, query);
   });
 }
+function cycleRows() {
+  return filteredRows().filter(isRuntimeCycleNode);
+}
+function visibleRows() {
+  return filteredRows().filter(node => !isRuntimeCycleNode(node));
+}
 function applyGridColumns() {
+  if (leftPaneCollapsed) return;
   normalizeValueColumns();
   const template = `${nameWidth}px 7px ${valueWidth}px`;
   document.getElementById('leftHead').style.gridTemplateColumns = template;
+  Array.from(cycleList.children).forEach(row => row.style.gridTemplateColumns = template);
   Array.from(signalList.children).forEach(row => row.style.gridTemplateColumns = template);
 }
 function updateContentColumns(width, rememberRatio = true) {
+  if (leftPaneCollapsed) {
+    content.style.gridTemplateColumns = '0 0 minmax(0, 1fr)';
+    scheduleWaveRender();
+    return;
+  }
   panelWidth = normalizePanelWidth(width);
   const total = contentWidth();
   if (rememberRatio && total > 0) {
@@ -879,6 +1067,11 @@ function updateContentColumns(width, rememberRatio = true) {
   scheduleWaveRender();
 }
 function autoLayout() {
+  if (leftPaneCollapsed) {
+    content.style.gridTemplateColumns = '0 0 minmax(0, 1fr)';
+    scheduleWaveRender();
+    return;
+  }
   const total = contentWidth();
   const target = panelRatio && total > 0 ? Math.round(total * panelRatio) : defaultPanelWidth();
   updateContentColumns(target, false);
@@ -890,10 +1083,45 @@ function scheduleAutoLayout() {
     autoLayout();
   });
 }
-function renderList() {
-  const rows = visibleRows();
-  signalList.textContent = '';
-  for (const node of rows) {
+function setLeftPaneCollapsed(collapsedState) {
+  if (collapsedState === leftPaneCollapsed) return;
+  if (collapsedState) {
+    rememberLeftPaneState();
+    leftPaneCollapsed = true;
+    content.classList.add('left-collapsed');
+    content.style.gridTemplateColumns = '0 0 minmax(0, 1fr)';
+    document.querySelector('.wave-wrap').style.gridColumn = '3';
+    toggleLeftPane.textContent = '展开';
+    toggleLeftPane.title = '展开信号列表';
+    toggleLeftPane.classList.add('active');
+    scheduleWaveRender();
+    return;
+  }
+
+  const restore = leftPaneRestoreState;
+  leftPaneCollapsed = false;
+  content.classList.remove('left-collapsed');
+  toggleLeftPane.textContent = '收起';
+  toggleLeftPane.title = '收起信号列表';
+  toggleLeftPane.classList.remove('active');
+  if (restore) {
+    panelWidth = restore.panelWidth || defaultPanelWidth();
+    panelRatio = restore.panelRatio || 0;
+    nameWidth = restore.nameWidth || 0;
+    valueWidth = restore.valueWidth || 0;
+    updateContentColumns(panelWidth, false);
+    document.querySelector('.wave-wrap').style.gridColumn = '';
+    signalList.scrollTop = restore.signalScrollTop || 0;
+    scroll.scrollTop = restore.waveScrollTop || 0;
+    scroll.scrollLeft = restore.waveScrollLeft || 0;
+  } else {
+    document.querySelector('.wave-wrap').style.gridColumn = '';
+    autoLayout();
+  }
+  renderAll();
+}
+function createListRow(node) {
+    const frameIndex = currentFrameIndex();
     const row = document.createElement('div');
     row.className = `row ${node.type}`;
     row.dataset.key = node.key;
@@ -915,7 +1143,7 @@ function renderList() {
     const value = document.createElement('div');
     value.className = 'value-cell';
     if (node.type === 'signal') {
-      value.textContent = valueAt(node.signal, cursor);
+      value.textContent = valueAt(node.signal, frameIndex);
       value.title = `点击切换进制：${radixLabel(radixFor(node.signal))}`;
       if (selectedValues.has(node.key)) value.classList.add('selected-value');
     } else {
@@ -930,7 +1158,16 @@ function renderList() {
     row.addEventListener('dragover', (event) => onDragOver(event, node, row));
     row.addEventListener('dragleave', () => row.classList.remove('drop-before', 'drop-after'));
     row.addEventListener('drop', (event) => onDrop(event, node));
-    signalList.appendChild(row);
+    return row;
+}
+function renderList() {
+  cycleList.textContent = '';
+  for (const node of cycleRows()) {
+    cycleList.appendChild(createListRow(node));
+  }
+  signalList.textContent = '';
+  for (const node of visibleRows()) {
+    signalList.appendChild(createListRow(node));
   }
   applyGridColumns();
 }
@@ -958,7 +1195,7 @@ function onRowClick(event, node) {
 }
 
 function selectNode(event, node) {
-  const rows = visibleRows();
+  const rows = [...cycleRows(), ...visibleRows()];
   const rowKeys = rows.map(row => row.key);
   if (event.shiftKey && lastSelectedKey && rowKeys.includes(lastSelectedKey)) {
     if (!event.ctrlKey && !event.metaKey) {
@@ -1154,17 +1391,6 @@ function onDrop(event, targetNode) {
   dragKey = null; dropTarget = null;
   renderAll();
 }
-function drawRuler() {
-  const width = waveContentWidth();
-  const ctx = sizeCanvas(ruler, width, 30);
-  ctx.fillStyle = '#11161b'; ctx.fillRect(0, 0, width, 30);
-  ctx.strokeStyle = '#343b46'; ctx.fillStyle = '#8b96a5'; ctx.font = '12px ui-monospace, monospace';
-  for (let i = 0; i < frames.length; i++) {
-    const x = i * px + 0.5;
-    ctx.beginPath(); ctx.moveTo(x, 18); ctx.lineTo(x, 30); ctx.stroke();
-    if (px >= 28 || i % Math.ceil(28 / px) === 0) ctx.fillText(String(frames[i].sequence ?? i), x + 3, 13);
-  }
-}
 function sizeCanvas(canvas, w, h) {
   const ratio = window.devicePixelRatio || 1;
   canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
@@ -1176,13 +1402,13 @@ function drawBit(ctx, y, start, end, value) {
   ctx.strokeStyle = '#6bd17a'; ctx.beginPath(); ctx.moveTo(start, yy); ctx.lineTo(end, yy); ctx.stroke();
 }
 function drawBus(ctx, y, start, end, value, invalid) {
-  ctx.strokeStyle = invalid ? '#6b7280' : '#d7c761'; ctx.fillStyle = invalid ? '#6b7280' : '#d7c761';
+  ctx.strokeStyle = invalid ? '#6b7280' : '#9eb3c7'; ctx.fillStyle = invalid ? '#6b7280' : '#9eb3c7';
   const top = y + 5, bottom = y + lane - 5; ctx.strokeRect(start + 1, top, Math.max(2, end - start - 2), bottom - top);
   if (end - start > 24) ctx.fillText(value || ' ', start + 5, y + 15);
 }
-function drawSignal(ctx, sig, rowIndex) {
+function drawSignal(ctx, sig, rowIndex, selectedRow = false) {
   const y = rowIndex * lane;
-  ctx.fillStyle = rowIndex % 2 ? '#0e1114' : '#090b0e'; ctx.fillRect(0, y, waveContentWidth(), lane);
+  ctx.fillStyle = selectedRow ? '#15283a' : (rowIndex % 2 ? '#0e1114' : '#090b0e'); ctx.fillRect(0, y, waveContentWidth(), lane);
   ctx.strokeStyle = '#242a32'; ctx.beginPath(); ctx.moveTo(0, y + lane - .5); ctx.lineTo(frames.length * px, y + lane - .5); ctx.stroke();
   let segmentStart = 0; let previous = rawValueAt(sig, 0);
   for (let i = 1; i <= frames.length; i++) {
@@ -1191,23 +1417,22 @@ function drawSignal(ctx, sig, rowIndex) {
       const x0 = segmentStart * px, x1 = i * px;
       const radix = radixFor(sig);
       const formatted = radix === 'auto' ? previous : formatInt(previous, radix);
-      if (isBit(previous)) drawBit(ctx, y, x0, x1, previous); else drawBus(ctx, y, x0, x1, formatted, previous === 'z' || previous === '');
+      if (drawsAsBit(sig, previous)) drawBit(ctx, y, x0, x1, previous); else drawBus(ctx, y, x0, x1, formatted, previous === 'z' || previous === '');
       if (i < frames.length) { ctx.strokeStyle = '#4b5563'; ctx.beginPath(); ctx.moveTo(i * px, y + 4); ctx.lineTo(i * px, y + lane - 4); ctx.stroke(); }
       segmentStart = i; previous = current;
     }
   }
 }
-function renderWave() {
-  const rows = visibleRows();
+function drawWaveRows(canvas, rows, viewportHeight) {
   const width = waveContentWidth();
-  const height = Math.max(scroll.clientHeight, rows.length * lane + 2);
-  const ctx = sizeCanvas(wave, width, height);
+  const height = Math.max(viewportHeight, rows.length * lane + 2);
+  const ctx = sizeCanvas(canvas, width, height);
   ctx.fillStyle = '#090b0e'; ctx.fillRect(0, 0, width, height); ctx.font = '12px ui-monospace, monospace';
   rows.forEach((node, row) => {
-    if (node.type === 'signal') drawSignal(ctx, node.signal, row);
+    if (node.type === 'signal') drawSignal(ctx, node.signal, row, selected.has(node.key));
     else {
       const y = row * lane;
-      ctx.fillStyle = '#11161b';
+      ctx.fillStyle = selected.has(node.key) ? '#26384b' : '#11161b';
       ctx.fillRect(0, y, width, lane);
       ctx.strokeStyle = '#242a32';
       ctx.beginPath();
@@ -1216,30 +1441,133 @@ function renderWave() {
       ctx.stroke();
     }
   });
-  drawRuler(); updateCursorLine(); updateStatus();
+}
+function renderWave() {
+  const rows = visibleRows();
+  const cycles = cycleRows();
+  const cycleHeight = cycles.length * lane;
+  const waveHeight = waveContentHeight(rows);
+  cycleList.style.height = `${cycleHeight}px`;
+  cycleWave.style.height = `${cycleHeight}px`;
+  drawWaveRows(cycleCanvas, cycles, cycleHeight);
+  drawWaveRows(wave, rows, waveHeight);
+  updateCycleWaveScroll();
+  updateCursorLine(); updateStatus();
 }
 function updateCursorLine() {
-  const x = cursor * px - scroll.scrollLeft;
-  cursorLine.style.transform = `translateX(${Math.round(x)}px)`;
+  const rows = visibleRows();
+  waveCursorLine.style.height = `${waveContentHeight(rows)}px`;
+  cycleCursorLine.style.height = `${Math.max(cycleWave.clientHeight, cycleRows().length * lane)}px`;
+  cycleCursorLine.style.transform = `translateX(${cursorX - scroll.scrollLeft}px)`;
+  waveCursorLine.style.transform = `translateX(${cursorX}px)`;
+}
+function updateCycleWaveScroll() {
+  cycleCanvas.style.transform = `translateX(${-scroll.scrollLeft}px)`;
 }
 function updateStatus() {
-  const frame = frames[cursor] || {};
+  const frameIndex = currentFrameIndex();
+  const frame = frames[frameIndex] || {};
   const rootTiming = frame.root_timing || TRACE.root_timing || {};
   const freq = formatHz(rootTiming.frequency_hz);
   const cycle = rootTiming.cycle ?? frame.cycle ?? '';
-  statusEl.textContent = `光标=${cursor} 序号=${frame.sequence ?? ''} 阶段=${frame.stage ?? ''} 顶层周期=${cycle} ${freq ? `顶层频率=${freq}` : ''} 时间=${frame.time_seconds ?? ''} 已选=${selected.size} 值选择=${selectedValues.size}`;
+  statusEl.textContent = `光标=${formatNumber(cursorFrameFloat(), 4)} 最近帧=${frameIndex} 序号=${frame.sequence ?? ''} 阶段=${frame.stage ?? ''} 顶层周期=${cycle} ${freq ? `顶层频率=${freq}` : ''} 时间=${frame.time_seconds ?? ''} 已选=${selected.size} 值选择=${selectedValues.size}`;
 }
 function renderAll() { renderList(); scheduleWaveRender(); }
-function setCursorFromClientX(clientX) {
+function clampFrameIndex(index) {
+  return Math.max(0, Math.min(frames.length - 1, index));
+}
+function maxCursorX() {
+  return Math.max(0, (frames.length - 1) * px);
+}
+function clampCursorX(x) {
+  return Math.max(0, Math.min(maxCursorX(), x));
+}
+function cursorFrameFloat() {
+  return px ? cursorX / px : 0;
+}
+function currentFrameIndex() {
+  return clampFrameIndex(Math.round(cursorFrameFloat()));
+}
+function wavePointFromClient(event) {
   const rect = scroll.getBoundingClientRect();
-  const x = clientX - rect.left + scroll.scrollLeft;
-  cursor = Math.max(0, Math.min(frames.length - 1, Math.round(x / px)));
+  return {
+    x: event.clientX - rect.left + scroll.scrollLeft,
+    y: event.clientY - rect.top + scroll.scrollTop,
+  };
+}
+function cyclePointFromClient(event) {
+  const rect = cycleWave.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left + scroll.scrollLeft,
+    y: event.clientY - rect.top,
+  };
+}
+function setCursorX(x) {
+  cursorX = clampCursorX(x);
   renderAll();
 }
-wave.addEventListener('click', event => setCursorFromClientX(event.clientX));
-ruler.addEventListener('click', event => setCursorFromClientX(event.clientX));
+function setCursorFrame(index) {
+  setCursorX(clampFrameIndex(index) * px);
+}
+function nodeFromWaveClientY(clientY) {
+  const rect = scroll.getBoundingClientRect();
+  const rowIndex = Math.floor((clientY - rect.top + scroll.scrollTop) / lane);
+  return visibleRows()[rowIndex] || null;
+}
+function revealCursor() {
+  const left = scroll.scrollLeft;
+  const right = left + scroll.clientWidth;
+  if (cursorX < left + 16) scroll.scrollLeft = Math.max(0, cursorX - 16);
+  else if (cursorX > right - 16) scroll.scrollLeft = Math.max(0, cursorX - scroll.clientWidth + 16);
+}
+function startCursorDrag(pointFromEvent, nodeFromEvent = null, snapOnClick = false) {
+  return event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const selectInitialNode = nodeFromEvent?.(event);
+    if (selectInitialNode) selectNode(event, selectInitialNode);
+    const startPoint = pointFromEvent(event);
+    const startNode = selectInitialNode;
+    let dragged = false;
+    const moveCursor = moveEvent => {
+      const point = pointFromEvent(moveEvent);
+      if (Math.abs(point.x - startPoint.x) > 3 || Math.abs(point.y - startPoint.y) > 3) {
+        dragged = true;
+      }
+      setCursorX(point.x);
+    };
+    const finish = () => {
+      if (!dragged && snapOnClick && startNode?.type === 'signal') {
+        setCursorX(snapXForSignal(startNode.signal, startPoint.x));
+      }
+      document.removeEventListener('mousemove', moveCursor);
+      document.removeEventListener('mouseup', finish);
+    };
+    moveCursor(event);
+    document.addEventListener('mousemove', moveCursor);
+    document.addEventListener('mouseup', finish);
+  };
+}
+function cycleNodeFromClientY(clientY) {
+  const point = {y: clientY - cycleWave.getBoundingClientRect().top};
+  return cycleRows()[Math.floor(point.y / lane)] || null;
+}
+function moveToChange(direction) {
+  const changes = changeIndicesForNodes(selectedChangeNodes());
+  if (!changes.length) return;
+  const current = cursorFrameFloat();
+  const epsilon = 1e-6;
+  const target = direction > 0
+    ? changes.find(index => index > current + epsilon)
+    : [...changes].reverse().find(index => index < current - epsilon);
+  if (target === undefined) return;
+  setCursorFrame(target);
+  revealCursor();
+}
+wave.addEventListener('mousedown', startCursorDrag(wavePointFromClient, event => nodeFromWaveClientY(event.clientY), true));
+cycleCanvas.addEventListener('mousedown', startCursorDrag(cyclePointFromClient, event => cycleNodeFromClientY(event.clientY), true));
 scroll.addEventListener('scroll', () => {
-  ruler.style.transform = `translateX(${-scroll.scrollLeft}px)`;
+  updateCycleWaveScroll();
   updateCursorLine();
   if (Math.abs(signalList.scrollTop - scroll.scrollTop) > 1) signalList.scrollTop = scroll.scrollTop;
 });
@@ -1251,21 +1579,37 @@ signalList.addEventListener('wheel', event => {
   if (event.shiftKey) scroll.scrollLeft += event.deltaY;
   event.preventDefault();
 }, {passive: false});
+cycleList.addEventListener('wheel', event => {
+  if (event.shiftKey) scroll.scrollLeft += event.deltaY;
+  else scroll.scrollTop += event.deltaY;
+  event.preventDefault();
+}, {passive: false});
 scroll.addEventListener('wheel', event => {
   if (event.shiftKey) {
     scroll.scrollLeft += event.deltaY;
     event.preventDefault();
   }
 }, {passive: false});
+cycleWave.addEventListener('wheel', event => {
+  if (event.shiftKey) scroll.scrollLeft += event.deltaY;
+  else scroll.scrollTop += event.deltaY;
+  event.preventDefault();
+}, {passive: false});
 document.getElementById('zoomIn').addEventListener('click', () => { px = Math.min(240, Math.round(px * 1.35)); scheduleWaveRender(); });
 document.getElementById('zoomOut').addEventListener('click', () => { px = Math.max(8, Math.round(px / 1.35)); scheduleWaveRender(); });
 document.getElementById('fit').addEventListener('click', () => { px = Math.max(8, Math.floor((scroll.clientWidth - 20) / Math.max(1, frames.length))); scheduleWaveRender(); });
+toggleLeftPane.addEventListener('click', () => setLeftPaneCollapsed(!leftPaneCollapsed));
+leftPaneExpander.addEventListener('click', () => setLeftPaneCollapsed(false));
+document.getElementById('prevChange').addEventListener('click', () => moveToChange(-1));
+document.getElementById('nextChange').addEventListener('click', () => moveToChange(1));
 document.getElementById('search').addEventListener('input', renderAll);
 function startDragResize(handler) { return event => { event.preventDefault(); const move = e => handler(e); const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); }; }
 document.getElementById('panelSplitter').addEventListener('mousedown', startDragResize(e => {
+  if (leftPaneCollapsed) return;
   updateContentColumns(e.clientX - content.getBoundingClientRect().left);
 }));
 document.getElementById('valueSplitter').addEventListener('mousedown', startDragResize(e => {
+  if (leftPaneCollapsed) return;
   const left = leftPane.getBoundingClientRect().left;
   const available = panelWidth || leftPane.clientWidth;
   const compact = available < 220;

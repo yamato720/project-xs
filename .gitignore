@@ -7,4 +7,11 @@ __pycache__/
 *.pyc
 build/
 *.o
-snapshot_traces/
+
+# Snapshot/waveform artifacts use the same trace directory name under tests.
+trace/
+
+# Verilator artifacts for any test/<name>/verilator_sim directory.
+test/**/verilator_sim/obj_dir/
+test/**/verilator_sim/*.vcd
+test/**/verilator_sim/samples.jsonl

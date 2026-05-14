@@ -49,6 +49,44 @@ std::vector<std::string> make_array_element_name_options(const StateArrayBase& a
     return array.element_name_options(flat_index);
 }
 
+std::string port_timing_description(const Port& port, const std::string& direction_label) {
+    std::string description = std::string(port.timing_kind()) + " " + direction_label + "端口";
+    if (port.timing_kind() == "wire") {
+        description += "；wire 在本拍同步/发射后立即可见";
+    } else if (port.timing_kind() == "reg") {
+        description += "；reg 在拍内暂存，end_cycle 后提交为下一拍可见值";
+    }
+    if (!port.bound_state_path().empty()) {
+        description += "；绑定 state: " + port.bound_state_path();
+    }
+    return description;
+}
+
+void append_simulator_cycle_sample(WaveformFrame& frame,
+                                   const CycleSimulator& simulator) {
+    frame.signals.insert(frame.signals.begin(), WaveformSignalSample{
+        simulator.name(),
+        "__cycle",
+        WaveformSignalKind::RuntimeCycle,
+        "uint64_t",
+        64,
+        std::to_string(simulator.current_cycle()),
+        true,
+        {simulator.name(), "__cycle"},
+        {
+            make_name_options(simulator.name(), simulator.name_aliases()),
+            {"simulator_cycle", "cycle", "__cycle"},
+        },
+        {
+            simulator.description(),
+            "simulator 本地周期计数；运行期元数据的波形投影，不是 State",
+        },
+        {"cycle_simulator", ""},
+        {simulator.frequency_hz(), 0.0L},
+        {simulator.current_cycle(), 0},
+    });
+}
+
 void append_state_samples(WaveformFrame& frame,
                           const std::string& scope,
                           std::vector<std::string> name_path,
@@ -155,20 +193,26 @@ void append_port_samples(WaveformFrame& frame,
     for (const auto& input : group.inputs()) {
         auto path = name_path;
         path.push_back(group.name());
+        path.push_back("input");
         path.push_back(input->name());
         auto options_path = name_options_path;
         options_path.push_back(make_name_options(group.name()));
+        options_path.push_back({"input", "inputs", "输入"});
         options_path.push_back(make_name_options(input->name()));
         auto descriptions = description_path;
-        descriptions.push_back("");
-        descriptions.push_back("");
+        descriptions.push_back("端口组：" + group.name());
+        descriptions.push_back("输入端口");
+        descriptions.push_back(port_timing_description(*input, "输入"));
         auto timing_kinds = timing_kind_path;
+        timing_kinds.push_back("");
         timing_kinds.push_back("");
         timing_kinds.push_back("");
         auto timing_frequencies = timing_frequency_hz_path;
         timing_frequencies.push_back(0.0L);
         timing_frequencies.push_back(0.0L);
+        timing_frequencies.push_back(0.0L);
         auto timing_cycles = timing_cycle_path;
+        timing_cycles.push_back(0);
         timing_cycles.push_back(0);
         timing_cycles.push_back(0);
         frame.signals.push_back(WaveformSignalSample{
@@ -190,20 +234,26 @@ void append_port_samples(WaveformFrame& frame,
     for (const auto& output : group.outputs()) {
         auto path = name_path;
         path.push_back(group.name());
+        path.push_back("output");
         path.push_back(output->name());
         auto options_path = name_options_path;
         options_path.push_back(make_name_options(group.name()));
+        options_path.push_back({"output", "outputs", "输出"});
         options_path.push_back(make_name_options(output->name()));
         auto descriptions = description_path;
-        descriptions.push_back("");
-        descriptions.push_back("");
+        descriptions.push_back("端口组：" + group.name());
+        descriptions.push_back("输出端口");
+        descriptions.push_back(port_timing_description(*output, "输出"));
         auto timing_kinds = timing_kind_path;
+        timing_kinds.push_back("");
         timing_kinds.push_back("");
         timing_kinds.push_back("");
         auto timing_frequencies = timing_frequency_hz_path;
         timing_frequencies.push_back(0.0L);
         timing_frequencies.push_back(0.0L);
+        timing_frequencies.push_back(0.0L);
         auto timing_cycles = timing_cycle_path;
+        timing_cycles.push_back(0);
         timing_cycles.push_back(0);
         timing_cycles.push_back(0);
         frame.signals.push_back(WaveformSignalSample{
@@ -241,6 +291,18 @@ void append_component_samples(WaveformFrame& frame,
     timing_kind_path.push_back("kernel_component");
     timing_frequency_hz_path.push_back(component.frequency_hz());
     timing_cycle_path.push_back(component.current_cycle());
+    for (const auto& group : component.port_groups()) {
+        append_port_samples(frame,
+                            component_scope,
+                            name_path,
+                            name_options_path,
+                            description_path,
+                            timing_kind_path,
+                            timing_frequency_hz_path,
+                            timing_cycle_path,
+                            *group,
+                            base);
+    }
     append_state_samples(frame,
                          component_scope,
                          name_path,
@@ -261,18 +323,6 @@ void append_component_samples(WaveformFrame& frame,
                          timing_cycle_path,
                          component.state_array_registry(),
                          base);
-    for (const auto& group : component.port_groups()) {
-        append_port_samples(frame,
-                            component_scope,
-                            name_path,
-                            name_options_path,
-                            description_path,
-                            timing_kind_path,
-                            timing_frequency_hz_path,
-                            timing_cycle_path,
-                            *group,
-                            base);
-    }
 }
 
 void append_kernel_samples(WaveformFrame& frame,
@@ -292,6 +342,18 @@ void append_kernel_samples(WaveformFrame& frame,
     timing_kind_path.push_back("kernel");
     timing_frequency_hz_path.push_back(kernel.frequency_hz());
     timing_cycle_path.push_back(kernel.current_cycle());
+    for (const auto& group : kernel.port_groups()) {
+        append_port_samples(frame,
+                            kernel_scope,
+                            name_path,
+                            name_options_path,
+                            description_path,
+                            timing_kind_path,
+                            timing_frequency_hz_path,
+                            timing_cycle_path,
+                            *group,
+                            base);
+    }
     append_state_samples(frame,
                          kernel_scope,
                          name_path,
@@ -312,18 +374,6 @@ void append_kernel_samples(WaveformFrame& frame,
                          timing_cycle_path,
                          kernel.state_array_registry(),
                          base);
-    for (const auto& group : kernel.port_groups()) {
-        append_port_samples(frame,
-                            kernel_scope,
-                            name_path,
-                            name_options_path,
-                            description_path,
-                            timing_kind_path,
-                            timing_frequency_hz_path,
-                            timing_cycle_path,
-                            *group,
-                            base);
-    }
     for (const auto& component : kernel.components()) {
         append_component_samples(frame,
                                  kernel_scope,
@@ -585,6 +635,18 @@ WaveformFrame capture_component_waveform_frame(const KernelComponent& component,
     const std::vector<std::string> timing_kind_path{"kernel_component"};
     const std::vector<long double> timing_frequency_hz_path{component.frequency_hz()};
     const std::vector<std::uint64_t> timing_cycle_path{component.current_cycle()};
+    for (const auto& group : component.port_groups()) {
+        append_port_samples(frame,
+                            scope,
+                            name_path,
+                            name_options_path,
+                            description_path,
+                            timing_kind_path,
+                            timing_frequency_hz_path,
+                            timing_cycle_path,
+                            *group,
+                            base);
+    }
     append_state_samples(frame,
                          scope,
                          name_path,
@@ -605,18 +667,6 @@ WaveformFrame capture_component_waveform_frame(const KernelComponent& component,
                          timing_cycle_path,
                          component.state_array_registry(),
                          base);
-    for (const auto& group : component.port_groups()) {
-        append_port_samples(frame,
-                            scope,
-                            name_path,
-                            name_options_path,
-                            description_path,
-                            timing_kind_path,
-                            timing_frequency_hz_path,
-                            timing_cycle_path,
-                            *group,
-                            base);
-    }
     return frame;
 }
 
@@ -634,6 +684,18 @@ WaveformFrame capture_kernel_waveform_frame(const Kernel& kernel,
     const std::vector<std::string> timing_kind_path{"kernel"};
     const std::vector<long double> timing_frequency_hz_path{kernel.frequency_hz()};
     const std::vector<std::uint64_t> timing_cycle_path{kernel.current_cycle()};
+    for (const auto& group : kernel.port_groups()) {
+        append_port_samples(frame,
+                            scope,
+                            name_path,
+                            name_options_path,
+                            description_path,
+                            timing_kind_path,
+                            timing_frequency_hz_path,
+                            timing_cycle_path,
+                            *group,
+                            base);
+    }
     append_state_samples(frame,
                          scope,
                          name_path,
@@ -654,18 +716,6 @@ WaveformFrame capture_kernel_waveform_frame(const Kernel& kernel,
                          timing_cycle_path,
                          kernel.state_array_registry(),
                          base);
-    for (const auto& group : kernel.port_groups()) {
-        append_port_samples(frame,
-                            scope,
-                            name_path,
-                            name_options_path,
-                            description_path,
-                            timing_kind_path,
-                            timing_frequency_hz_path,
-                            timing_cycle_path,
-                            *group,
-                            base);
-    }
     for (const auto& component : kernel.components()) {
         append_component_samples(frame,
                                  scope,
@@ -1468,6 +1518,18 @@ WaveformFrame capture_waveform_frame(const CycleSimulator& simulator,
     const std::vector<std::string> timing_kind_path{"cycle_simulator"};
     const std::vector<long double> timing_frequency_hz_path{simulator.frequency_hz()};
     const std::vector<std::uint64_t> timing_cycle_path{simulator.current_cycle()};
+    for (const auto& group : simulator.port_groups()) {
+        append_port_samples(frame,
+                            simulator_scope,
+                            name_path,
+                            name_options_path,
+                            description_path,
+                            timing_kind_path,
+                            timing_frequency_hz_path,
+                            timing_cycle_path,
+                            *group,
+                            base);
+    }
     append_state_samples(frame,
                          simulator_scope,
                          name_path,
@@ -1488,18 +1550,6 @@ WaveformFrame capture_waveform_frame(const CycleSimulator& simulator,
                          timing_cycle_path,
                          simulator.state_array_registry(),
                          base);
-    for (const auto& group : simulator.port_groups()) {
-        append_port_samples(frame,
-                            simulator_scope,
-                            name_path,
-                            name_options_path,
-                            description_path,
-                            timing_kind_path,
-                            timing_frequency_hz_path,
-                            timing_cycle_path,
-                            *group,
-                            base);
-    }
     for (const auto& kernel : simulator.kernels()) {
         append_kernel_samples(frame,
                               simulator_scope,
@@ -1607,17 +1657,32 @@ const char* waveform_signal_kind_name(WaveformSignalKind kind) {
             return "PortInput";
         case WaveformSignalKind::PortOutput:
             return "PortOutput";
+        case WaveformSignalKind::RuntimeCycle:
+            return "RuntimeCycle";
     }
     return "Unknown";
 }
 
 std::string default_snapshot_capture_directory() {
     try {
-        return (std::filesystem::current_path() / "snapshot_traces").string();
+        return (std::filesystem::current_path() / "trace").string();
     } catch (const std::filesystem::filesystem_error& ex) {
         raise_io("SnapshotCapture", std::string("cannot resolve current path: ") + ex.what());
     }
-    return "snapshot_traces";
+    return "trace";
+}
+
+std::string normalize_snapshot_capture_directory(const std::string& directory) {
+    std::filesystem::path path = directory.empty()
+        ? std::filesystem::path(default_snapshot_capture_directory())
+        : std::filesystem::path(directory);
+    if (path.filename().empty()) {
+        path = path.parent_path();
+    }
+    if (path.filename() != "trace") {
+        path /= "trace";
+    }
+    return path.string();
 }
 
 std::string prepare_snapshot_capture_segment_directory(const std::string& root_directory,
@@ -1797,7 +1862,8 @@ void append_waveform_jsonl_frame(const std::string& path,
             out << ",";
         }
         const auto& simulator = *simulators[index];
-        const auto frame = capture_waveform_frame(simulator, base);
+        auto frame = capture_waveform_frame(simulator, base);
+        append_simulator_cycle_sample(frame, simulator);
         out << "{";
         out << "\"name\":" << quoted(simulator.name());
         out << ",\"cycle\":" << simulator.current_cycle();

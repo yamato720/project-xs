@@ -7,6 +7,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -48,6 +49,15 @@ class Port {
 
     // 返回端口绑定的数据类型。
     const std::type_index& type_index() const { return type_index_; }
+
+    // 返回端口时序类型。
+    virtual std::string_view timing_kind() const = 0;
+
+    // 返回端口绑定的 state 路径，用于波形说明。
+    const std::string& bound_state_path() const { return bound_state_path_; }
+
+    // 设置端口绑定的 state 路径。端口由 State/StateArray 创建时自动填充。
+    void set_bound_state_path(std::string path) { bound_state_path_ = std::move(path); }
 
     // 当前端口是否有一个可见的有效值。
     bool valid() const { return valid_; }
@@ -164,6 +174,9 @@ class Port {
     // 当前端口绑定到的底层变量地址。
     void* bound_variable_ = nullptr;
 
+    // 当前端口绑定的 state 路径，仅用于诊断和波形显示。
+    std::string bound_state_path_;
+
     // 当前拍对外可见的值。
     std::vector<std::byte> visible_storage_;
 
@@ -187,6 +200,8 @@ class Port {
 // 适合模拟组合直通、同拍传播的简化信号。
 class WirePort final : public Port {
   public:
+    std::string_view timing_kind() const override { return "wire"; }
+
     // 同步一个 wire 输入端口的上游可见值。
     void sync_input() override;
 
@@ -229,6 +244,8 @@ class WirePort final : public Port {
 // 适合模拟 pipeline 寄存器、stage 边界、寄存一级的信号。
 class RegPort final : public Port {
   public:
+    std::string_view timing_kind() const override { return "reg"; }
+
     // 同步一个 reg 输入端口的上游已提交值。
     void sync_input() override;
 

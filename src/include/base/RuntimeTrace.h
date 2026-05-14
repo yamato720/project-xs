@@ -231,6 +231,7 @@ enum class WaveformSignalKind {
     StateArrayElement,
     PortInput,
     PortOutput,
+    RuntimeCycle,
 };
 
 // 单个信号在某一拍的采样值。
@@ -288,8 +289,11 @@ const char* snapshot_capture_stage_name(SnapshotCaptureStage stage);
 const char* waveform_signal_kind_name(WaveformSignalKind kind);
 
 // 默认采集目录。运行时无法可靠知道源文件 main.cpp 所在目录，
-// 因此这里使用当前工作目录下的 snapshot_traces；示例 main 可按需覆盖到源码同级目录。
+// 因此这里使用当前工作目录下的 trace；示例 main 可按需覆盖到源码同级目录。
 std::string default_snapshot_capture_directory();
+
+// 采集根目录固定命名为 trace。传入 trace 自身时保持不变，传入父目录时追加 trace。
+std::string normalize_snapshot_capture_directory(const std::string& directory);
 
 // 创建并返回某个自动采集 segment 的目录。
 std::string prepare_snapshot_capture_segment_directory(const std::string& root_directory,

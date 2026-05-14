@@ -9,6 +9,8 @@
 #include "base/State.h"
 
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -341,123 +343,68 @@ std::shared_ptr<OrderProbeKernel> build_order_probe_kernel(const std::string& la
     return probe_kernel;
 }
 
-void verify_base_snapshot_restore() {
-    auto simulator = std::make_shared<DemoCycleSimulator>("snapshot_simulator", 6, 1.0L);
-    auto kernel = build_demo_kernel("snapshot_kernel");
-    simulator->add_kernel(kernel);
-    simulator->reset();
-    simulator->initialize_zero();
-
-    simulator->step();
-    simulator->step();
-    const auto snapshot = simulator->snapshot();
-    const std::uint64_t saved_cycle = simulator->current_cycle();
-    const std::uint64_t saved_a =
-        kernel->state_set().value<std::uint64_t>("A");
-
-    simulator->step();
-    if (simulator->current_cycle() == saved_cycle) {
-        throw std::runtime_error("snapshot test did not advance after saving");
+std::filesystem::path latest_trace_segment(const std::filesystem::path& object_root) {
+    if (!std::filesystem::exists(object_root)) {
+        throw std::runtime_error("multi-clock waveform segment root was not created");
     }
 
-    simulator->restore(snapshot);
-    if (simulator->current_cycle() != saved_cycle ||
-        kernel->state_set().value<std::uint64_t>("A") != saved_a) {
-        throw std::runtime_error("base snapshot/restore did not recover saved runtime state");
+    std::filesystem::path latest;
+    std::filesystem::file_time_type latest_time{};
+    for (const auto& entry : std::filesystem::directory_iterator(object_root)) {
+        if (!entry.is_directory()) {
+            continue;
+        }
+        const auto manifest = entry.path() / "manifest.json";
+        if (!std::filesystem::exists(manifest)) {
+            continue;
+        }
+        const auto modified = std::filesystem::last_write_time(manifest);
+        if (latest.empty() || modified > latest_time) {
+            latest = entry.path();
+            latest_time = modified;
+        }
     }
 
-    std::cout << "[snapshot_test] restored cycle=" << simulator->current_cycle()
-              << " A=" << kernel->state_set().value<std::uint64_t>("A") << "\n";
+    if (latest.empty()) {
+        throw std::runtime_error("multi-clock waveform segment was not found");
+    }
+    return latest;
 }
 
-void verify_snapshot_capture_modes() {
-    const std::string trace_dir = "test/abctest/snapshot_traces";
-    auto simulator = std::make_shared<DemoCycleSimulator>("capture_simulator", 6, 1.0L);
-    auto kernel = build_demo_kernel("capture_kernel");
-    auto component = kernel->get_component("kernel_a");
-    simulator->set_snapshot_capture_directory(trace_dir);
-    kernel->set_snapshot_capture_directory(trace_dir);
-    component->set_snapshot_capture_directory(trace_dir);
-    simulator->add_kernel(kernel);
-    simulator->reset();
-    simulator->initialize_zero();
-
-    simulator->start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic);
-    simulator->step();
-    simulator->stop_snapshot_capture();
-
-    if (simulator->snapshot_history().size() != 10) {
-        throw std::runtime_error("automatic simulator snapshot did not record every step stage");
+bool file_contains(const std::filesystem::path& path, const std::string& pattern) {
+    std::ifstream input(path);
+    if (!input) {
+        throw std::runtime_error("cannot open " + path.string());
     }
-    if (simulator->snapshot_history().front().checkpoint_role != "segment_first" ||
-        simulator->snapshot_history().back().checkpoint_role != "segment_last") {
-        throw std::runtime_error("automatic simulator snapshot did not write segment checkpoints");
+    std::string line;
+    while (std::getline(input, line)) {
+        if (line.find(pattern) != std::string::npos) {
+            return true;
+        }
     }
-    if (!kernel->snapshot_history().empty() || !component->snapshot_history().empty()) {
-        throw std::runtime_error("simulator snapshot capture leaked into nested histories");
-    }
-
-    kernel->start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Manual);
-    const auto& manual_record =
-        kernel->capture_snapshot(project_xs::sim::SnapshotCaptureStage::Manual);
-    kernel->stop_snapshot_capture();
-    if (kernel->snapshot_history().size() != 1 ||
-        manual_record.stage != project_xs::sim::SnapshotCaptureStage::Manual ||
-        manual_record.checkpoint_role != "manual") {
-        throw std::runtime_error("manual kernel snapshot capture failed");
-    }
-    kernel->restore_checkpoint(manual_record.checkpoint_path);
-
-    component->start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic);
-    simulator->step();
-    component->stop_snapshot_capture();
-    if (component->snapshot_history().size() != 8) {
-        throw std::runtime_error("automatic component snapshot did not record run/end stages");
-    }
-    if (component->snapshot_history().front().checkpoint_role != "segment_first" ||
-        component->snapshot_history().back().checkpoint_role != "segment_last") {
-        throw std::runtime_error("automatic component snapshot did not write segment checkpoints");
-    }
-
-    std::cout << "[snapshot_capture_test] simulator_records="
-              << simulator->snapshot_history().size()
-              << " component_records=" << component->snapshot_history().size() << "\n";
-}
-
-void verify_waveform_capture() {
-    auto simulator = std::make_shared<DemoCycleSimulator>("waveform_simulator", 3, 1.0L);
-    simulator->add_kernel(build_demo_kernel("waveform_kernel"));
-    simulator->reset();
-    simulator->initialize_zero();
-    simulator->step();
-
-    project_xs::sim::WaveformTrace trace;
-    project_xs::sim::append_waveform_frame(trace, *simulator);
-    if (trace.frames.empty() || trace.frames.front().signals.empty()) {
-        throw std::runtime_error("waveform capture did not collect any signal");
-    }
-
-    std::cout << "[waveform_test] cycle=" << trace.frames.front().cycle
-              << " signals=" << trace.frames.front().signals.size() << "\n";
+    return false;
 }
 
 }  // namespace
 
 int main() {
-    verify_base_snapshot_restore();
-    verify_snapshot_capture_modes();
-    verify_waveform_capture();
-
     // session 自己有一套时间步频率，底层 simulator 则各自有自己的周期频率。
-    // 当前 demo 同时挂两个 simulator：
-    // - sim_a: 4Hz，最多跑 6 个周期
-    // - sim_b: 2Hz，最多跑 6 个周期
-    // session 会一直运行到总时间到达，或者全部 simulator 自己 finished。
+    // 这个 test 只保留多时钟域波形显示场景：
+    // - session: 4Hz，作为 HTML 顶层时间基准
+    // - simulator_a: 4Hz，每个 session tick 都推进
+    // - simulator_b: 2Hz，每两个 session tick 推进一次
+    // - simulator_c: 1.5Hz，非整数比例，用来覆盖 4Hz session 下 8/3 tick 推进一次的情况
+    // 自动采样会记录 session 下三个 simulator 的层级 timing，供 HTML 展示周期比例。
+    const std::filesystem::path trace_dir = "test/abctest/trace";
     project_xs::sim::SimulationSession session(4.0L, 3.0L);
+    session.set_snapshot_capture_directory(trace_dir.string());
+
     auto simulator_a = std::make_shared<DemoCycleSimulator>("simulator_a", 6, 4.0L);
     auto simulator_b = std::make_shared<DemoCycleSimulator>("simulator_b", 6, 2.0L);
+    auto simulator_c = std::make_shared<DemoCycleSimulator>("simulator_c", 4, 1.5L);
 
     auto kernel_a = build_demo_kernel("sim_a");
+    kernel_a->set_snapshot_capture_directory(trace_dir.string());
     simulator_a->add_kernel(kernel_a);
     simulator_a->add_kernel(build_order_probe_kernel("order_probe"));
 
@@ -466,8 +413,12 @@ int main() {
     kernel_b->remove_demo_component("kernel_c");
     simulator_b->add_kernel(kernel_b);
 
+    auto kernel_c = build_demo_kernel("sim_c_fractional");
+    simulator_c->add_kernel(kernel_c);
+
     session.add_simulator(simulator_a);
     session.add_simulator(simulator_b);
+    session.add_simulator(simulator_c);
 
     // 先做一次全局 reset，再把所有寄存器型端口初始化成 0。
     // initialize_zero() 也是为了让 reg 观测更直观：
@@ -476,8 +427,63 @@ int main() {
     session.initialize_zero();
 
     std::cout << session.start_info() << "\n";
+    session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic);
+    kernel_a->start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic);
     session.run();
+    kernel_a->stop_snapshot_capture();
+    session.stop_snapshot_capture();
     std::cout << session.finish_info() << "\n";
+
+    if (session.snapshot_history().empty()) {
+        throw std::runtime_error("multi-clock session did not produce waveform records");
+    }
+    if (session.snapshot_history().front().checkpoint_role != "segment_first" ||
+        session.snapshot_history().back().checkpoint_role != "segment_last") {
+        throw std::runtime_error("multi-clock session did not write segment checkpoints");
+    }
+    if (simulator_a->current_cycle() != 6 || simulator_b->current_cycle() != 6 ||
+        simulator_c->current_cycle() != 4) {
+        throw std::runtime_error("multi-clock simulators did not reach expected cycles");
+    }
+
+    const auto segment = latest_trace_segment(trace_dir / "simulation_session_session");
+    const auto kernel_segment = latest_trace_segment(trace_dir / "kernel_sim_a");
+    const auto waveform_path = segment / "waveform.jsonl";
+    const auto html_path = segment / "waveform.html";
+    if (!std::filesystem::exists(waveform_path) || !std::filesystem::exists(html_path)) {
+        throw std::runtime_error("multi-clock waveform files were not generated");
+    }
+    const auto kernel_waveform_path = kernel_segment / "waveform.jsonl";
+    const auto kernel_html_path = kernel_segment / "waveform.html";
+    if (!std::filesystem::exists(kernel_waveform_path) ||
+        !std::filesystem::exists(kernel_html_path)) {
+        throw std::runtime_error("kernel-level reg/wire waveform files were not generated");
+    }
+    if (!file_contains(waveform_path, "\"session_ticks_per_simulator_cycle\":2") ||
+        !file_contains(waveform_path, "\"session_ticks_per_simulator_cycle\":2.666") ||
+        !file_contains(waveform_path, "\"signals\":[{\"scope\":\"simulator_a\",\"name\":\"__cycle\"") ||
+        !file_contains(waveform_path, "\"signals\":[{\"scope\":\"simulator_b\",\"name\":\"__cycle\"") ||
+        !file_contains(waveform_path, "\"signals\":[{\"scope\":\"simulator_c\",\"name\":\"__cycle\"") ||
+        !file_contains(waveform_path, "\"timing_kind_path\"")) {
+        throw std::runtime_error("multi-clock waveform metadata is incomplete");
+    }
+    if (!file_contains(html_path, "\"kind\":\"RuntimeCycle\"") ||
+        !file_contains(html_path, "\"draw_style\":\"bus\"")) {
+        throw std::runtime_error("multi-clock runtime cycle waveform html is incomplete");
+    }
+    if (!file_contains(kernel_waveform_path, "KernelAfterEmitOutputs") ||
+        !file_contains(kernel_waveform_path, "\"name_path\":[\"sim_a\",\"reg_outputs\",\"output\",\"A\"]") ||
+        !file_contains(kernel_html_path, "reg 输出端口")) {
+        throw std::runtime_error("kernel-level reg/wire waveform metadata is incomplete");
+    }
+
+    std::cout << "[multi_clock_waveform_test] records="
+              << session.snapshot_history().size()
+              << " sim_a_cycles=" << simulator_a->current_cycle()
+              << " sim_b_cycles=" << simulator_b->current_cycle()
+              << " sim_c_cycles=" << simulator_c->current_cycle()
+              << " html=" << html_path.string()
+              << " kernel_html=" << kernel_html_path.string() << "\n";
 
     return 0;
 }

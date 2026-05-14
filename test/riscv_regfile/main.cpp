@@ -96,7 +96,7 @@ void run_without_snapshot_demo() {
 void run_with_snapshot_demo() {
     std::cout << "\n[demo_with_snapshot] begin\n";
 
-    const std::string trace_dir = "test/riscv_regfile/snapshot_traces";
+    const std::string trace_dir = "test/riscv_regfile/trace";
 
     // 这里用 session 级 snapshot。
     // session=2Hz、simulator=1Hz，保存点选在 session tick=5，

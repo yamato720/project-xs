@@ -1,0 +1,38 @@
+{
+  "name": "abctest sim_a session-vs-verilator",
+  "xs_trace_root": "trace/simulation_session_session",
+  "xs_waveform": "waveform.jsonl",
+  "verilog_samples": "verilator_sim/samples.jsonl",
+  "simulator": "simulator_a",
+  "cycle_offset": 1,
+  "signals": [
+    {
+      "verilog": "source_out",
+      "xs": "simulator_a.cycle_simulator_ports.output.source_out"
+    },
+    {
+      "verilog": "wire_A",
+      "xs": "simulator_a.sim_a.sim_a_ports.output.A"
+    },
+    {
+      "verilog": "wire_B",
+      "xs": "simulator_a.sim_a.sim_a_ports.output.B"
+    },
+    {
+      "verilog": "wire_C",
+      "xs": "simulator_a.sim_a.sim_a_ports.output.C"
+    },
+    {
+      "verilog": "reg_A",
+      "xs": "simulator_a.sim_a.reg_outputs.output.A"
+    },
+    {
+      "verilog": "reg_B",
+      "xs": "simulator_a.sim_a.reg_outputs.output.B"
+    },
+    {
+      "verilog": "reg_C",
+      "xs": "simulator_a.sim_a.reg_outputs.output.C"
+    }
+  ]
+}

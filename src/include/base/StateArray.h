@@ -189,13 +189,15 @@ class StateArrayBase {
     std::shared_ptr<PortT> make_port(PortDirection direction,
                                      void* element_ptr,
                                      std::string port_name) const {
-        return std::shared_ptr<PortT>(new PortT(
+        auto port = std::shared_ptr<PortT>(new PortT(
             std::move(port_name),
             direction,
             width_bits_,
             *type_info_,
             data_size_,
             element_ptr));
+        port->set_bound_state_path(name());
+        return port;
     }
 
   private:

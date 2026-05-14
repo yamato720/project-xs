@@ -353,7 +353,7 @@ void CycleSimulator::restore_checkpoint(const std::string& path) {
 }
 
 void CycleSimulator::set_snapshot_capture_directory(std::string directory) {
-    snapshot_capture_root_directory_ = std::move(directory);
+    snapshot_capture_root_directory_ = normalize_snapshot_capture_directory(directory);
 }
 
 void CycleSimulator::start_snapshot_capture(SnapshotCaptureMode mode) {

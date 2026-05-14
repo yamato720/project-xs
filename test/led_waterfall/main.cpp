@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include <string>
 
 namespace {
 
@@ -18,8 +19,12 @@ class LedWaterfallSimulator final : public project_xs::sim::CycleSimulator {
   public:
     LedWaterfallSimulator(std::string name, std::int64_t max_cycles, long double frequency_hz)
         : project_xs::sim::CycleSimulator(std::move(name), max_cycles, frequency_hz) {
-        create_state<bool>("rst_n", "外部复位输入", false);
-        ports().add_output(state<bool>("rst_n").make_wire_output_port());
+        set_description("流水灯测试环境 simulator；每个 step 等价于 Verilog clk 的一个上升沿，并负责驱动 rst_n");
+        add_name_alias("led_waterfall_env");
+        add_name_alias("verilator_testbench");
+
+        create_state<bool>("rst_n", "外部低有效复位输入；cycle 0 为 0，cycle 1 起释放为 1", false);
+        ports().add_output(state<bool>("rst_n").make_wire_output_port("rst_n"));
     }
 
   private:
@@ -47,7 +52,10 @@ int main() {
     // - 1 个 simulator step = 1 个周期
     //
     // run_time = 12 秒，意味着总共跑 12 个周期。
+    const std::string trace_dir = "test/led_waterfall/trace";
+
     project_xs::sim::SimulationSession session(1.0L, 12.0L);
+    session.set_snapshot_capture_directory(trace_dir);
 
     auto simulator = std::make_shared<LedWaterfallSimulator>("led_waterfall_simulator", 12, 1.0L);
 
@@ -67,8 +75,12 @@ int main() {
     session.initialize_zero();
 
     std::cout << session.start_info() << "\n";
+    session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic);
     session.run();
+    session.stop_snapshot_capture();
     std::cout << session.finish_info() << "\n";
+    std::cout << "[project_xs_waveform] records=" << session.snapshot_history().size()
+              << " trace_dir=" << trace_dir << "\n";
 
     return 0;
 }
