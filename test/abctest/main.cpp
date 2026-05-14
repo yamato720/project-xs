@@ -37,10 +37,10 @@ class DemoCycleSimulator final : public project_xs::sim::CycleSimulator {
     }
 };
 
-class KernelAComponent final : public project_xs::sim::KernelComponent {
+class StageAComponent final : public project_xs::sim::KernelComponent {
   public:
-    KernelAComponent()
-        : project_xs::sim::KernelComponent("kernel_a", 1) {
+    StageAComponent()
+        : project_xs::sim::KernelComponent("stage_a", 1) {
         create_state<std::uint64_t>("in", "A 组件输入", 0);
         create_state<std::uint64_t>("out", "A 组件输出", 0);
         ports().add_input(state<std::uint64_t>("in").make_wire_input_port());
@@ -63,10 +63,10 @@ class KernelAComponent final : public project_xs::sim::KernelComponent {
     }
 };
 
-class KernelBComponent final : public project_xs::sim::KernelComponent {
+class StageBComponent final : public project_xs::sim::KernelComponent {
   public:
-    KernelBComponent()
-        : project_xs::sim::KernelComponent("kernel_b", 2) {
+    StageBComponent()
+        : project_xs::sim::KernelComponent("stage_b", 2) {
         create_state<std::uint64_t>("in", "B 组件输入", 0);
         create_state<std::uint64_t>("captured", "B 组件拍内暂存", 0);
         create_state<std::uint64_t>("out", "B 组件输出", 0);
@@ -98,10 +98,10 @@ class KernelBComponent final : public project_xs::sim::KernelComponent {
     }
 };
 
-class KernelCComponent final : public project_xs::sim::KernelComponent {
+class StageCComponent final : public project_xs::sim::KernelComponent {
   public:
-    KernelCComponent()
-        : project_xs::sim::KernelComponent("kernel_c", 3, 1) {
+    StageCComponent()
+        : project_xs::sim::KernelComponent("stage_c", 3, 1) {
         create_state<std::uint64_t>("in", "C 组件输入", 0);
         create_state<std::uint64_t>("captured", "C 组件拍内暂存", 0);
         create_state<std::uint64_t>("out", "C 组件输出", 0);
@@ -179,9 +179,9 @@ class OrderConsumerComponent final : public project_xs::sim::KernelComponent {
 class AbcDemoKernel final : public project_xs::sim::Kernel {
   public:
     AbcDemoKernel(std::string label,
-                  KernelAComponent* a_component,
-                  KernelBComponent* b_component,
-                  KernelCComponent* c_component)
+                  StageAComponent* a_component,
+                  StageBComponent* b_component,
+                  StageCComponent* c_component)
         : project_xs::sim::Kernel(label),
           label_(std::move(label)),
           a_component_(a_component),
@@ -189,21 +189,22 @@ class AbcDemoKernel final : public project_xs::sim::Kernel {
           c_component_(c_component),
           reg_outputs_(create_port_group("reg_outputs")) {
         create_state<std::uint64_t>("A", "wire 观测 A", 0);
-        create_state<std::uint64_t>("B", "wire 观测 B", 0);
-        create_state<std::uint64_t>("C", "wire 观测 C", 0);
+        create_state<std::uint64_t>("B", "寄存器源 wire 观测 B", 0);
+        create_state<std::uint64_t>("C", "寄存器源 wire 观测 C", 0);
         create_state<std::uint64_t>("reg_A", "reg 观测 A", 0);
         create_state<std::uint64_t>("reg_B", "reg 观测 B", 0);
         create_state<std::uint64_t>("reg_C", "reg 观测 C", 0);
 
-        // 这一组 wire 输出是“当前拍可见”的观测面。
-        // demo kernel 自己不参与 A/B/C 的功能计算，只负责把子组件输出汇总出来用于观察。
+        // A 对应 Verilog 里的组合 wire_A，source_out 改变后本拍立即可见。
         ports().add_output(state<std::uint64_t>("A").make_wire_output_port());
-        ports().add_output(state<std::uint64_t>("B").make_wire_output_port());
-        ports().add_output(state<std::uint64_t>("C").make_wire_output_port());
+        // B/C 对应 Verilog 里的 wire_B/wire_C，但它们实际连接到内部寄存器
+        // b_out/c_out；posedge 前仍是上一拍 visible，end_cycle 后才提交。
+        ports().add_output(state<std::uint64_t>("B").make_reg_output_port());
+        ports().add_output(state<std::uint64_t>("C").make_reg_output_port());
 
         // 这一组 reg 输出是“下一拍可见”的对照面。
         // reg_outputs_ 不是业务上必需的模块端口，而是测试里额外加的一层，
-        // 专门用来和上面的 wire 输出做逐拍比较。
+        // 专门用来和 A 这种真正组合输出做逐拍比较。
         reg_outputs_.add_output(state<std::uint64_t>("reg_A").make_reg_output_port("A"));
         reg_outputs_.add_output(state<std::uint64_t>("reg_B").make_reg_output_port("B"));
         reg_outputs_.add_output(state<std::uint64_t>("reg_C").make_reg_output_port("C"));
@@ -211,7 +212,7 @@ class AbcDemoKernel final : public project_xs::sim::Kernel {
     }
 
     bool remove_demo_component(std::string_view name) {
-        if (name == "kernel_c") {
+        if (name == "stage_c") {
             c_component_ = nullptr;
             return remove_component(name);
         }
@@ -233,11 +234,6 @@ class AbcDemoKernel final : public project_xs::sim::Kernel {
     }
 
     void run_single(std::uint64_t cycle) override {
-        // 这里先清空默认 wire 观测口。
-        // 不清空的话，当前拍如果不重新赋值，wire 口会保留上一拍的 visible 状态，
-        // 就看不出“本拍是否真的重新发射了值”。
-        ports().clear();
-
         // 默认 Kernel::run_single() 会按注册顺序推进 source -> A -> B -> C。
         // 也就是说，子组件内部的 sync_input / emit_outputs / phase 推进都已经发生完了；
         // 这里做的只是“把子组件结果汇总到 demo kernel 自己的观测口”。
@@ -262,9 +258,9 @@ class AbcDemoKernel final : public project_xs::sim::Kernel {
 
   private:
     std::string label_;
-    KernelAComponent* a_component_;
-    KernelBComponent* b_component_;
-    KernelCComponent* c_component_;
+    StageAComponent* a_component_;
+    StageBComponent* b_component_;
+    StageCComponent* c_component_;
     project_xs::sim::PortGroup& reg_outputs_;
 
     std::string debug_info(std::uint64_t cycle) const override {
@@ -308,22 +304,22 @@ class OrderProbeKernel final : public project_xs::sim::Kernel {
 };
 
 std::shared_ptr<AbcDemoKernel> build_demo_kernel(const std::string& label) {
-    auto component_a = std::make_shared<KernelAComponent>();
-    auto component_b = std::make_shared<KernelBComponent>();
-    auto component_c = std::make_shared<KernelCComponent>();
+    auto stage_a = std::make_shared<StageAComponent>();
+    auto stage_b = std::make_shared<StageBComponent>();
+    auto stage_c = std::make_shared<StageCComponent>();
 
-    component_b->ports().get_input("in")->connect(component_a->ports().get_output("out"));
-    component_c->ports().get_input("in")->connect(component_b->ports().get_output("out"));
+    stage_b->ports().get_input("in")->connect(stage_a->ports().get_output("out"));
+    stage_c->ports().get_input("in")->connect(stage_b->ports().get_output("out"));
 
     auto demo_kernel = std::make_shared<AbcDemoKernel>(
         label,
-        component_a.get(),
-        component_b.get(),
-        component_c.get());
+        stage_a.get(),
+        stage_b.get(),
+        stage_c.get());
 
-    demo_kernel->add_component(component_a);
-    demo_kernel->add_component(component_b);
-    demo_kernel->add_component(component_c);
+    demo_kernel->add_component(stage_a);
+    demo_kernel->add_component(stage_b);
+    demo_kernel->add_component(stage_c);
 
     return demo_kernel;
 }
@@ -402,19 +398,20 @@ int main() {
     auto simulator_a = std::make_shared<DemoCycleSimulator>("simulator_a", 6, 4.0L);
     auto simulator_b = std::make_shared<DemoCycleSimulator>("simulator_b", 6, 2.0L);
     auto simulator_c = std::make_shared<DemoCycleSimulator>("simulator_c", 4, 1.5L);
+    simulator_a->set_snapshot_capture_directory(trace_dir.string());
 
-    auto kernel_a = build_demo_kernel("sim_a");
-    kernel_a->set_snapshot_capture_directory(trace_dir.string());
-    simulator_a->add_kernel(kernel_a);
+    auto sim_a_kernel = build_demo_kernel("sim_a");
+    sim_a_kernel->set_snapshot_capture_directory(trace_dir.string());
+    simulator_a->add_kernel(sim_a_kernel);
     simulator_a->add_kernel(build_order_probe_kernel("order_probe"));
 
     // 差异化实例直接在构造阶段生成，不再通过旧复制接口改写结构。
-    auto kernel_b = build_demo_kernel("sim_b_without_c");
-    kernel_b->remove_demo_component("kernel_c");
-    simulator_b->add_kernel(kernel_b);
+    auto sim_b_kernel = build_demo_kernel("sim_b_without_c");
+    sim_b_kernel->remove_demo_component("stage_c");
+    simulator_b->add_kernel(sim_b_kernel);
 
-    auto kernel_c = build_demo_kernel("sim_c_fractional");
-    simulator_c->add_kernel(kernel_c);
+    auto sim_c_kernel = build_demo_kernel("sim_c_fractional");
+    simulator_c->add_kernel(sim_c_kernel);
 
     session.add_simulator(simulator_a);
     session.add_simulator(simulator_b);
@@ -427,11 +424,19 @@ int main() {
     session.initialize_zero();
 
     std::cout << session.start_info() << "\n";
-    session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic);
-    kernel_a->start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic);
+    session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic,
+                                   "abctest_session");
+    session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic,
+                                   "abctest_session_nested");
+    simulator_a->start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic,
+                                        "abctest_simulator_a");
+    sim_a_kernel->start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic,
+                                         "abctest_sim_a_kernel");
     session.run();
-    kernel_a->stop_snapshot_capture();
-    session.stop_snapshot_capture();
+    sim_a_kernel->stop_snapshot_capture("abctest_sim_a_kernel");
+    simulator_a->stop_snapshot_capture("abctest_simulator_a");
+    session.stop_snapshot_capture("abctest_session_nested");
+    session.stop_snapshot_capture("abctest_session");
     std::cout << session.finish_info() << "\n";
 
     if (session.snapshot_history().empty()) {
@@ -447,11 +452,18 @@ int main() {
     }
 
     const auto segment = latest_trace_segment(trace_dir / "simulation_session_session");
+    const auto simulator_segment = latest_trace_segment(trace_dir / "cycle_simulator_simulator_a");
     const auto kernel_segment = latest_trace_segment(trace_dir / "kernel_sim_a");
     const auto waveform_path = segment / "waveform.jsonl";
     const auto html_path = segment / "waveform.html";
     if (!std::filesystem::exists(waveform_path) || !std::filesystem::exists(html_path)) {
         throw std::runtime_error("multi-clock waveform files were not generated");
+    }
+    const auto simulator_waveform_path = simulator_segment / "waveform.jsonl";
+    const auto simulator_html_path = simulator_segment / "waveform.html";
+    if (!std::filesystem::exists(simulator_waveform_path) ||
+        !std::filesystem::exists(simulator_html_path)) {
+        throw std::runtime_error("simulator-level waveform files were not generated");
     }
     const auto kernel_waveform_path = kernel_segment / "waveform.jsonl";
     const auto kernel_html_path = kernel_segment / "waveform.html";
@@ -471,8 +483,17 @@ int main() {
         !file_contains(html_path, "\"draw_style\":\"bus\"")) {
         throw std::runtime_error("multi-clock runtime cycle waveform html is incomplete");
     }
+    if (!file_contains(simulator_waveform_path, "CycleAfterKernelRun") ||
+        !file_contains(simulator_waveform_path, "\"signals\":[{\"scope\":\"simulator_a\",\"name\":\"__cycle\"") ||
+        !file_contains(simulator_waveform_path, "\"name_path\":[\"simulator_a\",\"sim_a\",\"reg_outputs\",\"output\",\"A\"]") ||
+        !file_contains(simulator_html_path, "\"kind\":\"RuntimeCycle\"")) {
+        throw std::runtime_error("simulator-level waveform metadata is incomplete");
+    }
     if (!file_contains(kernel_waveform_path, "KernelAfterEmitOutputs") ||
+        !file_contains(kernel_waveform_path, "\"signals\":[{\"scope\":\"sim_a\",\"name\":\"__cycle\"") ||
+        !file_contains(kernel_waveform_path, "\"name_path\":[\"sim_a\",\"stage_a\",\"stage_a_ports\",\"input\",\"in\"]") ||
         !file_contains(kernel_waveform_path, "\"name_path\":[\"sim_a\",\"reg_outputs\",\"output\",\"A\"]") ||
+        !file_contains(kernel_html_path, "\"kind\":\"RuntimeCycle\"") ||
         !file_contains(kernel_html_path, "reg 输出端口")) {
         throw std::runtime_error("kernel-level reg/wire waveform metadata is incomplete");
     }
@@ -483,6 +504,7 @@ int main() {
               << " sim_b_cycles=" << simulator_b->current_cycle()
               << " sim_c_cycles=" << simulator_c->current_cycle()
               << " html=" << html_path.string()
+              << " simulator_html=" << simulator_html_path.string()
               << " kernel_html=" << kernel_html_path.string() << "\n";
 
     return 0;

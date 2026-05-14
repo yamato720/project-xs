@@ -1,8 +1,7 @@
 VERILATOR ?= verilator
-TOP := abc_demo
-VCD := abc_demo.vcd
+TOP := reg_chain
+VCD := reg_chain.vcd
 SAMPLES := samples.jsonl
-EVENT_SAMPLES := event_samples.jsonl
 
 .PHONY: all run clean
 
@@ -17,4 +16,4 @@ run: obj_dir/V$(TOP)
 	./obj_dir/V$(TOP)
 
 clean:
-	rm -rf obj_dir $(VCD) $(SAMPLES) $(EVENT_SAMPLES)
+	rm -rf obj_dir $(VCD) $(SAMPLES)

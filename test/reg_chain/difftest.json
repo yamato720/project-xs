@@ -1,0 +1,36 @@
+{
+  "name": "reg_chain session cycle-end vs Verilator",
+  "xs_trace_root": "trace/simulation_session_session",
+  "xs_waveform": "waveform.jsonl",
+  "xs_stage": "SessionStepEnd",
+  "verilog_samples": "verilator_sim/samples.jsonl",
+  "verilog_stage": "cycle_end",
+  "simulator": "reg_chain_simulator",
+  "cycle_offset": 1,
+  "signals": [
+    {
+      "verilog": "A",
+      "xs": "reg_chain_simulator.reg_chain.A"
+    },
+    {
+      "verilog": "B",
+      "xs": "reg_chain_simulator.reg_chain.B"
+    },
+    {
+      "verilog": "wire_A",
+      "xs": "reg_chain_simulator.reg_chain.reg_chain_ports.output.wire_A"
+    },
+    {
+      "verilog": "wire_B",
+      "xs": "reg_chain_simulator.reg_chain.reg_chain_ports.output.wire_B"
+    },
+    {
+      "verilog": "reg_A",
+      "xs": "reg_chain_simulator.reg_chain.reg_outputs.output.reg_A"
+    },
+    {
+      "verilog": "reg_B",
+      "xs": "reg_chain_simulator.reg_chain.reg_outputs.output.reg_B"
+    }
+  ]
+}

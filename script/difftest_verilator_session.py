@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Compare Verilator cycle-end samples against Project-XS session waveforms."""
+"""Compare Verilator samples against Project-XS waveform frames."""
 
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 def load_json(path: Path) -> Dict[str, Any]:
@@ -69,7 +69,14 @@ def signal_key(signal: Dict[str, Any]) -> str:
     )
 
 
-def flatten_xs_signals(frame: Dict[str, Any], simulator_name: str) -> Dict[str, Dict[str, Any]]:
+def flatten_xs_signals(frame: Dict[str, Any], simulator_name: Optional[str]) -> Dict[str, Dict[str, Any]]:
+    if simulator_name is None:
+        return {
+            signal_key(signal): signal
+            for signal in frame.get("signals", [])
+            if isinstance(signal, dict)
+        }
+
     for simulator in frame.get("simulators", []):
         if simulator.get("name") == simulator_name:
             return {
@@ -84,43 +91,72 @@ def cycle_from_sample(sample: Dict[str, Any]) -> int:
     return normalize_int(sample.get("cycle"))
 
 
-def verilog_samples_by_xs_cycle(samples: Iterable[Dict[str, Any]], offset: int) -> Dict[int, Dict[str, Any]]:
+def sample_stage(sample: Dict[str, Any]) -> str:
+    return str(sample.get("stage", ""))
+
+
+def verilog_samples_by_xs_cycle(
+    samples: Iterable[Dict[str, Any]],
+    offset: int,
+    stage: str,
+) -> Dict[int, Dict[str, Any]]:
     indexed: Dict[int, Dict[str, Any]] = {}
     for sample in samples:
+        if sample_stage(sample) != stage:
+            continue
         xs_cycle = cycle_from_sample(sample) + offset
         if xs_cycle in indexed:
-            raise ValueError(f"duplicate Verilog sample for XS cycle {xs_cycle}")
+            raise ValueError(f"duplicate Verilog sample for stage {stage} XS cycle {xs_cycle}")
         indexed[xs_cycle] = sample
     return indexed
 
 
-def xs_session_step_end_frames(frames: Iterable[Dict[str, Any]]) -> Dict[int, Dict[str, Any]]:
+def frame_cycle(frame: Dict[str, Any]) -> int:
+    if "current_tick" in frame:
+        return normalize_int(frame["current_tick"])
+    root_timing = frame.get("root_timing")
+    if isinstance(root_timing, dict) and "cycle" in root_timing:
+        return normalize_int(root_timing["cycle"])
+    return normalize_int(frame.get("cycle"))
+
+
+def xs_frames_by_stage(frames: Iterable[Dict[str, Any]], stage: str) -> Dict[int, Dict[str, Any]]:
     indexed: Dict[int, Dict[str, Any]] = {}
     for frame in frames:
-        if frame.get("stage") != "SessionStepEnd":
+        if frame.get("stage") != stage:
             continue
-        cycle = normalize_int(frame.get("current_tick", frame.get("cycle")))
+        cycle = frame_cycle(frame)
+        if cycle in indexed:
+            raise ValueError(f"duplicate XS frame for stage {stage} cycle {cycle}")
         indexed[cycle] = frame
     return indexed
 
 
-def compare(config: Dict[str, Any], config_path: Path) -> Tuple[int, int]:
+def compare_one(config: Dict[str, Any], config_path: Path) -> Tuple[int, int]:
     config_dir = config_path.parent
     xs_root = (config_dir / config["xs_trace_root"]).resolve()
     xs_segment = latest_segment(xs_root)
     xs_waveform = xs_segment / config.get("xs_waveform", "waveform.jsonl")
     verilog_samples_path = (config_dir / config["verilog_samples"]).resolve()
 
-    xs_frames = xs_session_step_end_frames(load_jsonl(xs_waveform))
+    xs_stage = str(config.get("xs_stage", "SessionStepEnd"))
+    verilog_stage = str(config.get("verilog_stage", "cycle_end"))
+    xs_frames = xs_frames_by_stage(load_jsonl(xs_waveform), xs_stage)
     verilator_samples = verilog_samples_by_xs_cycle(
         load_jsonl(verilog_samples_path),
         int(config.get("cycle_offset", 0)),
+        verilog_stage,
     )
 
-    simulator_name = str(config["simulator"])
+    simulator_name = config.get("simulator")
+    simulator_name = str(simulator_name) if simulator_name is not None else None
     mappings = config.get("signals")
     if not isinstance(mappings, list) or not mappings:
         raise ValueError("config must contain a non-empty signals list")
+    if not xs_frames:
+        raise ValueError(f"XS waveform has no frames for stage {xs_stage}")
+    if not verilator_samples:
+        raise ValueError(f"Verilator samples have no rows for stage {verilog_stage}")
 
     compared = 0
     mismatches: List[str] = []
@@ -163,7 +199,9 @@ def compare(config: Dict[str, Any], config_path: Path) -> Tuple[int, int]:
     if mismatches:
         print(f"[difftest] FAIL {config.get('name', config_path.stem)}")
         print(f"[difftest] xs={xs_waveform}")
+        print(f"[difftest] xs_stage={xs_stage}")
         print(f"[difftest] verilator={verilog_samples_path}")
+        print(f"[difftest] verilog_stage={verilog_stage}")
         for line in mismatches[:20]:
             print(f"[difftest] {line}")
         if len(mismatches) > 20:
@@ -175,8 +213,30 @@ def compare(config: Dict[str, Any], config_path: Path) -> Tuple[int, int]:
         f"signals={len(mappings)} cycles={len(verilator_samples)} compared={compared}"
     )
     print(f"[difftest] xs={xs_waveform}")
+    print(f"[difftest] xs_stage={xs_stage}")
     print(f"[difftest] verilator={verilog_samples_path}")
+    print(f"[difftest] verilog_stage={verilog_stage}")
     return compared, 0
+
+
+def compare(config: Dict[str, Any], config_path: Path) -> Tuple[int, int]:
+    comparisons = config.get("comparisons")
+    if comparisons is None:
+        return compare_one(config, config_path)
+    if not isinstance(comparisons, list) or not comparisons:
+        raise ValueError("comparisons must be a non-empty list")
+
+    total_compared = 0
+    total_mismatches = 0
+    for index, item in enumerate(comparisons):
+        if not isinstance(item, dict):
+            raise ValueError(f"comparisons[{index}] must be a JSON object")
+        merged = {key: value for key, value in config.items() if key != "comparisons"}
+        merged.update(item)
+        compared, mismatches = compare_one(merged, config_path)
+        total_compared += compared
+        total_mismatches += mismatches
+    return total_compared, total_mismatches
 
 
 def main() -> int:

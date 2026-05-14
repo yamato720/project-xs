@@ -12,6 +12,7 @@ namespace {
 
 constexpr vluint64_t kCycles = 6;
 constexpr const char* kSamplePath = "samples.jsonl";
+constexpr const char* kEventSamplePath = "event_samples.jsonl";
 
 void dump_eval(Vabc_demo& top, VerilatedVcdC& trace, vluint64_t& time) {
     top.eval();
@@ -27,10 +28,13 @@ void tick(Vabc_demo& top, VerilatedVcdC& trace, vluint64_t& time) {
     dump_eval(top, trace, time);
 }
 
-void write_sample(std::ofstream& samples, const Vabc_demo& top, vluint64_t cycle) {
+void write_sample(std::ofstream& samples,
+                  const Vabc_demo& top,
+                  vluint64_t cycle,
+                  const char* stage) {
     samples << "{\"format\":\"project_xs.verilator_cycle_sample\","
             << "\"version\":1,"
-            << "\"stage\":\"cycle_end\","
+            << "\"stage\":\"" << stage << "\","
             << "\"cycle\":" << cycle << ","
             << "\"signals\":{"
             << "\"source_out\":" << top.source_out << ","
@@ -41,6 +45,22 @@ void write_sample(std::ofstream& samples, const Vabc_demo& top, vluint64_t cycle
             << "\"reg_B\":" << top.reg_B << ","
             << "\"reg_C\":" << top.reg_C
             << "}}\n";
+}
+
+void tick_with_pre_posedge_sample(Vabc_demo& top,
+                                  VerilatedVcdC& trace,
+                                  vluint64_t& time,
+                                  std::ofstream& event_samples,
+                                  vluint64_t cycle) {
+    top.clk = 0;
+    dump_eval(top, trace, time);
+    write_sample(event_samples, top, cycle, "pre_posedge_after_input_drive");
+
+    top.clk = 1;
+    dump_eval(top, trace, time);
+
+    top.clk = 0;
+    dump_eval(top, trace, time);
 }
 
 }  // namespace
@@ -58,6 +78,11 @@ int main(int argc, char** argv) {
         std::cerr << "[verilator] cannot open " << kSamplePath << "\n";
         return 1;
     }
+    std::ofstream event_samples(kEventSamplePath);
+    if (!event_samples) {
+        std::cerr << "[verilator] cannot open " << kEventSamplePath << "\n";
+        return 1;
+    }
 
     vluint64_t time = 0;
     top->clk = 0;
@@ -68,8 +93,8 @@ int main(int argc, char** argv) {
     top->rst_n = 1;
     for (vluint64_t cycle = 0; cycle < kCycles; ++cycle) {
         top->source_out = cycle;
-        tick(*top, *trace, time);
-        write_sample(samples, *top, cycle);
+        tick_with_pre_posedge_sample(*top, *trace, time, event_samples, cycle);
+        write_sample(samples, *top, cycle, "cycle_end");
         std::cout << "[verilator][cycle " << cycle << "] wire: A="
                   << top->wire_A << " B=" << top->wire_B << " C=" << top->wire_C
                   << " | reg: A=" << top->reg_A << " B=" << top->reg_B
@@ -77,8 +102,10 @@ int main(int argc, char** argv) {
     }
 
     samples.close();
+    event_samples.close();
     trace->close();
     top->final();
-    std::cout << "[verilator] vcd=abc_demo.vcd samples=" << kSamplePath << "\n";
+    std::cout << "[verilator] vcd=abc_demo.vcd samples=" << kSamplePath
+              << " event_samples=" << kEventSamplePath << "\n";
     return 0;
 }

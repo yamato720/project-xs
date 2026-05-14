@@ -117,22 +117,24 @@ void run_with_snapshot_demo() {
     // 先跑几拍，让寄存器数组、stage phase、reg 端口 pending/visible 状态都不再是初始 0。
     // 如果只在第 0 拍保存，很容易漏掉真正的运行态恢复问题。
     std::cout << "[demo_with_snapshot] run source to checkpoint\n";
-    source_session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic);
+    source_session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic,
+                                          "riscv_regfile_source_auto");
     while (source_session.current_tick() < 5) {
         source_session.step();
     }
-    source_session.stop_snapshot_capture();
+    source_session.stop_snapshot_capture("riscv_regfile_source_auto");
     std::cout << "[demo_with_snapshot] automatic session snapshot records="
               << source_session.snapshot_history().size() << "\n";
 
     // 手动挡只在显式 capture_snapshot() 时采样；这里用它保存恢复点。
     // 捕获到的 session 快照包含 session 自己的 current_tick / 调度累计器，
     // 以及内部 simulator/kernel/component 的运行态。
-    source_session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Manual);
+    source_session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Manual,
+                                          "riscv_regfile_restore_point");
     const auto& checkpoint_record =
         source_session.capture_snapshot(project_xs::sim::SnapshotCaptureStage::Manual);
     const std::string checkpoint_path = checkpoint_record.checkpoint_path;
-    source_session.stop_snapshot_capture();
+    source_session.stop_snapshot_capture("riscv_regfile_restore_point");
     std::cout << "[demo_with_snapshot] saved snapshot at session_tick="
               << source_session.current_tick()
               << ", simulator_cycle=" << source_simulator->current_cycle()

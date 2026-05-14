@@ -75,9 +75,10 @@ int main() {
     session.initialize_zero();
 
     std::cout << session.start_info() << "\n";
-    session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic);
+    session.start_snapshot_capture(project_xs::sim::SnapshotCaptureMode::Automatic,
+                                   "led_waterfall_session");
     session.run();
-    session.stop_snapshot_capture();
+    session.stop_snapshot_capture("led_waterfall_session");
     std::cout << session.finish_info() << "\n";
     std::cout << "[project_xs_waveform] records=" << session.snapshot_history().size()
               << " trace_dir=" << trace_dir << "\n";

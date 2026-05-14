@@ -1470,7 +1470,7 @@ function updateStatus() {
   const rootTiming = frame.root_timing || TRACE.root_timing || {};
   const freq = formatHz(rootTiming.frequency_hz);
   const cycle = rootTiming.cycle ?? frame.cycle ?? '';
-  statusEl.textContent = `光标=${formatNumber(cursorFrameFloat(), 4)} 最近帧=${frameIndex} 序号=${frame.sequence ?? ''} 阶段=${frame.stage ?? ''} 顶层周期=${cycle} ${freq ? `顶层频率=${freq}` : ''} 时间=${frame.time_seconds ?? ''} 已选=${selected.size} 值选择=${selectedValues.size}`;
+  statusEl.textContent = `光标=${formatNumber(cursorFrameFloat(), 4)} 当前帧=${frameIndex} 序号=${frame.sequence ?? ''} 阶段=${frame.stage ?? ''} 顶层周期=${cycle} ${freq ? `顶层频率=${freq}` : ''} 时间=${frame.time_seconds ?? ''} 已选=${selected.size} 值选择=${selectedValues.size}`;
 }
 function renderAll() { renderList(); scheduleWaveRender(); }
 function clampFrameIndex(index) {
@@ -1486,7 +1486,9 @@ function cursorFrameFloat() {
   return px ? cursorX / px : 0;
 }
 function currentFrameIndex() {
-  return clampFrameIndex(Math.round(cursorFrameFloat()));
+  const position = cursorFrameFloat();
+  if (!Number.isFinite(position) || position <= 0) return 0;
+  return clampFrameIndex(Math.floor(position + 1e-9));
 }
 function wavePointFromClient(event) {
   const rect = scroll.getBoundingClientRect();

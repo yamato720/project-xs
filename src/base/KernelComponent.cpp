@@ -207,25 +207,43 @@ void KernelComponent::set_snapshot_capture_directory(std::string directory) {
     snapshot_capture_root_directory_ = normalize_snapshot_capture_directory(directory);
 }
 
-void KernelComponent::start_snapshot_capture(SnapshotCaptureMode mode) {
-    if (snapshot_capture_segment_active_) {
-        finish_snapshot_capture_segment();
-    }
-    snapshot_capture_mode_ = mode;
-    snapshot_capture_active_ = true;
-    if (snapshot_capture_mode_ == SnapshotCaptureMode::Automatic) {
-        begin_snapshot_capture_segment();
+void KernelComponent::start_snapshot_capture(SnapshotCaptureMode mode,
+                                             std::string capture_name) {
+    snapshot_capture_contexts_.push_back(SnapshotCaptureContext{
+        std::move(capture_name),
+        mode,
+    });
+    if (mode == SnapshotCaptureMode::Automatic) {
         capture_snapshot(SnapshotCaptureStage::AutomaticSegmentBegin);
     }
 }
 
-void KernelComponent::stop_snapshot_capture() {
-    if (snapshot_capture_active_ &&
-        snapshot_capture_mode_ == SnapshotCaptureMode::Automatic) {
-        capture_snapshot(SnapshotCaptureStage::AutomaticSegmentEnd);
-        finish_snapshot_capture_segment();
+void KernelComponent::stop_snapshot_capture(std::string capture_name) {
+    if (snapshot_capture_contexts_.empty()) {
+        if (!capture_name.empty()) {
+            error::raise(error::Stage::Runtime,
+                         error::Kind::InvalidArgument,
+                         "KernelComponent",
+                         "no active snapshot capture named: " + capture_name);
+        }
+        return;
     }
-    snapshot_capture_active_ = false;
+
+    auto& context = snapshot_capture_contexts_.back();
+    if (context.name != capture_name) {
+        error::raise(error::Stage::Runtime,
+                     error::Kind::InvalidArgument,
+                     "KernelComponent",
+                     "snapshot capture stop name \"" + capture_name +
+                         "\" does not match active capture name \"" +
+                         context.name + "\"");
+    }
+
+    if (context.mode == SnapshotCaptureMode::Automatic) {
+        capture_snapshot(SnapshotCaptureStage::AutomaticSegmentEnd);
+        finish_snapshot_capture_segment(snapshot_capture_contexts_.back());
+    }
+    snapshot_capture_contexts_.pop_back();
 }
 
 const KernelComponentSnapshotRecord& KernelComponent::capture_snapshot(
@@ -235,7 +253,7 @@ const KernelComponentSnapshotRecord& KernelComponent::capture_snapshot(
     record.stage = stage;
     record.snapshot = snapshot();
     snapshot_history_.push_back(std::move(record));
-    if (snapshot_capture_active_) {
+    if (snapshot_capture_active()) {
         store_snapshot_capture_record(snapshot_history_.back());
     }
     return snapshot_history_.back();
@@ -245,6 +263,7 @@ void KernelComponent::clear_snapshot_history() {
     snapshot_history_.clear();
     snapshot_capture_sequence_ = 0;
     snapshot_capture_segment_index_ = 0;
+    snapshot_capture_contexts_.clear();
 }
 
 void KernelComponent::run_single(std::uint64_t cycle) {
@@ -322,80 +341,100 @@ void KernelComponent::advance_phase() {
 }
 
 void KernelComponent::capture_snapshot_if_automatic(SnapshotCaptureStage stage) {
-    if (snapshot_capture_active_ &&
-        snapshot_capture_mode_ == SnapshotCaptureMode::Automatic) {
-        capture_snapshot(stage);
+    for (const auto& context : snapshot_capture_contexts_) {
+        if (context.mode == SnapshotCaptureMode::Automatic) {
+            capture_snapshot(stage);
+            return;
+        }
     }
 }
 
-void KernelComponent::begin_snapshot_capture_segment() {
-    snapshot_capture_segment_directory_ = prepare_snapshot_capture_segment_directory(
+void KernelComponent::begin_snapshot_capture_segment(SnapshotCaptureContext& context) {
+    context.segment_index = snapshot_capture_segment_index_++;
+    context.segment_directory = prepare_snapshot_capture_segment_directory(
         snapshot_capture_root_directory_,
         "kernel_component",
         name_,
         snapshot_capture_sequence_,
-        snapshot_capture_segment_index_++);
-    snapshot_capture_waveform_path_ =
-        snapshot_capture_waveform_path(snapshot_capture_segment_directory_);
-    std::ofstream(snapshot_capture_waveform_path_, std::ios::out | std::ios::trunc).close();
-    snapshot_capture_segment_frame_count_ = 0;
-    snapshot_capture_segment_active_ = true;
-    write_snapshot_capture_manifest(snapshot_capture_segment_directory_,
+        context.segment_index,
+        context.name);
+    context.waveform_path = snapshot_capture_waveform_path(context.segment_directory);
+    std::ofstream(context.waveform_path, std::ios::out | std::ios::trunc).close();
+    context.frame_count = 0;
+    context.segment_active = true;
+    write_snapshot_capture_manifest(context.segment_directory,
                                     "kernel_component",
                                     name_,
-                                    snapshot_capture_segment_index_ - 1,
-                                    snapshot_capture_segment_frame_count_,
-                                    false);
+                                    context.segment_index,
+                                    context.frame_count,
+                                    false,
+                                    context.name);
 }
 
-void KernelComponent::finish_snapshot_capture_segment() {
-    if (!snapshot_capture_segment_active_) {
+void KernelComponent::finish_snapshot_capture_segment(SnapshotCaptureContext& context) {
+    if (!context.segment_active) {
         return;
     }
-    if (snapshot_capture_segment_frame_count_ != 0 && !snapshot_history_.empty()) {
-        auto& last_record = snapshot_history_[snapshot_capture_segment_last_record_index_];
-        last_record.checkpoint_path =
-            snapshot_capture_last_checkpoint_path(snapshot_capture_segment_directory_);
+    if (context.frame_count != 0 && !snapshot_history_.empty()) {
+        auto& last_record = snapshot_history_[context.last_record_index];
+        last_record.checkpoint_path = snapshot_capture_last_checkpoint_path(context.segment_directory);
         last_record.checkpoint_role = "segment_last";
         project_xs::sim::save_checkpoint(last_record.checkpoint_path, last_record.snapshot);
     }
-    write_snapshot_capture_manifest(snapshot_capture_segment_directory_,
+    write_snapshot_capture_manifest(context.segment_directory,
                                     "kernel_component",
                                     name_,
-                                    snapshot_capture_segment_index_ - 1,
-                                    snapshot_capture_segment_frame_count_,
-                                    true);
-    render_snapshot_capture_html(snapshot_capture_segment_directory_);
-    snapshot_capture_segment_active_ = false;
+                                    context.segment_index,
+                                    context.frame_count,
+                                    true,
+                                    context.name);
+    render_snapshot_capture_html(context.segment_directory);
+    context.segment_active = false;
 }
 
 void KernelComponent::store_snapshot_capture_record(KernelComponentSnapshotRecord& record) {
-    if (snapshot_capture_mode_ == SnapshotCaptureMode::Automatic) {
-        if (!snapshot_capture_segment_active_) {
-            begin_snapshot_capture_segment();
+    const std::size_t record_index = snapshot_history_.size() - 1;
+    for (std::size_t index = 0; index < snapshot_capture_contexts_.size(); ++index) {
+        auto& context = snapshot_capture_contexts_[index];
+        const bool is_top_context = index + 1 == snapshot_capture_contexts_.size();
+        if (context.mode != SnapshotCaptureMode::Automatic) {
+            continue;
         }
-        const std::size_t record_index = snapshot_history_.size() - 1;
-        append_waveform_jsonl_frame(snapshot_capture_waveform_path_, record.sequence, record.stage, *this);
-        if (snapshot_capture_segment_frame_count_ == 0) {
-            snapshot_capture_segment_first_record_index_ = record_index;
-            record.checkpoint_path =
-                snapshot_capture_first_checkpoint_path(snapshot_capture_segment_directory_);
-            record.checkpoint_role = "segment_first";
-            project_xs::sim::save_checkpoint(record.checkpoint_path, record.snapshot);
+        if (!context.segment_active) {
+            begin_snapshot_capture_segment(context);
         }
-        snapshot_capture_segment_last_record_index_ = record_index;
-        ++snapshot_capture_segment_frame_count_;
-        return;
+        append_waveform_jsonl_frame(context.waveform_path, record.sequence, record.stage, *this);
+        if (context.frame_count == 0) {
+            context.first_record_index = record_index;
+            const std::string path = snapshot_capture_first_checkpoint_path(context.segment_directory);
+            if (is_top_context) {
+                record.checkpoint_path = path;
+                record.checkpoint_role = "segment_first";
+            }
+            project_xs::sim::save_checkpoint(path, record.snapshot);
+        }
+        context.last_record_index = record_index;
+        ++context.frame_count;
     }
 
-    const std::string path = prepare_manual_checkpoint_path(
-        snapshot_capture_root_directory_,
-        "kernel_component",
-        name_,
-        record.sequence);
-    record.checkpoint_path = path;
-    record.checkpoint_role = "manual";
-    project_xs::sim::save_checkpoint(path, record.snapshot);
+    for (std::size_t index = 0; index < snapshot_capture_contexts_.size(); ++index) {
+        auto& context = snapshot_capture_contexts_[index];
+        const bool is_top_context = index + 1 == snapshot_capture_contexts_.size();
+        if (context.mode != SnapshotCaptureMode::Manual) {
+            continue;
+        }
+        const std::string path = prepare_manual_checkpoint_path(
+            snapshot_capture_root_directory_,
+            "kernel_component",
+            name_,
+            record.sequence,
+            context.name);
+        if (is_top_context) {
+            record.checkpoint_path = path;
+            record.checkpoint_role = "manual";
+        }
+        project_xs::sim::save_checkpoint(path, record.snapshot);
+    }
 }
 
 }  // namespace project_xs::sim

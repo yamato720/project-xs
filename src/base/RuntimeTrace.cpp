@@ -62,29 +62,82 @@ std::string port_timing_description(const Port& port, const std::string& directi
     return description;
 }
 
-void append_simulator_cycle_sample(WaveformFrame& frame,
-                                   const CycleSimulator& simulator) {
+void append_runtime_cycle_sample(WaveformFrame& frame,
+                                 const std::string& scope,
+                                 const std::string& name,
+                                 const std::vector<std::string>& aliases,
+                                 const std::string& description,
+                                 const std::string& timing_kind,
+                                 const std::string& cycle_alias,
+                                 const std::string& cycle_description,
+                                 long double frequency_hz,
+                                 std::uint64_t current_cycle) {
     frame.signals.insert(frame.signals.begin(), WaveformSignalSample{
-        simulator.name(),
+        scope,
         "__cycle",
         WaveformSignalKind::RuntimeCycle,
         "uint64_t",
         64,
-        std::to_string(simulator.current_cycle()),
+        std::to_string(current_cycle),
         true,
-        {simulator.name(), "__cycle"},
+        {name, "__cycle"},
         {
-            make_name_options(simulator.name(), simulator.name_aliases()),
-            {"simulator_cycle", "cycle", "__cycle"},
+            make_name_options(name, aliases),
+            {cycle_alias, "cycle", "__cycle"},
         },
         {
-            simulator.description(),
-            "simulator 本地周期计数；运行期元数据的波形投影，不是 State",
+            description,
+            cycle_description,
         },
-        {"cycle_simulator", ""},
-        {simulator.frequency_hz(), 0.0L},
-        {simulator.current_cycle(), 0},
+        {timing_kind, ""},
+        {frequency_hz, 0.0L},
+        {current_cycle, 0},
     });
+}
+
+void append_simulator_cycle_sample(WaveformFrame& frame,
+                                   const CycleSimulator& simulator) {
+    append_runtime_cycle_sample(
+        frame,
+        simulator.name(),
+        simulator.name(),
+        simulator.name_aliases(),
+        simulator.description(),
+        "cycle_simulator",
+        "simulator_cycle",
+        "simulator 本地周期计数；运行期元数据的波形投影，不是 State",
+        simulator.frequency_hz(),
+        simulator.current_cycle());
+}
+
+void append_kernel_cycle_sample(WaveformFrame& frame,
+                                const Kernel& kernel) {
+    append_runtime_cycle_sample(
+        frame,
+        kernel.name(),
+        kernel.name(),
+        kernel.name_aliases(),
+        kernel.description(),
+        "kernel",
+        "kernel_cycle",
+        "kernel 本地周期计数；运行期元数据的波形投影，不是 State",
+        kernel.frequency_hz(),
+        kernel.current_cycle());
+}
+
+void append_component_cycle_sample(WaveformFrame& frame,
+                                   const KernelComponent& component) {
+    append_runtime_cycle_sample(
+        frame,
+        component.name(),
+        component.name(),
+        component.name_aliases(),
+        component.description(),
+        "kernel_component",
+        "component_cycle",
+        "component 本地周期计数；运行期元数据的波形投影，不是 State",
+        component.frequency_hz(),
+        component.current_cycle());
 }
 
 void append_state_samples(WaveformFrame& frame,
@@ -505,6 +558,11 @@ std::string sanitize_path_component(const std::string& value) {
     return clean.empty() ? "unnamed" : clean;
 }
 
+std::string capture_segment_prefix(const std::string& object_kind,
+                                   const std::string& capture_name) {
+    return sanitize_path_component(capture_name.empty() ? object_kind : capture_name);
+}
+
 std::string padded_index(std::uint64_t index) {
     std::ostringstream oss;
     oss << std::setw(6) << std::setfill('0') << index;
@@ -626,6 +684,7 @@ WaveformFrame capture_component_waveform_frame(const KernelComponent& component,
                                                PortValueBase base) {
     WaveformFrame frame;
     frame.cycle = frame_index;
+    append_component_cycle_sample(frame, component);
     const std::string scope = component.name();
     const std::vector<std::string> name_path{component.name()};
     const std::vector<std::vector<std::string>> name_options_path{
@@ -675,6 +734,7 @@ WaveformFrame capture_kernel_waveform_frame(const Kernel& kernel,
                                             PortValueBase base) {
     WaveformFrame frame;
     frame.cycle = frame_index;
+    append_kernel_cycle_sample(frame, kernel);
     const std::string scope = kernel.name();
     const std::vector<std::string> name_path{kernel.name()};
     const std::vector<std::vector<std::string>> name_options_path{
@@ -1508,6 +1568,7 @@ WaveformFrame capture_waveform_frame(const CycleSimulator& simulator,
                                      PortValueBase base) {
     WaveformFrame frame;
     frame.cycle = cycle;
+    append_simulator_cycle_sample(frame, simulator);
 
     const std::string simulator_scope = simulator.name();
     const std::vector<std::string> name_path{simulator.name()};
@@ -1689,9 +1750,10 @@ std::string prepare_snapshot_capture_segment_directory(const std::string& root_d
                                                        const std::string& object_kind,
                                                        const std::string& object_name,
                                                        std::uint64_t start_cycle,
-                                                       std::uint64_t segment_index) {
+                                                       std::uint64_t segment_index,
+                                                       const std::string& capture_name) {
     const std::string base_name =
-        sanitize_path_component(object_kind) + "." +
+        capture_segment_prefix(object_kind, capture_name) + "." +
         current_datetime_label() + "." +
         compact_scaled_cycle(start_cycle);
     auto directory = std::filesystem::path(root_directory) /
@@ -1708,12 +1770,18 @@ std::string prepare_snapshot_capture_segment_directory(const std::string& root_d
 std::string prepare_manual_checkpoint_path(const std::string& root_directory,
                                            const std::string& object_kind,
                                            const std::string& object_name,
-                                           std::uint64_t sequence) {
+                                           std::uint64_t sequence,
+                                           const std::string& capture_name) {
+    std::string file_name = "manual_";
+    if (!capture_name.empty()) {
+        file_name += sanitize_path_component(capture_name) + "_";
+    }
+    file_name += padded_index(sequence) + ".pxsckpt";
     const auto path = std::filesystem::path(root_directory) /
                       (sanitize_path_component(object_kind) + "_" +
                        sanitize_path_component(object_name)) /
                       "checkpoints" /
-                      ("manual_" + padded_index(sequence) + ".pxsckpt");
+                      file_name;
     create_directories_or_throw(path.parent_path());
     return path.string();
 }
@@ -1735,7 +1803,8 @@ void write_snapshot_capture_manifest(const std::string& segment_directory,
                                      const std::string& object_name,
                                      std::uint64_t segment_index,
                                      std::uint64_t frame_count,
-                                     bool closed) {
+                                     bool closed,
+                                     const std::string& capture_name) {
     const auto manifest_path =
         (std::filesystem::path(segment_directory) / "manifest.json").string();
     auto out = open_output_file(manifest_path);
@@ -1744,6 +1813,9 @@ void write_snapshot_capture_manifest(const std::string& segment_directory,
     out << "  \"version\": 1,\n";
     out << "  \"object_kind\": " << quoted(object_kind) << ",\n";
     out << "  \"object_name\": " << quoted(object_name) << ",\n";
+    out << "  \"capture_name\": " << quoted(capture_name) << ",\n";
+    out << "  \"segment_prefix\": "
+        << quoted(capture_segment_prefix(object_kind, capture_name)) << ",\n";
     out << "  \"mode\": \"Automatic\",\n";
     out << "  \"segment_index\": " << segment_index << ",\n";
     out << "  \"frame_count\": " << frame_count << ",\n";
@@ -1863,7 +1935,6 @@ void append_waveform_jsonl_frame(const std::string& path,
         }
         const auto& simulator = *simulators[index];
         auto frame = capture_waveform_frame(simulator, base);
-        append_simulator_cycle_sample(frame, simulator);
         out << "{";
         out << "\"name\":" << quoted(simulator.name());
         out << ",\"cycle\":" << simulator.current_cycle();

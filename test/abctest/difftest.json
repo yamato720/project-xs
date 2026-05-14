@@ -1,38 +1,106 @@
 {
-  "name": "abctest sim_a session-vs-verilator",
-  "xs_trace_root": "trace/simulation_session_session",
-  "xs_waveform": "waveform.jsonl",
-  "verilog_samples": "verilator_sim/samples.jsonl",
-  "simulator": "simulator_a",
-  "cycle_offset": 1,
-  "signals": [
+  "comparisons": [
     {
-      "verilog": "source_out",
-      "xs": "simulator_a.cycle_simulator_ports.output.source_out"
+      "name": "abctest sim_a session cycle-end vs Verilator",
+      "xs_trace_root": "trace/simulation_session_session",
+      "xs_waveform": "waveform.jsonl",
+      "xs_stage": "SessionStepEnd",
+      "verilog_samples": "verilator_sim/samples.jsonl",
+      "verilog_stage": "cycle_end",
+      "simulator": "simulator_a",
+      "cycle_offset": 1,
+      "signals": [
+        {
+          "verilog": "source_out",
+          "xs": "simulator_a.cycle_simulator_ports.output.source_out"
+        },
+        {
+          "verilog": "wire_A",
+          "xs": "simulator_a.sim_a.sim_a_ports.output.A"
+        },
+        {
+          "verilog": "wire_B",
+          "xs": "simulator_a.sim_a.sim_a_ports.output.B"
+        },
+        {
+          "verilog": "wire_C",
+          "xs": "simulator_a.sim_a.sim_a_ports.output.C"
+        },
+        {
+          "verilog": "reg_A",
+          "xs": "simulator_a.sim_a.reg_outputs.output.A"
+        },
+        {
+          "verilog": "reg_B",
+          "xs": "simulator_a.sim_a.reg_outputs.output.B"
+        },
+        {
+          "verilog": "reg_C",
+          "xs": "simulator_a.sim_a.reg_outputs.output.C"
+        }
+      ]
     },
     {
-      "verilog": "wire_A",
-      "xs": "simulator_a.sim_a.sim_a_ports.output.A"
+      "name": "abctest simulator_a pre-posedge top vs Verilator",
+      "xs_trace_root": "trace/cycle_simulator_simulator_a",
+      "xs_waveform": "waveform.jsonl",
+      "xs_stage": "CycleAfterKernelRun",
+      "verilog_samples": "verilator_sim/event_samples.jsonl",
+      "verilog_stage": "pre_posedge_after_input_drive",
+      "cycle_offset": 0,
+      "signals": [
+        {
+          "verilog": "source_out",
+          "xs": "simulator_a.cycle_simulator_ports.output.source_out"
+        },
+        {
+          "verilog": "wire_A",
+          "xs": "simulator_a.sim_a.sim_a_ports.output.A"
+        },
+        {
+          "verilog": "wire_B",
+          "xs": "simulator_a.sim_a.sim_a_ports.output.B"
+        },
+        {
+          "verilog": "wire_C",
+          "xs": "simulator_a.sim_a.sim_a_ports.output.C"
+        },
+        {
+          "verilog": "reg_A",
+          "xs": "simulator_a.sim_a.reg_outputs.output.A"
+        },
+        {
+          "verilog": "reg_B",
+          "xs": "simulator_a.sim_a.reg_outputs.output.B"
+        },
+        {
+          "verilog": "reg_C",
+          "xs": "simulator_a.sim_a.reg_outputs.output.C"
+        }
+      ]
     },
     {
-      "verilog": "wire_B",
-      "xs": "simulator_a.sim_a.sim_a_ports.output.B"
-    },
-    {
-      "verilog": "wire_C",
-      "xs": "simulator_a.sim_a.sim_a_ports.output.C"
-    },
-    {
-      "verilog": "reg_A",
-      "xs": "simulator_a.sim_a.reg_outputs.output.A"
-    },
-    {
-      "verilog": "reg_B",
-      "xs": "simulator_a.sim_a.reg_outputs.output.B"
-    },
-    {
-      "verilog": "reg_C",
-      "xs": "simulator_a.sim_a.reg_outputs.output.C"
+      "name": "abctest sim_a kernel A pre-posedge ghost vs Verilator",
+      "xs_trace_root": "trace/kernel_sim_a",
+      "xs_waveform": "waveform.jsonl",
+      "xs_stage": "KernelAfterEmitOutputs",
+      "verilog_samples": "verilator_sim/event_samples.jsonl",
+      "verilog_stage": "pre_posedge_after_input_drive",
+      "cycle_offset": 0,
+      "signals": [
+        {
+          "verilog": "source_out",
+          "xs": "sim_a.stage_a.stage_a_ports.input.in"
+        },
+        {
+          "verilog": "wire_A",
+          "xs": "sim_a.sim_a_ports.output.A"
+        },
+        {
+          "verilog": "reg_A",
+          "xs": "sim_a.reg_outputs.output.A"
+        }
+      ]
     }
   ]
 }

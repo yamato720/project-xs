@@ -50,6 +50,20 @@ enum class SnapshotCaptureMode {
     Automatic,
 };
 
+// 单个正在进行的快照/波形采集上下文。
+// 同一对象允许多个上下文按栈嵌套开启；stop 时必须匹配栈顶 name。
+struct SnapshotCaptureContext {
+    std::string name;
+    SnapshotCaptureMode mode = SnapshotCaptureMode::Manual;
+    std::string segment_directory;
+    std::string waveform_path;
+    std::uint64_t segment_index = 0;
+    std::uint64_t frame_count = 0;
+    bool segment_active = false;
+    std::size_t first_record_index = 0;
+    std::size_t last_record_index = 0;
+};
+
 // 快照采集阶段。
 // Manual 可由调用者自由标记；其他阶段由对应层级在 step/run/end_cycle 中自动打点。
 enum class SnapshotCaptureStage {
@@ -300,13 +314,15 @@ std::string prepare_snapshot_capture_segment_directory(const std::string& root_d
                                                        const std::string& object_kind,
                                                        const std::string& object_name,
                                                        std::uint64_t start_cycle,
-                                                       std::uint64_t segment_index);
+                                                       std::uint64_t segment_index,
+                                                       const std::string& capture_name = {});
 
 // 返回手动 checkpoint 文件路径，并确保目录存在。
 std::string prepare_manual_checkpoint_path(const std::string& root_directory,
                                            const std::string& object_kind,
                                            const std::string& object_name,
-                                           std::uint64_t sequence);
+                                           std::uint64_t sequence,
+                                           const std::string& capture_name = {});
 
 std::string snapshot_capture_waveform_path(const std::string& segment_directory);
 std::string snapshot_capture_first_checkpoint_path(const std::string& segment_directory);
@@ -317,7 +333,8 @@ void write_snapshot_capture_manifest(const std::string& segment_directory,
                                      const std::string& object_name,
                                      std::uint64_t segment_index,
                                      std::uint64_t frame_count,
-                                     bool closed);
+                                     bool closed,
+                                     const std::string& capture_name = {});
 
 // 调用 Python 渲染器，把自动采集 segment 转成自包含 waveform.html。
 void render_snapshot_capture_html(const std::string& segment_directory);
