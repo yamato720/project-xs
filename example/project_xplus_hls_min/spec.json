@@ -1,12 +1,11 @@
 {
   "title": "Project-XS XPlus HLS Minimal Review",
-  "subtitle": "最小化渲染样例：保留全部 XO 与 CFG，弱化注释层，只审查接口、综合与实现报告接线是否正确。",
-  "source_note": "这个 spec 只保留最少的渲染控制字段；XO、CFG、csynth 和 routed timing 都通过相对路径显式指定，并关闭自动发现。",
-  "cfg": "../project_xplus_hls/connectivity_u55c.cfg",
+  "subtitle": "最小化渲染样例：只指定 XPlus hw build 目录与 CFG，自动发现 XO、csynth、schedule 和 routed timing。",
+  "source_note": "这个 spec 只保留最少的渲染控制字段；硬件产物通过 artifacts.build_dir 自动发现，CFG 继续显式指定以解析 nk/sp 绑定。",
+  "cfg": "../../../Project-XPlus/cfg/connectivity_u55c.cfg",
   "artifacts": {
     "auto_discover": false,
-    "csynth_dir": "../project_xplus_hls/vivado-log/csynth",
-    "schedule_dir": "../project_xplus_hls/vivado-log/sched"
+    "build_dir": "../../../Project-XPlus/build/hw"
   },
   "output": {
     "json": "reports/min_review.json",
@@ -21,24 +20,19 @@
   ],
   "kernels": [
     {
-      "name": "spmv_csr_kernel",
-      "xo": "../project_xplus_hls/xo/spmv_csr_kernel.xo"
+      "name": "spmv_csr_kernel"
     },
     {
-      "name": "init_pcg_kernel",
-      "xo": "../project_xplus_hls/xo/init_pcg_kernel.xo"
+      "name": "init_pcg_kernel"
     },
     {
-      "name": "dot_kernel",
-      "xo": "../project_xplus_hls/xo/dot_kernel.xo"
+      "name": "dot_kernel"
     },
     {
-      "name": "update_xrz_kernel",
-      "xo": "../project_xplus_hls/xo/update_xrz_kernel.xo"
+      "name": "update_xrz_kernel"
     },
     {
-      "name": "update_p_kernel",
-      "xo": "../project_xplus_hls/xo/update_p_kernel.xo"
+      "name": "update_p_kernel"
     }
   ]
 }

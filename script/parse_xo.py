@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_EXAMPLE_DIR = ROOT / "example" / "project_xplus_hls"
+RESOURCE_KEYS = ["LUT", "LUTAsMem", "REG", "BRAM", "URAM", "DSP"]
 
 
 def read_spec(path: Path) -> dict:
@@ -79,6 +80,16 @@ def resolve_optional_path(base: Path, raw: str | None) -> Path | None:
     if not raw:
         return None
     return resolve_path(base, raw)
+
+
+def resolve_optional_path_list(base: Path, raw: object) -> list[Path]:
+    if not raw:
+        return []
+    if isinstance(raw, str):
+        return [resolve_path(base, raw)]
+    if isinstance(raw, list):
+        return [resolve_path(base, str(item)) for item in raw if str(item)]
+    raise RuntimeError(f"path list field must be a string or list of strings: {raw!r}")
 
 
 def resolve_input_path(raw_path: str) -> tuple[Path, Path]:
@@ -176,12 +187,14 @@ def parse_connectivity_cfg(cfg_path: Path | None) -> dict:
             "cfg_path": "",
             "kernel_instances": [],
             "sp_bindings": [],
+            "stream_connections": [],
             "instances_by_kernel": {},
             "bindings_by_kernel": {},
         }
 
     kernel_instances = []
     sp_bindings = []
+    stream_connections = []
     current_section = ""
 
     for raw_line in cfg_path.read_text(encoding="utf-8").splitlines():
@@ -223,6 +236,22 @@ def parse_connectivity_cfg(cfg_path: Path | None) -> dict:
                     "raw": payload,
                 }
             )
+            continue
+
+        if line.startswith("stream_connect="):
+            payload = line[len("stream_connect="):].strip()
+            source_endpoint, sink_endpoint = payload.split(":", 1)
+            source_instance, source_port = source_endpoint.split(".", 1)
+            sink_instance, sink_port = sink_endpoint.split(".", 1)
+            stream_connections.append(
+                {
+                    "source_instance": source_instance,
+                    "source_port": source_port,
+                    "sink_instance": sink_instance,
+                    "sink_port": sink_port,
+                    "raw": payload,
+                }
+            )
 
     instances_by_kernel = {}
     instance_to_kernel = {}
@@ -237,10 +266,15 @@ def parse_connectivity_cfg(cfg_path: Path | None) -> dict:
         binding["kernel_name"] = kernel_name
         bindings_by_kernel.setdefault(kernel_name, []).append(binding)
 
+    for connection in stream_connections:
+        connection["source_kernel"] = instance_to_kernel.get(connection["source_instance"], "")
+        connection["sink_kernel"] = instance_to_kernel.get(connection["sink_instance"], "")
+
     return {
         "cfg_path": str(cfg_path),
         "kernel_instances": kernel_instances,
         "sp_bindings": sp_bindings,
+        "stream_connections": stream_connections,
         "instances_by_kernel": instances_by_kernel,
         "bindings_by_kernel": bindings_by_kernel,
     }
@@ -265,10 +299,122 @@ def parse_ns_to_mhz(period_ns: str) -> str:
     return f"{1000.0 / value:.3f}"
 
 
+def parse_int_resource(value: object) -> int | None:
+    if value is None:
+        return None
+    text = str(value).strip().replace(",", "")
+    if not text or text in {"-", "?"}:
+        return None
+    if text.startswith("~"):
+        text = text[1:]
+    try:
+        return int(float(text))
+    except ValueError:
+        return None
+
+
+def format_resource_value(value: int | None) -> str:
+    return "" if value is None else str(value)
+
+
+def resource_percent(used: int | None, available: int | None) -> str:
+    if used is None or available is None or available <= 0:
+        return ""
+    return f"{used * 100.0 / available:.2f}"
+
+
+def implementation_resource_cells(actual: dict, supply: dict | None = None) -> dict:
+    supply = supply or {}
+    cells = {}
+    for key in RESOURCE_KEYS:
+        used = parse_int_resource(actual.get(key))
+        available = parse_int_resource(supply.get(key))
+        cells[key] = {
+            "used": format_resource_value(used),
+            "available": format_resource_value(available),
+            "util_pct": resource_percent(used, available),
+        }
+    return cells
+
+
+def hls_resource_cells(resources: dict, available_resources: dict | None = None) -> dict:
+    available_resources = available_resources or {}
+    key_map = {
+        "LUT": "LUT",
+        "LUTAsMem": "LUTAsMem",
+        "REG": "FF",
+        "BRAM": "BRAM_18K",
+        "URAM": "URAM",
+        "DSP": "DSP",
+    }
+    cells = {}
+    for key, hls_key in key_map.items():
+        used = parse_int_resource(resources.get(hls_key))
+        available = parse_int_resource(available_resources.get(hls_key))
+        cells[key] = {
+            "used": format_resource_value(used),
+            "available": format_resource_value(available),
+            "util_pct": resource_percent(used, available),
+        }
+    return cells
+
+
 def discover_csynth_report(base_dir: Path, kernel_name: str) -> Path | None:
     candidate = base_dir / f"{kernel_name}_csynth.xml"
     if candidate.is_file():
         return candidate.resolve()
+    return None
+
+
+def discover_build_xos(build_dir: Path | None) -> list[Path]:
+    if build_dir is None or not build_dir.is_dir():
+        return []
+    # v++ leaves additional export.xo files under _x_temp; the top-level XOs are
+    # the linked kernel artifacts that match the build target.
+    return sorted(path.resolve() for path in build_dir.glob("*.xo") if path.is_file())
+
+
+def discover_build_xo(build_dir: Path | None, kernel_name: str) -> Path | None:
+    if build_dir is None or not build_dir.is_dir() or not kernel_name:
+        return None
+    candidate = build_dir / f"{kernel_name}.xo"
+    if candidate.is_file():
+        return candidate.resolve()
+
+    for path in discover_build_xos(build_dir):
+        try:
+            if parse_xo(path).get("kernel_name") == kernel_name:
+                return path
+        except Exception:
+            continue
+    return None
+
+
+def discover_build_csynth_report(build_dir: Path | None, kernel_name: str) -> Path | None:
+    if build_dir is None or not build_dir.is_dir() or not kernel_name:
+        return None
+
+    preferred = (
+        build_dir
+        / "_x_temp"
+        / kernel_name
+        / kernel_name
+        / kernel_name
+        / "solution"
+        / "syn"
+        / "report"
+        / f"{kernel_name}_csynth.xml"
+    )
+    if preferred.is_file():
+        return preferred.resolve()
+
+    matches = sorted(
+        path.resolve()
+        for path in build_dir.rglob(f"{kernel_name}_csynth.xml")
+        if path.is_file() and "_x_temp/link/" not in path.as_posix()
+    )
+    if matches:
+        return matches[0]
     return None
 
 
@@ -283,7 +429,67 @@ def discover_link_timing_report(base_dir: Path) -> Path | None:
     return None
 
 
-def discover_schedule_reports(base_dir: Path, kernel_name: str) -> tuple[Path | None, list[Path]]:
+def discover_build_link_timing_report(build_dir: Path | None) -> Path | None:
+    if build_dir is None or not build_dir.is_dir():
+        return None
+
+    preferred = [
+        build_dir / "_x_temp" / "reports" / "link" / "imp" / "impl_1_hw_bb_locked_timing_summary_routed.rpt",
+        build_dir
+        / "_x_temp"
+        / "link"
+        / "vivado"
+        / "vpl"
+        / "prj"
+        / "prj.runs"
+        / "impl_1"
+        / "hw_bb_locked_timing_summary_routed.rpt",
+    ]
+    for candidate in preferred:
+        if candidate.is_file():
+            return candidate.resolve()
+
+    routed = sorted(path.resolve() for path in build_dir.rglob("*hw_bb_locked_timing_summary_routed.rpt") if path.is_file())
+    if routed:
+        return routed[0]
+    timing = sorted(path.resolve() for path in build_dir.rglob("*timing_summary*.rpt") if path.is_file())
+    if timing:
+        return timing[0]
+    return None
+
+
+def discover_build_resource_report(build_dir: Path | None) -> Path | None:
+    if build_dir is None or not build_dir.is_dir():
+        return None
+
+    preferred_names = [
+        "kernel_util_routed.json",
+        "kernel_util_placed.json",
+        "kernel_util_synthed.json",
+    ]
+    preferred_dirs = [
+        build_dir / "_x_temp" / "link" / "vivado" / "vpl" / "prj" / "prj.runs" / "impl_1",
+        build_dir / "_x_temp" / "reports" / "link" / "imp",
+    ]
+    for directory in preferred_dirs:
+        for name in preferred_names:
+            candidate = directory / name
+            if candidate.is_file():
+                return candidate.resolve()
+
+    for name in preferred_names:
+        matches = sorted(path.resolve() for path in build_dir.rglob(name) if path.is_file())
+        if matches:
+            return matches[0]
+    return None
+
+
+def discover_schedule_reports(
+    base_dir: Path,
+    kernel_name: str,
+    *,
+    include_all_pipeline_children: bool = False,
+) -> tuple[Path | None, list[Path]]:
     top_report = None
     child_reports = []
     if not base_dir.is_dir():
@@ -293,22 +499,64 @@ def discover_schedule_reports(base_dir: Path, kernel_name: str) -> tuple[Path | 
     if direct.is_file():
         top_report = direct.resolve()
 
+    child_pattern = "*.verbose.sched.rpt" if include_all_pipeline_children else f"{kernel_name}_Pipeline_*.verbose.sched.rpt"
     child_reports = sorted(
         path.resolve()
-        for path in base_dir.glob(f"{kernel_name}_Pipeline_*.verbose.sched.rpt")
+        for path in base_dir.glob(child_pattern)
         if path.is_file()
+        and "_Pipeline_" in path.name
     )
     return top_report, child_reports
+
+
+def discover_build_schedule_reports(build_dir: Path | None, kernel_name: str) -> tuple[Path | None, list[Path]]:
+    if build_dir is None or not build_dir.is_dir() or not kernel_name:
+        return None, []
+
+    db_dir = (
+        build_dir
+        / "_x_temp"
+        / kernel_name
+        / kernel_name
+        / kernel_name
+        / "solution"
+        / ".autopilot"
+        / "db"
+    )
+    if db_dir.is_dir():
+        return discover_schedule_reports(db_dir, kernel_name, include_all_pipeline_children=True)
+
+    matches = sorted(
+        path.resolve()
+        for path in build_dir.rglob(f"{kernel_name}.verbose.sched.rpt")
+        if path.is_file() and "_x_temp/link/" not in path.as_posix()
+    )
+    if not matches:
+        return None, []
+    return discover_schedule_reports(matches[0].parent, kernel_name, include_all_pipeline_children=True)
 
 
 def resolve_artifact_config(spec: dict, example_dir: Path) -> dict:
     artifacts = spec.get("artifacts", {})
     auto_discover = artifacts.get("auto_discover", True)
+    build_dir = resolve_optional_path(example_dir, artifacts.get("build_dir"))
     vivado_log_dir = resolve_optional_path(example_dir, artifacts.get("vivado_log_dir"))
     csynth_dir = resolve_optional_path(example_dir, artifacts.get("csynth_dir"))
     schedule_dir = resolve_optional_path(example_dir, artifacts.get("schedule_dir"))
     link_dir = resolve_optional_path(example_dir, artifacts.get("link_dir"))
     link_timing_report = resolve_optional_path(example_dir, artifacts.get("link_timing_report"))
+    resource_report = resolve_optional_path(example_dir, artifacts.get("resource_report"))
+    xclbin = resolve_optional_path(example_dir, artifacts.get("xclbin"))
+
+    if xclbin is None and build_dir is not None:
+        xclbin_matches = sorted(path.resolve() for path in build_dir.glob("*.xclbin") if path.is_file())
+        if xclbin_matches:
+            xclbin = xclbin_matches[0]
+
+    if link_timing_report is None and build_dir is not None:
+        link_timing_report = discover_build_link_timing_report(build_dir)
+    if resource_report is None and build_dir is not None:
+        resource_report = discover_build_resource_report(build_dir)
 
     # Backward-compatible fallback to historical auto-discovery under vivado-log/.
     if auto_discover:
@@ -332,11 +580,14 @@ def resolve_artifact_config(spec: dict, example_dir: Path) -> dict:
 
     return {
         "auto_discover": auto_discover,
+        "build_dir": build_dir,
+        "xclbin": xclbin,
         "vivado_log_dir": vivado_log_dir,
         "csynth_dir": csynth_dir,
         "schedule_dir": schedule_dir,
         "link_dir": link_dir,
         "link_timing_report": link_timing_report,
+        "resource_report": resource_report,
     }
 
 
@@ -579,6 +830,7 @@ def parse_csynth_report(csynth_path: Path | None, example_dir: Path) -> dict:
             "pipeline_type": "",
             "overall_latency": {},
             "resources": {},
+            "available_resources": {},
             "loop_latency": [],
         }
 
@@ -592,6 +844,11 @@ def parse_csynth_report(csynth_path: Path | None, example_dir: Path) -> dict:
     if resources_root is not None:
         for tag in ["BRAM_18K", "DSP", "FF", "LUT", "URAM"]:
             resources[tag] = normalize_report_value(resources_root.findtext(tag))
+    available_resources_root = root.find("./AreaEstimates/AvailableResources")
+    available_resources = {}
+    if available_resources_root is not None:
+        for tag in ["BRAM_18K", "DSP", "FF", "LUT", "URAM"]:
+            available_resources[tag] = normalize_report_value(available_resources_root.findtext(tag))
 
     overall_latency_root = root.find("./PerformanceEstimates/SummaryOfOverallLatency")
     overall_latency = {}
@@ -628,6 +885,7 @@ def parse_csynth_report(csynth_path: Path | None, example_dir: Path) -> dict:
         "pipeline_type": normalize_report_value(root.findtext("./PerformanceEstimates/PipelineType")),
         "overall_latency": overall_latency,
         "resources": resources,
+        "available_resources": available_resources,
         "loop_latency": loop_latency,
     }
 
@@ -755,6 +1013,109 @@ def parse_link_timing_report(report_path: Path | None, example_dir: Path) -> dic
     }
 
 
+def empty_resource_summary(report_path: Path | None, example_dir: Path) -> dict:
+    return {
+        "source": "",
+        "stage": "",
+        "available": False,
+        "report_path": "",
+        "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+        "how_to_get": "优先使用 kernel_util_routed.json / kernel_util_placed.json / kernel_util_synthed.json；若实现报告尚未生成，则回退到每个 kernel 的 csynth.xml 资源估计。",
+        "total": {},
+        "kernels": [],
+    }
+
+
+def parse_implementation_resource_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return empty_resource_summary(report_path, example_dir)
+
+    try:
+        raw = json.loads(report_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return empty_resource_summary(report_path, example_dir)
+
+    budget = raw.get("user_budget", {})
+    total_actual = budget.get("actual_resources", {})
+    total_supply = budget.get("supply_resources", {})
+    kernel_rows = []
+    for kernel in raw.get("kernels", []):
+        actual = {key: 0 for key in RESOURCE_KEYS}
+        compute_units = kernel.get("compute_units", [])
+        for compute_unit in compute_units:
+            resources = compute_unit.get("actual_resources", {})
+            for key in RESOURCE_KEYS:
+                value = parse_int_resource(resources.get(key))
+                if value is not None:
+                    actual[key] += value
+        kernel_rows.append(
+            {
+                "name": str(kernel.get("name", "")),
+                "compute_unit_count": str(kernel.get("compute_unit_count", len(compute_units))),
+                "cells": implementation_resource_cells(actual, total_supply),
+            }
+        )
+
+    return {
+        "source": "implementation",
+        "stage": str(raw.get("design_state", "")),
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "how_to_get": "",
+        "total": implementation_resource_cells(total_actual, total_supply),
+        "kernels": kernel_rows,
+    }
+
+
+def build_hls_resource_summary(kernels: list[dict]) -> dict:
+    total_values = {key: 0 for key in RESOURCE_KEYS}
+    any_value = False
+    kernel_rows = []
+    for kernel in kernels:
+        hls = kernel.get("hls", {})
+        if not hls.get("available"):
+            continue
+        cells = hls_resource_cells(hls.get("resources", {}), hls.get("available_resources", {}))
+        has_cell = False
+        for key, cell in cells.items():
+            value = parse_int_resource(cell.get("used"))
+            if value is not None:
+                total_values[key] += value
+                any_value = True
+                has_cell = True
+        if has_cell:
+            kernel_rows.append(
+                {
+                    "name": kernel.get("name", ""),
+                    "compute_unit_count": "",
+                    "cells": cells,
+                }
+            )
+
+    if not any_value:
+        return empty_resource_summary(None, ROOT)
+
+    total_cells = {
+        key: {
+            "used": format_resource_value(value),
+            "available": "",
+            "util_pct": "",
+        }
+        for key, value in total_values.items()
+    }
+    return {
+        "source": "hls_estimate",
+        "stage": "csynth",
+        "available": True,
+        "report_path": "",
+        "requested_path": "",
+        "how_to_get": "",
+        "total": total_cells,
+        "kernels": kernel_rows,
+    }
+
+
 def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
     cfg_raw = spec.get("cfg", "")
     cfg_path = resolve_path(example_dir, cfg_raw) if cfg_raw else discover_cfg(example_dir)
@@ -762,23 +1123,49 @@ def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
     artifacts = resolve_artifact_config(spec, example_dir)
     link_timing_path = artifacts["link_timing_report"]
     link_timing = parse_link_timing_report(link_timing_path, example_dir)
+    resource_summary = parse_implementation_resource_report(artifacts["resource_report"], example_dir)
+
+    kernel_specs = list(spec.get("kernels", []))
+    if not kernel_specs and artifacts["build_dir"] is not None:
+        for xo_path in discover_build_xos(artifacts["build_dir"]):
+            kernel_specs.append({"xo": format_display_path(xo_path, example_dir)})
 
     kernels = []
     pipeline_overview = []
-    for index, kernel_spec in enumerate(spec["kernels"]):
-        xo_path = resolve_path(example_dir, kernel_spec["xo"])
+    for index, kernel_spec in enumerate(kernel_specs):
+        xo_raw = kernel_spec.get("xo")
+        xo_path = resolve_path(example_dir, xo_raw) if xo_raw else None
+        if xo_path is None and kernel_spec.get("name"):
+            xo_path = discover_build_xo(artifacts["build_dir"], kernel_spec["name"])
+        if xo_path is None:
+            raise RuntimeError(f"kernel entry #{index} must specify xo or name with artifacts.build_dir")
         xo_info = parse_xo(xo_path)
         kernel_name = kernel_spec.get("name") or xo_info["kernel_name"] or xo_path.stem
         cfg_kernel_name = xo_info["kernel_name"] or kernel_name
         csynth_override = resolve_optional_path(example_dir, kernel_spec.get("csynth"))
         csynth_path = csynth_override
+        if csynth_path is None:
+            csynth_path = discover_build_csynth_report(artifacts["build_dir"], cfg_kernel_name)
         if csynth_path is None and artifacts["csynth_dir"] is not None:
             csynth_path = discover_csynth_report(artifacts["csynth_dir"], cfg_kernel_name)
         csynth = parse_csynth_report(csynth_path, example_dir)
-        sched_top_path = None
-        sched_child_paths: list[Path] = []
-        if artifacts["schedule_dir"] is not None:
-            sched_top_path, sched_child_paths = discover_schedule_reports(artifacts["schedule_dir"], cfg_kernel_name)
+        sched_top_path = resolve_optional_path(example_dir, kernel_spec.get("schedule_top"))
+        sched_child_paths = resolve_optional_path_list(example_dir, kernel_spec.get("schedule_children"))
+        schedule_dir = resolve_optional_path(example_dir, kernel_spec.get("schedule_dir"))
+        if sched_top_path is None and not sched_child_paths:
+            discovered_top, discovered_children = discover_build_schedule_reports(
+                artifacts["build_dir"], cfg_kernel_name
+            )
+            sched_top_path = discovered_top
+            sched_child_paths = discovered_children
+        if schedule_dir is None:
+            schedule_dir = artifacts["schedule_dir"]
+        if schedule_dir is not None:
+            discovered_top, discovered_children = discover_schedule_reports(schedule_dir, cfg_kernel_name)
+            if sched_top_path is None:
+                sched_top_path = discovered_top
+            if not sched_child_paths:
+                sched_child_paths = discovered_children
         pipeline = parse_pipeline_reports(sched_top_path, sched_child_paths, example_dir)
         for row in pipeline["overview_rows"]:
             pipeline_overview.append({"kernel_name": kernel_name, **row})
@@ -822,6 +1209,9 @@ def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
     if order:
         kernels.sort(key=lambda item: (order.get(item["name"], 1 << 30), item["input_index"], item["name"]))
 
+    if not resource_summary.get("available"):
+        resource_summary = build_hls_resource_summary(kernels)
+
     connectivity_rows = []
     for entry in connectivity["kernel_instances"]:
         kernel_name = entry["kernel_name"]
@@ -848,9 +1238,16 @@ def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
         "connectivity": {
             "cfg_path": format_display_path(cfg_path, example_dir) if cfg_path else "",
             "kernels": connectivity_rows,
+            "stream_connections": connectivity["stream_connections"],
         },
         "vivado": {
             "auto_discover": artifacts["auto_discover"],
+            "build_dir": format_display_path(artifacts["build_dir"], example_dir)
+            if artifacts["build_dir"] is not None
+            else "",
+            "xclbin": format_display_path(artifacts["xclbin"], example_dir)
+            if artifacts["xclbin"] is not None
+            else "",
             "vivado_log_dir": format_display_path(artifacts["vivado_log_dir"], example_dir)
             if artifacts["vivado_log_dir"] is not None
             else "",
@@ -864,6 +1261,7 @@ def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
             if artifacts["link_dir"] is not None
             else "",
             "link_timing": link_timing,
+            "resources": resource_summary,
             "pipeline_overview": pipeline_overview,
         },
         "kernels": kernels,
@@ -871,6 +1269,16 @@ def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
 
 
 def render_html_page(data: dict) -> str:
+    def render_resource_cell(cell: dict) -> str:
+        used = cell.get("used", "") or "-"
+        available = cell.get("available", "")
+        pct = cell.get("util_pct", "")
+        if available and pct:
+            return f"{html.escape(used)} / {html.escape(available)} ({html.escape(pct)}%)"
+        if available:
+            return f"{html.escape(used)} / {html.escape(available)}"
+        return html.escape(used)
+
     sequence_rows = []
     for index, kernel_name in enumerate(data["sequence"], start=1):
         desc = data["sequence_descriptions"].get(kernel_name, "")
@@ -918,6 +1326,67 @@ def render_html_page(data: dict) -> str:
             f"<td>{row['binding_count']}</td>"
             "</tr>"
         )
+
+    stream_connection_rows = []
+    for row in data.get("connectivity", {}).get("stream_connections", []):
+        source = f"{row.get('source_instance', '')}.{row.get('source_port', '')}"
+        sink = f"{row.get('sink_instance', '')}.{row.get('sink_port', '')}"
+        stream_connection_rows.append(
+            "<tr>"
+            f"<td>{html.escape(row.get('source_kernel', '') or '-')}</td>"
+            f"<td>{html.escape(source)}</td>"
+            f"<td>{html.escape(row.get('sink_kernel', '') or '-')}</td>"
+            f"<td>{html.escape(sink)}</td>"
+            "</tr>"
+        )
+
+    resources = data.get("vivado", {}).get("resources", {})
+    resource_total_cells = resources.get("total", {})
+    resource_total_row = (
+        "<tr>"
+        "<td>total</td>"
+        + "".join(f"<td>{render_resource_cell(resource_total_cells.get(key, {}))}</td>" for key in RESOURCE_KEYS)
+        + "</tr>"
+    )
+    resource_kernel_rows = []
+    for row in resources.get("kernels", []):
+        cells = row.get("cells", {})
+        resource_kernel_rows.append(
+            "<tr>"
+            f"<td>{html.escape(row.get('name', ''))}</td>"
+            f"<td>{html.escape(row.get('compute_unit_count', '') or '-')}</td>"
+            + "".join(f"<td>{render_resource_cell(cells.get(key, {}))}</td>" for key in RESOURCE_KEYS)
+            + "</tr>"
+        )
+    resource_source_label = {
+        "implementation": "实现阶段资源",
+        "hls_estimate": "HLS 资源估计",
+    }.get(resources.get("source", ""), resources.get("source", "") or "未提供")
+    resource_overview_section = f"""
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">设计资源总览</div>
+          <div class="section-note">优先使用 Vitis/Vivado 已生成的 kernel_util 报告；如果 bitstream/link/implementation 尚未走到该阶段，则回退到 HLS csynth.xml 的 kernel 资源估计。</div>
+          <div class="section-note">source: {html.escape(resource_source_label)}{f'，stage: {html.escape(resources.get("stage", ""))}' if resources.get("stage") else ''}</div>
+          {f'<div class="section-note">report: {html.escape(resources.get("report_path", ""))}</div>' if resources.get("report_path") else ''}
+          {f'<div class="section-note">当前未提供。{html.escape(resources.get("how_to_get", ""))}</div>' if not resources.get("available") else ''}
+          <div class="table-wrap mb-3">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>scope</th>{''.join(f'<th>{key}</th>' for key in RESOURCE_KEYS)}</tr></thead>
+              <tbody>{resource_total_row if resources.get("available") else '<tr><td colspan="7">无</td></tr>'}</tbody>
+            </table>
+          </div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>kernel</th><th>CUs</th>{''.join(f'<th>{key}</th>' for key in RESOURCE_KEYS)}</tr></thead>
+              <tbody>{''.join(resource_kernel_rows) or '<tr><td colspan="8">无</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div></div>
+      </div>
+    </div>
+"""
 
     link_timing = data.get("vivado", {}).get("link_timing", {})
     design_timing = link_timing.get("design_summary", {})
@@ -1416,6 +1885,8 @@ def render_html_page(data: dict) -> str:
       {f'<div class="report-subtitle">{html.escape(data["source_note"])}</div>' if data.get("source_note") else ''}
     </div>
 
+    {resource_overview_section}
+
     {f'''
     <div class="row g-4 mb-4">
       <div class="col-12">
@@ -1461,6 +1932,15 @@ def render_html_page(data: dict) -> str:
               <tbody>{''.join(connectivity_rows) or '<tr><td colspan="4">无</td></tr>'}</tbody>
             </table>
           </div>
+          {f'''
+          <div class="sub-title">AXI4-Stream 连接</div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>source kernel</th><th>source endpoint</th><th>sink kernel</th><th>sink endpoint</th></tr></thead>
+              <tbody>{''.join(stream_connection_rows)}</tbody>
+            </table>
+          </div>
+          ''' if stream_connection_rows else ''}
         </div></div>
       </div>
     </div>

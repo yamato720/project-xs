@@ -1,9 +1,9 @@
 {
   "title": "Project-XS XPlus HLS Minimal Review",
-  "subtitle": "最小化渲染样例：保留全部 XO 与 CFG，弱化注释层，只审查接口、综合与实现报告接线是否正确。",
+  "subtitle": "最小化渲染样例：只指定 XPlus hw build 目录与 CFG，自动发现 XO、csynth、schedule 和 routed timing。",
   "spec_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls_min/spec.json",
   "example_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls_min",
-  "source_note": "这个 spec 只保留最少的渲染控制字段；XO、CFG、csynth 和 routed timing 都通过相对路径显式指定，并关闭自动发现。",
+  "source_note": "这个 spec 只保留最少的渲染控制字段；硬件产物通过 artifacts.build_dir 自动发现，CFG 继续显式指定以解析 nk/sp 绑定。",
   "sequence": [
     "spmv_csr_kernel",
     "init_pcg_kernel",
@@ -15,7 +15,7 @@
   "dependencies": [],
   "host_nodes": [],
   "connectivity": {
-    "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+    "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
     "kernels": [
       {
         "kernel_name": "spmv_csr_kernel",
@@ -57,23 +57,701 @@
         ],
         "binding_count": 2
       }
-    ]
+    ],
+    "stream_connections": []
   },
   "vivado": {
     "auto_discover": false,
+    "build_dir": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw",
+    "xclbin": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/cgsolver_jacobi_pcg.xclbin",
     "vivado_log_dir": "",
-    "csynth_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth",
-    "schedule_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched",
+    "csynth_dir": "",
+    "schedule_dir": "",
     "link_dir": "",
     "link_timing": {
-      "report_path": "",
-      "available": false,
-      "requested_path": "",
-      "how_to_get": "期望文件名通常为 impl_1_*timing_summary*_routed.rpt 或同类 routed timing summary，常见于 v++ link / Vivado implementation 的 reports/link/imp/ 或 impl report 目录中",
-      "constraints_met": false,
-      "design_summary": {},
-      "clock_summary": [],
-      "kernel_clock_summary": []
+      "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/link/imp/impl_1_hw_bb_locked_timing_summary_routed.rpt",
+      "available": true,
+      "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/link/imp/impl_1_hw_bb_locked_timing_summary_routed.rpt",
+      "how_to_get": "",
+      "constraints_met": true,
+      "design_summary": {
+        "wns_ns": "0.003",
+        "tns_ns": "0.000",
+        "tns_failing_endpoints": "0",
+        "tns_total_endpoints": "705530",
+        "whs_ns": "0.009",
+        "ths_ns": "0.000",
+        "ths_failing_endpoints": "0",
+        "ths_total_endpoints": "702735",
+        "wpws_ns": "0.000",
+        "tpws_ns": "0.000",
+        "tpws_failing_endpoints": "0",
+        "tpws_total_endpoints": "278095"
+      },
+      "clock_summary": [
+        {
+          "name": "io_clk_freerun_00_clk_p",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "clk_kernel_00_unbuffered_net",
+          "waveform_ns": "{0.000 1.667}",
+          "period_ns": "3.333",
+          "frequency_mhz": "300.000"
+        },
+        {
+          "name": "clk_kernel_01_unbuffered_net",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "hbm_aclk",
+          "waveform_ns": "{0.000 1.111}",
+          "period_ns": "2.222",
+          "frequency_mhz": "450.000"
+        },
+        {
+          "name": "io_clk_pcie_00_clk_p",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_4",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_5",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_6",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_7",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_4",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_5",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_6",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_7",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_4",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_5",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_6",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_7",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "dma_ip_axi_aclk_1",
+          "waveform_ns": "{0.000 2.000}",
+          "period_ns": "4.000",
+          "frequency_mhz": "250.000"
+        },
+        {
+          "name": "clk_out1_bd_39ab_clkwiz_level0_periph_0_1",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+          "waveform_ns": "{0.000 10.000}",
+          "period_ns": "20.000",
+          "frequency_mhz": "50.000"
+        },
+        {
+          "name": "clk_sck",
+          "waveform_ns": "{0.000 20.000}",
+          "period_ns": "40.000",
+          "frequency_mhz": "25.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+          "waveform_ns": "{80.000 160.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+          "waveform_ns": "{80.000 160.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "mcap_clk_1",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "pipe_clk_1",
+          "waveform_ns": "{0.000 2.000}",
+          "period_ns": "4.000",
+          "frequency_mhz": "250.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_4",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_5",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_6",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_7",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/INTERNAL_TCK",
+          "waveform_ns": "{0.000 25.000}",
+          "period_ns": "50.000",
+          "frequency_mhz": "20.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/Use_External.Use_BSCANID.No_Dbg_Reg_Access.BUFG_UPDATE/Using_FPGA.Native/O",
+          "waveform_ns": "{0.000 50.000}",
+          "period_ns": "100.000",
+          "frequency_mhz": "10.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[0].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[10].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[11].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[12].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[13].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[14].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[15].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[1].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[2].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[3].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[4].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[5].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[6].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[7].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[8].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[9].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_clk_i/bufg_gt_intclk/O",
+          "waveform_ns": "{0.000 500.000}",
+          "period_ns": "1000.000",
+          "frequency_mhz": "1.000"
+        }
+      ],
+      "kernel_clock_summary": [
+        {
+          "name": "clk_kernel_00_unbuffered_net",
+          "waveform_ns": "{0.000 1.667}",
+          "period_ns": "3.333",
+          "frequency_mhz": "300.000",
+          "wns_ns": "0.223",
+          "tns_ns": "0.000",
+          "tns_failing_endpoints": "0",
+          "tns_total_endpoints": "187381",
+          "whs_ns": "0.009",
+          "ths_ns": "0.000",
+          "ths_failing_endpoints": "0",
+          "ths_total_endpoints": "187381",
+          "wpws_ns": "1.125",
+          "tpws_ns": "0.000",
+          "tpws_failing_endpoints": "0",
+          "tpws_total_endpoints": "68078"
+        },
+        {
+          "name": "clk_kernel_01_unbuffered_net",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000",
+          "wns_ns": "0.653",
+          "tns_ns": "0.000",
+          "tns_failing_endpoints": "0",
+          "tns_total_endpoints": "264",
+          "whs_ns": "0.016",
+          "ths_ns": "0.000",
+          "ths_failing_endpoints": "0",
+          "ths_total_endpoints": "264",
+          "wpws_ns": "0.468",
+          "tpws_ns": "0.000",
+          "tpws_failing_endpoints": "0",
+          "tpws_total_endpoints": "174"
+        }
+      ]
+    },
+    "resources": {
+      "source": "implementation",
+      "stage": "Routed",
+      "available": true,
+      "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/kernel_util_routed.json",
+      "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/kernel_util_routed.json",
+      "how_to_get": "",
+      "total": {
+        "LUT": {
+          "used": "32469",
+          "available": "1160828",
+          "util_pct": "2.80"
+        },
+        "LUTAsMem": {
+          "used": "7915",
+          "available": "587064",
+          "util_pct": "1.35"
+        },
+        "REG": {
+          "used": "39219",
+          "available": "2402824",
+          "util_pct": "1.63"
+        },
+        "BRAM": {
+          "used": "30",
+          "available": "1816",
+          "util_pct": "1.65"
+        },
+        "URAM": {
+          "used": "0",
+          "available": "960",
+          "util_pct": "0.00"
+        },
+        "DSP": {
+          "used": "52",
+          "available": "9020",
+          "util_pct": "0.58"
+        }
+      },
+      "kernels": [
+        {
+          "name": "dot_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "3887",
+              "available": "1160828",
+              "util_pct": "0.33"
+            },
+            "LUTAsMem": {
+              "used": "844",
+              "available": "587064",
+              "util_pct": "0.14"
+            },
+            "REG": {
+              "used": "4594",
+              "available": "2402824",
+              "util_pct": "0.19"
+            },
+            "BRAM": {
+              "used": "3",
+              "available": "1816",
+              "util_pct": "0.17"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "8",
+              "available": "9020",
+              "util_pct": "0.09"
+            }
+          }
+        },
+        {
+          "name": "init_pcg_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "8972",
+              "available": "1160828",
+              "util_pct": "0.77"
+            },
+            "LUTAsMem": {
+              "used": "2225",
+              "available": "587064",
+              "util_pct": "0.38"
+            },
+            "REG": {
+              "used": "10348",
+              "available": "2402824",
+              "util_pct": "0.43"
+            },
+            "BRAM": {
+              "used": "8",
+              "available": "1816",
+              "util_pct": "0.44"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "11",
+              "available": "9020",
+              "util_pct": "0.12"
+            }
+          }
+        },
+        {
+          "name": "spmv_csr_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "5774",
+              "available": "1160828",
+              "util_pct": "0.50"
+            },
+            "LUTAsMem": {
+              "used": "1413",
+              "available": "587064",
+              "util_pct": "0.24"
+            },
+            "REG": {
+              "used": "7117",
+              "available": "2402824",
+              "util_pct": "0.30"
+            },
+            "BRAM": {
+              "used": "6",
+              "available": "1816",
+              "util_pct": "0.33"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "11",
+              "available": "9020",
+              "util_pct": "0.12"
+            }
+          }
+        },
+        {
+          "name": "update_p_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "3620",
+              "available": "1160828",
+              "util_pct": "0.31"
+            },
+            "LUTAsMem": {
+              "used": "891",
+              "available": "587064",
+              "util_pct": "0.15"
+            },
+            "REG": {
+              "used": "4610",
+              "available": "2402824",
+              "util_pct": "0.19"
+            },
+            "BRAM": {
+              "used": "3",
+              "available": "1816",
+              "util_pct": "0.17"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "11",
+              "available": "9020",
+              "util_pct": "0.12"
+            }
+          }
+        },
+        {
+          "name": "update_xrz_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "10216",
+              "available": "1160828",
+              "util_pct": "0.88"
+            },
+            "LUTAsMem": {
+              "used": "2542",
+              "available": "587064",
+              "util_pct": "0.43"
+            },
+            "REG": {
+              "used": "12550",
+              "available": "2402824",
+              "util_pct": "0.52"
+            },
+            "BRAM": {
+              "used": "10",
+              "available": "1816",
+              "util_pct": "0.55"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "11",
+              "available": "9020",
+              "util_pct": "0.12"
+            }
+          }
+        }
+      ]
     },
     "pipeline_overview": [
       {
@@ -86,7 +764,7 @@
         "trip_count": "1 ~ 1024",
         "pipelined": "yes",
         "pipeline_depth": "3",
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
       },
       {
         "kernel_name": "spmv_csr_kernel",
@@ -98,7 +776,7 @@
         "trip_count": "1 ~ ?",
         "pipelined": "no",
         "pipeline_depth": "",
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt"
       },
       {
         "kernel_name": "spmv_csr_kernel",
@@ -110,7 +788,7 @@
         "trip_count": "?",
         "pipelined": "no",
         "pipeline_depth": "",
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt"
       },
       {
         "kernel_name": "init_pcg_kernel",
@@ -122,7 +800,7 @@
         "trip_count": "1 ~ ?",
         "pipelined": "yes",
         "pipeline_depth": "32",
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
       },
       {
         "kernel_name": "dot_kernel",
@@ -134,7 +812,7 @@
         "trip_count": "1 ~ ?",
         "pipelined": "yes",
         "pipeline_depth": "16",
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
       },
       {
         "kernel_name": "update_xrz_kernel",
@@ -146,7 +824,7 @@
         "trip_count": "1 ~ ?",
         "pipelined": "yes",
         "pipeline_depth": "150",
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
       },
       {
         "kernel_name": "update_p_kernel",
@@ -158,7 +836,7 @@
         "trip_count": "?",
         "pipelined": "yes",
         "pipeline_depth": "157",
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
       }
     ]
   },
@@ -167,7 +845,7 @@
       "name": "spmv_csr_kernel",
       "input_index": 0,
       "xo": {
-        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/spmv_csr_kernel.xo",
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/spmv_csr_kernel.xo",
         "kernel_name": "spmv_csr_kernel",
         "language": "c",
         "vlnv": "xilinx.com:hls:spmv_csr_kernel:1.0",
@@ -282,14 +960,16 @@
         "xo_meta": {
           "dir": "spmv_csr_kernel",
           "supported_flows": [
-            "CPU_EMU"
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
           ]
         }
       },
       "hls": {
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/spmv_csr_kernel_csynth.xml",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/syn/report/spmv_csr_kernel_csynth.xml",
         "available": true,
-        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/spmv_csr_kernel_csynth.xml",
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/syn/report/spmv_csr_kernel_csynth.xml",
         "how_to_get": "",
         "kernel_name": "spmv_csr_kernel",
         "target_clock_ns": "3.33",
@@ -315,6 +995,13 @@
           "FF": "7583",
           "LUT": "11253",
           "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
         },
         "loop_latency": [
           {
@@ -343,9 +1030,9 @@
       },
       "pipeline": {
         "top": {
-          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt",
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt",
           "available": true,
-          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt",
           "how_to_get": "",
           "is_top_model": "1",
           "pipeline_count": "0",
@@ -376,7 +1063,7 @@
         },
         "children": [
           {
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt",
             "pipeline_name": "spmv_csr_kernel_Pipeline_load_x",
             "fsm_states": "3",
             "pipeline_count": "1",
@@ -407,7 +1094,7 @@
             "trip_count": "1 ~ 1024",
             "pipelined": "yes",
             "pipeline_depth": "3",
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
           },
           {
             "kernel_pipeline": "top-level-loop",
@@ -418,7 +1105,7 @@
             "trip_count": "1 ~ ?",
             "pipelined": "no",
             "pipeline_depth": "",
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt"
           },
           {
             "kernel_pipeline": "top-level-loop",
@@ -429,12 +1116,12 @@
             "trip_count": "?",
             "pipelined": "no",
             "pipeline_depth": "",
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt"
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt"
           }
         ]
       },
       "cfg": {
-        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
         "instances": [
           "spmv_csr_kernel_1"
         ],
@@ -524,7 +1211,7 @@
       "name": "init_pcg_kernel",
       "input_index": 1,
       "xo": {
-        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/init_pcg_kernel.xo",
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/init_pcg_kernel.xo",
         "kernel_name": "init_pcg_kernel",
         "language": "c",
         "vlnv": "xilinx.com:hls:init_pcg_kernel:1.0",
@@ -582,7 +1269,7 @@
           {
             "name": "M_AXI_GMEM_METRICS",
             "mode": "master",
-            "data_width": "64",
+            "data_width": "128",
             "port_type": "addressable",
             "base": "0x0",
             "range": "0xFFFFFFFF"
@@ -673,14 +1360,16 @@
         "xo_meta": {
           "dir": "init_pcg_kernel",
           "supported_flows": [
-            "CPU_EMU"
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
           ]
         }
       },
       "hls": {
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/init_pcg_kernel_csynth.xml",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/syn/report/init_pcg_kernel_csynth.xml",
         "available": true,
-        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/init_pcg_kernel_csynth.xml",
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/syn/report/init_pcg_kernel_csynth.xml",
         "how_to_get": "",
         "kernel_name": "init_pcg_kernel",
         "target_clock_ns": "3.33",
@@ -707,13 +1396,20 @@
           "LUT": "17306",
           "URAM": "0"
         },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
         "loop_latency": []
       },
       "pipeline": {
         "top": {
-          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel.verbose.sched.rpt",
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel.verbose.sched.rpt",
           "available": true,
-          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel.verbose.sched.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel.verbose.sched.rpt",
           "how_to_get": "",
           "is_top_model": "1",
           "pipeline_count": "0",
@@ -723,7 +1419,7 @@
         },
         "children": [
           {
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt",
             "pipeline_name": "init_pcg_kernel_Pipeline_init_loop",
             "fsm_states": "32",
             "pipeline_count": "1",
@@ -754,12 +1450,12 @@
             "trip_count": "1 ~ ?",
             "pipelined": "yes",
             "pipeline_depth": "32",
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
           }
         ]
       },
       "cfg": {
-        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
         "instances": [
           "init_pcg_kernel_1"
         ],
@@ -875,7 +1571,7 @@
       "name": "dot_kernel",
       "input_index": 2,
       "xo": {
-        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/dot_kernel.xo",
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/dot_kernel.xo",
         "kernel_name": "dot_kernel",
         "language": "c",
         "vlnv": "xilinx.com:hls:dot_kernel:1.0",
@@ -956,14 +1652,16 @@
         "xo_meta": {
           "dir": "dot_kernel",
           "supported_flows": [
-            "CPU_EMU"
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
           ]
         }
       },
       "hls": {
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/dot_kernel_csynth.xml",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/syn/report/dot_kernel_csynth.xml",
         "available": true,
-        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/dot_kernel_csynth.xml",
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/syn/report/dot_kernel_csynth.xml",
         "how_to_get": "",
         "kernel_name": "dot_kernel",
         "target_clock_ns": "3.33",
@@ -990,13 +1688,20 @@
           "LUT": "7521",
           "URAM": "0"
         },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
         "loop_latency": []
       },
       "pipeline": {
         "top": {
-          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel.verbose.sched.rpt",
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel.verbose.sched.rpt",
           "available": true,
-          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel.verbose.sched.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel.verbose.sched.rpt",
           "how_to_get": "",
           "is_top_model": "1",
           "pipeline_count": "0",
@@ -1006,7 +1711,7 @@
         },
         "children": [
           {
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt",
             "pipeline_name": "dot_kernel_Pipeline_dot_loop",
             "fsm_states": "16",
             "pipeline_count": "1",
@@ -1037,12 +1742,12 @@
             "trip_count": "1 ~ ?",
             "pipelined": "yes",
             "pipeline_depth": "16",
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
           }
         ]
       },
       "cfg": {
-        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
         "instances": [
           "dot_kernel_1"
         ],
@@ -1106,7 +1811,7 @@
       "name": "update_xrz_kernel",
       "input_index": 3,
       "xo": {
-        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_xrz_kernel.xo",
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/update_xrz_kernel.xo",
         "kernel_name": "update_xrz_kernel",
         "language": "c",
         "vlnv": "xilinx.com:hls:update_xrz_kernel:1.0",
@@ -1164,7 +1869,7 @@
           {
             "name": "M_AXI_GMEM_METRICS",
             "mode": "master",
-            "data_width": "64",
+            "data_width": "128",
             "port_type": "addressable",
             "base": "0x0",
             "range": "0xFFFFFFFF"
@@ -1264,14 +1969,16 @@
         "xo_meta": {
           "dir": "update_xrz_kernel",
           "supported_flows": [
-            "CPU_EMU"
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
           ]
         }
       },
       "hls": {
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_xrz_kernel_csynth.xml",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/syn/report/update_xrz_kernel_csynth.xml",
         "available": true,
-        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_xrz_kernel_csynth.xml",
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/syn/report/update_xrz_kernel_csynth.xml",
         "how_to_get": "",
         "kernel_name": "update_xrz_kernel",
         "target_clock_ns": "3.33",
@@ -1298,13 +2005,20 @@
           "LUT": "17717",
           "URAM": "0"
         },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
         "loop_latency": []
       },
       "pipeline": {
         "top": {
-          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel.verbose.sched.rpt",
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel.verbose.sched.rpt",
           "available": true,
-          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel.verbose.sched.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel.verbose.sched.rpt",
           "how_to_get": "",
           "is_top_model": "1",
           "pipeline_count": "0",
@@ -1314,7 +2028,7 @@
         },
         "children": [
           {
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt",
             "pipeline_name": "update_xrz_kernel_Pipeline_update_loop",
             "fsm_states": "150",
             "pipeline_count": "1",
@@ -1345,12 +2059,12 @@
             "trip_count": "1 ~ ?",
             "pipelined": "yes",
             "pipeline_depth": "150",
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
           }
         ]
       },
       "cfg": {
-        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
         "instances": [
           "update_xrz_kernel_1"
         ],
@@ -1466,7 +2180,7 @@
       "name": "update_p_kernel",
       "input_index": 4,
       "xo": {
-        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_p_kernel.xo",
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/update_p_kernel.xo",
         "kernel_name": "update_p_kernel",
         "language": "c",
         "vlnv": "xilinx.com:hls:update_p_kernel:1.0",
@@ -1539,14 +2253,16 @@
         "xo_meta": {
           "dir": "update_p_kernel",
           "supported_flows": [
-            "CPU_EMU"
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
           ]
         }
       },
       "hls": {
-        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_p_kernel_csynth.xml",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/syn/report/update_p_kernel_csynth.xml",
         "available": true,
-        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_p_kernel_csynth.xml",
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/syn/report/update_p_kernel_csynth.xml",
         "how_to_get": "",
         "kernel_name": "update_p_kernel",
         "target_clock_ns": "3.33",
@@ -1573,13 +2289,20 @@
           "LUT": "5439",
           "URAM": "0"
         },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
         "loop_latency": []
       },
       "pipeline": {
         "top": {
-          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel.verbose.sched.rpt",
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel.verbose.sched.rpt",
           "available": true,
-          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel.verbose.sched.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel.verbose.sched.rpt",
           "how_to_get": "",
           "is_top_model": "1",
           "pipeline_count": "0",
@@ -1589,7 +2312,7 @@
         },
         "children": [
           {
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt",
             "pipeline_name": "update_p_kernel_Pipeline_update_p_loop",
             "fsm_states": "157",
             "pipeline_count": "1",
@@ -1620,12 +2343,12 @@
             "trip_count": "?",
             "pipelined": "yes",
             "pipeline_depth": "157",
-            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
           }
         ]
       },
       "cfg": {
-        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg",
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
         "instances": [
           "update_p_kernel_1"
         ],

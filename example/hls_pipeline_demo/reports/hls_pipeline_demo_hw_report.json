@@ -1,0 +1,1986 @@
+{
+  "title": "Project-XS HLS Pipeline Demo Hardware Review",
+  "subtitle": "使用 Project-X 根目录已生成的 hls_pipeline_demo hw bitstream 产物，只指定 build 目录与 CFG，自动发现 XO、HLS schedule/csynth 和 routed timing。",
+  "spec_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/hls_pipeline_demo/spec.json",
+  "example_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/hls_pipeline_demo",
+  "source_note": "这个 example 不复制 build 产物；硬件产物通过 artifacts.build_dir 自动发现，CFG 提供 kernel 实例与 AXI4-Stream 连接，HLS/Vivado 报告提供 pipeline、综合延迟、资源和实现时序。",
+  "sequence": [
+    "krnl_hls_pipeline_demo",
+    "krnl_hls_pipeline_source",
+    "krnl_hls_pipeline_compute",
+    "krnl_hls_pipeline_sink"
+  ],
+  "sequence_descriptions": {
+    "krnl_hls_pipeline_demo": "单 XRT kernel 内部 DATAFLOW：load_stage -> compute_stage -> store_stage",
+    "krnl_hls_pipeline_source": "多 kernel 流水第一段：从 input 内存读数据并写入 AXI4-Stream",
+    "krnl_hls_pipeline_compute": "多 kernel 流水中间段：从 stream 读取、执行 lane 展开计算和两级寄存器延迟链",
+    "krnl_hls_pipeline_sink": "多 kernel 流水末段：从 stream 接收最终 output 并写回内存"
+  },
+  "dependencies": [
+    {
+      "upstream": "krnl_hls_pipeline_demo",
+      "downstream": "host",
+      "description": "单 kernel 版本一次 run 后写回 output / stage_value / delayed_value，host 读取并和 CPU golden 对照。"
+    },
+    {
+      "upstream": "krnl_hls_pipeline_source",
+      "downstream": "krnl_hls_pipeline_compute",
+      "description": "CFG stream_connect: source.output_stream -> compute.input_stream。"
+    },
+    {
+      "upstream": "krnl_hls_pipeline_compute",
+      "downstream": "krnl_hls_pipeline_sink",
+      "description": "CFG stream_connect: compute.output_stream -> sink.input_stream。"
+    },
+    {
+      "upstream": "krnl_hls_pipeline_sink",
+      "downstream": "host",
+      "description": "三 kernel stream pipeline 完成后，host 从 output / stage_value / delayed_value 读回并校验。"
+    }
+  ],
+  "host_nodes": [
+    {
+      "name": "single_kernel_runner",
+      "role": "启动单 kernel DATAFLOW 版本并等待完成",
+      "reads": [
+        "input buffer",
+        "item_count"
+      ],
+      "writes": [
+        "output",
+        "stage_value",
+        "delayed_value"
+      ],
+      "drives": [
+        "krnl_hls_pipeline_demo"
+      ],
+      "sim_mapping": [
+        "CycleSimulator transaction",
+        "AxiLiteIf(item_count)",
+        "AxiMasterIf buffers"
+      ]
+    },
+    {
+      "name": "stream_pipeline_runner",
+      "role": "按 sink -> compute -> source 的顺序启动三 kernel 流水线",
+      "reads": [
+        "input buffer",
+        "item_count"
+      ],
+      "writes": [
+        "output",
+        "stage_value",
+        "delayed_value"
+      ],
+      "drives": [
+        "krnl_hls_pipeline_source",
+        "krnl_hls_pipeline_compute",
+        "krnl_hls_pipeline_sink"
+      ],
+      "sim_mapping": [
+        "SimulationSession with three schedulable kernels",
+        "AXI4-Stream port binding"
+      ]
+    }
+  ],
+  "connectivity": {
+    "cfg_path": "/home/pyx/ProjectFS/Project-X/cfg/hls_pipeline_demo.cfg",
+    "kernels": [
+      {
+        "kernel_name": "krnl_hls_pipeline_demo",
+        "count": "1",
+        "instances": [
+          "krnl_hls_pipeline_demo_1"
+        ],
+        "binding_count": 0
+      },
+      {
+        "kernel_name": "krnl_hls_pipeline_source",
+        "count": "1",
+        "instances": [
+          "krnl_hls_pipeline_source_1"
+        ],
+        "binding_count": 0
+      },
+      {
+        "kernel_name": "krnl_hls_pipeline_compute",
+        "count": "1",
+        "instances": [
+          "krnl_hls_pipeline_compute_1"
+        ],
+        "binding_count": 0
+      },
+      {
+        "kernel_name": "krnl_hls_pipeline_sink",
+        "count": "1",
+        "instances": [
+          "krnl_hls_pipeline_sink_1"
+        ],
+        "binding_count": 0
+      }
+    ],
+    "stream_connections": [
+      {
+        "source_instance": "krnl_hls_pipeline_source_1",
+        "source_port": "output_stream",
+        "sink_instance": "krnl_hls_pipeline_compute_1",
+        "sink_port": "input_stream",
+        "raw": "krnl_hls_pipeline_source_1.output_stream:krnl_hls_pipeline_compute_1.input_stream",
+        "source_kernel": "krnl_hls_pipeline_source",
+        "sink_kernel": "krnl_hls_pipeline_compute"
+      },
+      {
+        "source_instance": "krnl_hls_pipeline_compute_1",
+        "source_port": "output_stream",
+        "sink_instance": "krnl_hls_pipeline_sink_1",
+        "sink_port": "input_stream",
+        "raw": "krnl_hls_pipeline_compute_1.output_stream:krnl_hls_pipeline_sink_1.input_stream",
+        "source_kernel": "krnl_hls_pipeline_compute",
+        "sink_kernel": "krnl_hls_pipeline_sink"
+      }
+    ]
+  },
+  "vivado": {
+    "auto_discover": false,
+    "build_dir": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1",
+    "xclbin": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/hls_pipeline_demo.xclbin",
+    "vivado_log_dir": "",
+    "csynth_dir": "",
+    "schedule_dir": "",
+    "link_dir": "",
+    "link_timing": {
+      "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/hw_bb_locked_timing_summary_routed.rpt",
+      "available": true,
+      "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/hw_bb_locked_timing_summary_routed.rpt",
+      "how_to_get": "",
+      "constraints_met": true,
+      "design_summary": {
+        "wns_ns": "0.003",
+        "tns_ns": "0.000",
+        "tns_failing_endpoints": "0",
+        "tns_total_endpoints": "506719",
+        "whs_ns": "0.009",
+        "ths_ns": "0.000",
+        "ths_failing_endpoints": "0",
+        "ths_total_endpoints": "504528",
+        "wpws_ns": "0.000",
+        "tpws_ns": "0.000",
+        "tpws_failing_endpoints": "0",
+        "tpws_total_endpoints": "207621"
+      },
+      "clock_summary": [
+        {
+          "name": "io_clk_freerun_00_clk_p",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "clk_kernel_00_unbuffered_net",
+          "waveform_ns": "{0.000 1.667}",
+          "period_ns": "3.333",
+          "frequency_mhz": "300.000"
+        },
+        {
+          "name": "clk_kernel_01_unbuffered_net",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "hbm_aclk",
+          "waveform_ns": "{0.000 1.111}",
+          "period_ns": "2.222",
+          "frequency_mhz": "450.000"
+        },
+        {
+          "name": "io_clk_pcie_00_clk_p",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_4",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_5",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_6",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_7",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_4",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_5",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_6",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_7",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_4",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_5",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_6",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_7",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "dma_ip_axi_aclk_1",
+          "waveform_ns": "{0.000 2.000}",
+          "period_ns": "4.000",
+          "frequency_mhz": "250.000"
+        },
+        {
+          "name": "clk_out1_bd_39ab_clkwiz_level0_periph_0_1",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+          "waveform_ns": "{0.000 10.000}",
+          "period_ns": "20.000",
+          "frequency_mhz": "50.000"
+        },
+        {
+          "name": "clk_sck",
+          "waveform_ns": "{0.000 20.000}",
+          "period_ns": "40.000",
+          "frequency_mhz": "25.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+          "waveform_ns": "{80.000 160.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+          "waveform_ns": "{80.000 160.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "mcap_clk_1",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "pipe_clk_1",
+          "waveform_ns": "{0.000 2.000}",
+          "period_ns": "4.000",
+          "frequency_mhz": "250.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_4",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_5",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_6",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_7",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/INTERNAL_TCK",
+          "waveform_ns": "{0.000 25.000}",
+          "period_ns": "50.000",
+          "frequency_mhz": "20.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/Use_External.Use_BSCANID.No_Dbg_Reg_Access.BUFG_UPDATE/Using_FPGA.Native/O",
+          "waveform_ns": "{0.000 50.000}",
+          "period_ns": "100.000",
+          "frequency_mhz": "10.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[0].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[10].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[11].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[12].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[13].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[14].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[15].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[1].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[2].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[3].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[4].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[5].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[6].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[7].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[8].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[9].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_clk_i/bufg_gt_intclk/O",
+          "waveform_ns": "{0.000 500.000}",
+          "period_ns": "1000.000",
+          "frequency_mhz": "1.000"
+        }
+      ],
+      "kernel_clock_summary": [
+        {
+          "name": "clk_kernel_00_unbuffered_net",
+          "waveform_ns": "{0.000 1.667}",
+          "period_ns": "3.333",
+          "frequency_mhz": "300.000",
+          "wns_ns": "0.425",
+          "tns_ns": "0.000",
+          "tns_failing_endpoints": "0",
+          "tns_total_endpoints": "63514",
+          "whs_ns": "0.010",
+          "ths_ns": "0.000",
+          "ths_failing_endpoints": "0",
+          "ths_total_endpoints": "63514",
+          "wpws_ns": "1.125",
+          "tpws_ns": "0.000",
+          "tpws_failing_endpoints": "0",
+          "tpws_total_endpoints": "21986"
+        },
+        {
+          "name": "clk_kernel_01_unbuffered_net",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000",
+          "wns_ns": "0.762",
+          "tns_ns": "0.000",
+          "tns_failing_endpoints": "0",
+          "tns_total_endpoints": "264",
+          "whs_ns": "0.019",
+          "ths_ns": "0.000",
+          "ths_failing_endpoints": "0",
+          "ths_total_endpoints": "264",
+          "wpws_ns": "0.468",
+          "tpws_ns": "0.000",
+          "tpws_failing_endpoints": "0",
+          "tpws_total_endpoints": "174"
+        }
+      ]
+    },
+    "resources": {
+      "source": "implementation",
+      "stage": "Routed",
+      "available": true,
+      "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/kernel_util_routed.json",
+      "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/kernel_util_routed.json",
+      "how_to_get": "",
+      "total": {
+        "LUT": {
+          "used": "9192",
+          "available": "1176646",
+          "util_pct": "0.78"
+        },
+        "LUTAsMem": {
+          "used": "2507",
+          "available": "591130",
+          "util_pct": "0.42"
+        },
+        "REG": {
+          "used": "11020",
+          "available": "2431253",
+          "util_pct": "0.45"
+        },
+        "BRAM": {
+          "used": "3",
+          "available": "1818",
+          "util_pct": "0.17"
+        },
+        "URAM": {
+          "used": "0",
+          "available": "960",
+          "util_pct": "0.00"
+        },
+        "DSP": {
+          "used": "0",
+          "available": "9020",
+          "util_pct": "0.00"
+        }
+      },
+      "kernels": [
+        {
+          "name": "krnl_hls_pipeline_compute",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "2432",
+              "available": "1176646",
+              "util_pct": "0.21"
+            },
+            "LUTAsMem": {
+              "used": "668",
+              "available": "591130",
+              "util_pct": "0.11"
+            },
+            "REG": {
+              "used": "2803",
+              "available": "2431253",
+              "util_pct": "0.12"
+            },
+            "BRAM": {
+              "used": "1",
+              "available": "1818",
+              "util_pct": "0.06"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "0",
+              "available": "9020",
+              "util_pct": "0.00"
+            }
+          }
+        },
+        {
+          "name": "krnl_hls_pipeline_demo",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "4403",
+              "available": "1176646",
+              "util_pct": "0.37"
+            },
+            "LUTAsMem": {
+              "used": "1225",
+              "available": "591130",
+              "util_pct": "0.21"
+            },
+            "REG": {
+              "used": "5496",
+              "available": "2431253",
+              "util_pct": "0.23"
+            },
+            "BRAM": {
+              "used": "2",
+              "available": "1818",
+              "util_pct": "0.11"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "0",
+              "available": "9020",
+              "util_pct": "0.00"
+            }
+          }
+        },
+        {
+          "name": "krnl_hls_pipeline_sink",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "1247",
+              "available": "1176646",
+              "util_pct": "0.11"
+            },
+            "LUTAsMem": {
+              "used": "334",
+              "available": "591130",
+              "util_pct": "0.06"
+            },
+            "REG": {
+              "used": "1462",
+              "available": "2431253",
+              "util_pct": "0.06"
+            },
+            "BRAM": {
+              "used": "0",
+              "available": "1818",
+              "util_pct": "0.00"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "0",
+              "available": "9020",
+              "util_pct": "0.00"
+            }
+          }
+        },
+        {
+          "name": "krnl_hls_pipeline_source",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "1110",
+              "available": "1176646",
+              "util_pct": "0.09"
+            },
+            "LUTAsMem": {
+              "used": "280",
+              "available": "591130",
+              "util_pct": "0.05"
+            },
+            "REG": {
+              "used": "1259",
+              "available": "2431253",
+              "util_pct": "0.05"
+            },
+            "BRAM": {
+              "used": "0",
+              "available": "1818",
+              "util_pct": "0.00"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "0",
+              "available": "9020",
+              "util_pct": "0.00"
+            }
+          }
+        }
+      ]
+    },
+    "pipeline_overview": [
+      {
+        "kernel_name": "krnl_hls_pipeline_demo",
+        "kernel_pipeline": "p_anonymous_namespace_compute_stage_Pipeline_ComputeLoop",
+        "loop_name": "ComputeLoop",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "4",
+        "trip_count": "1 ~ 4096",
+        "pipelined": "yes",
+        "pipeline_depth": "4",
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/p_anonymous_namespace_compute_stage_Pipeline_ComputeLoop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "krnl_hls_pipeline_demo",
+        "kernel_pipeline": "p_anonymous_namespace_load_stage_Pipeline_LoadLoop",
+        "loop_name": "LoadLoop",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "3",
+        "trip_count": "1 ~ 4096",
+        "pipelined": "yes",
+        "pipeline_depth": "3",
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/p_anonymous_namespace_load_stage_Pipeline_LoadLoop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "krnl_hls_pipeline_demo",
+        "kernel_pipeline": "p_anonymous_namespace_store_stage_Pipeline_StoreLoop",
+        "loop_name": "StoreLoop",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "72",
+        "trip_count": "1 ~ 4096",
+        "pipelined": "yes",
+        "pipeline_depth": "72",
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/p_anonymous_namespace_store_stage_Pipeline_StoreLoop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "krnl_hls_pipeline_source",
+        "kernel_pipeline": "krnl_hls_pipeline_source_Pipeline_SourceLoop",
+        "loop_name": "SourceLoop",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "2",
+        "trip_count": "1 ~ 4096",
+        "pipelined": "yes",
+        "pipeline_depth": "2",
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_source/krnl_hls_pipeline_source/krnl_hls_pipeline_source/solution/.autopilot/db/krnl_hls_pipeline_source_Pipeline_SourceLoop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "krnl_hls_pipeline_compute",
+        "kernel_pipeline": "krnl_hls_pipeline_compute_Pipeline_ComputeLoop",
+        "loop_name": "ComputeLoop",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "3",
+        "trip_count": "1 ~ 4096",
+        "pipelined": "yes",
+        "pipeline_depth": "3",
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/solution/.autopilot/db/krnl_hls_pipeline_compute_Pipeline_ComputeLoop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "krnl_hls_pipeline_sink",
+        "kernel_pipeline": "krnl_hls_pipeline_sink_Pipeline_SinkLoop",
+        "loop_name": "SinkLoop",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "2",
+        "trip_count": "1 ~ 4096",
+        "pipelined": "yes",
+        "pipeline_depth": "2",
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/solution/.autopilot/db/krnl_hls_pipeline_sink_Pipeline_SinkLoop.verbose.sched.rpt"
+      }
+    ]
+  },
+  "kernels": [
+    {
+      "name": "krnl_hls_pipeline_demo",
+      "input_index": 0,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/krnl_hls_pipeline_demo.xo",
+        "kernel_name": "krnl_hls_pipeline_demo",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:krnl_hls_pipeline_demo:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_INPUT",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_OUTPUT",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_STAGE",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_DELAY",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x48"
+          }
+        ],
+        "args": [
+          {
+            "name": "item_count",
+            "id": "0",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x10",
+            "type": "unsigned int"
+          },
+          {
+            "name": "input",
+            "id": "1",
+            "port": "M_AXI_GMEM_INPUT",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x18",
+            "type": "void*"
+          },
+          {
+            "name": "output",
+            "id": "2",
+            "port": "M_AXI_GMEM_OUTPUT",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x24",
+            "type": "void*"
+          },
+          {
+            "name": "stage_value",
+            "id": "3",
+            "port": "M_AXI_GMEM_STAGE",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x30",
+            "type": "void*"
+          },
+          {
+            "name": "delayed_value",
+            "id": "4",
+            "port": "M_AXI_GMEM_DELAY",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x3C",
+            "type": "void*"
+          }
+        ],
+        "xo_meta": {
+          "dir": "krnl_hls_pipeline_demo",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/syn/report/krnl_hls_pipeline_demo_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/syn/report/krnl_hls_pipeline_demo_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "krnl_hls_pipeline_demo",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "dataflow",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "150",
+          "avg_cycles": "2197",
+          "worst_cycles": "4245",
+          "best_time": "0.500 us",
+          "avg_time": "7.323 us",
+          "worst_time": "14.149 us",
+          "interval_min": "77",
+          "interval_max": "4172"
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "0",
+          "FF": "5572",
+          "LUT": "7335",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/krnl_hls_pipeline_demo.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/krnl_hls_pipeline_demo.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "1",
+          "fsm_states": "7",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/p_anonymous_namespace_compute_stage_Pipeline_ComputeLoop.verbose.sched.rpt",
+            "pipeline_name": "p_anonymous_namespace_compute_stage_Pipeline_ComputeLoop",
+            "fsm_states": "4",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "4",
+            "loop_rows": [
+              {
+                "loop_name": "ComputeLoop",
+                "latency_min": "3",
+                "latency_max": "4098",
+                "iteration_latency": "4",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "1 ~ 4096",
+                "pipelined": "yes"
+              }
+            ]
+          },
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/p_anonymous_namespace_load_stage_Pipeline_LoadLoop.verbose.sched.rpt",
+            "pipeline_name": "p_anonymous_namespace_load_stage_Pipeline_LoadLoop",
+            "fsm_states": "3",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "3",
+            "loop_rows": [
+              {
+                "loop_name": "LoadLoop",
+                "latency_min": "2",
+                "latency_max": "4097",
+                "iteration_latency": "3",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "1 ~ 4096",
+                "pipelined": "yes"
+              }
+            ]
+          },
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/p_anonymous_namespace_store_stage_Pipeline_StoreLoop.verbose.sched.rpt",
+            "pipeline_name": "p_anonymous_namespace_store_stage_Pipeline_StoreLoop",
+            "fsm_states": "72",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "72",
+            "loop_rows": [
+              {
+                "loop_name": "StoreLoop",
+                "latency_min": "71",
+                "latency_max": "4166",
+                "iteration_latency": "72",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "1 ~ 4096",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "p_anonymous_namespace_compute_stage_Pipeline_ComputeLoop",
+            "loop_name": "ComputeLoop",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "4",
+            "trip_count": "1 ~ 4096",
+            "pipelined": "yes",
+            "pipeline_depth": "4",
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/p_anonymous_namespace_compute_stage_Pipeline_ComputeLoop.verbose.sched.rpt"
+          },
+          {
+            "kernel_pipeline": "p_anonymous_namespace_load_stage_Pipeline_LoadLoop",
+            "loop_name": "LoadLoop",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "3",
+            "trip_count": "1 ~ 4096",
+            "pipelined": "yes",
+            "pipeline_depth": "3",
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/p_anonymous_namespace_load_stage_Pipeline_LoadLoop.verbose.sched.rpt"
+          },
+          {
+            "kernel_pipeline": "p_anonymous_namespace_store_stage_Pipeline_StoreLoop",
+            "loop_name": "StoreLoop",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "72",
+            "trip_count": "1 ~ 4096",
+            "pipelined": "yes",
+            "pipeline_depth": "72",
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/krnl_hls_pipeline_demo/solution/.autopilot/db/p_anonymous_namespace_store_stage_Pipeline_StoreLoop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/cfg/hls_pipeline_demo.cfg",
+        "instances": [
+          "krnl_hls_pipeline_demo_1"
+        ],
+        "sp_bindings": [],
+        "bindings_by_arg": {}
+      },
+      "annotations": {
+        "role": "单 kernel 内部任务流水",
+        "summary": [
+          "top 函数使用 HLS DATAFLOW，把 load_stage、compute_stage、store_stage 作为三个任务流水段。",
+          "stage 间通过 hls::stream FIFO 连接，每个 stage 内部循环都以 II=1 pipeline。",
+          "compute stage 暴露 stage_value 和 delayed_value，便于对照当前组合计算值与两级寄存器延迟链。"
+        ],
+        "reads": [
+          "item_count",
+          "input"
+        ],
+        "writes": [
+          "output",
+          "stage_value",
+          "delayed_value"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "Kernel",
+          "components": [
+            "load_stage",
+            "compute_stage",
+            "store_stage"
+          ],
+          "streams": [
+            "load_to_compute",
+            "compute_to_store"
+          ],
+          "memory": [
+            "input",
+            "output",
+            "stage_value",
+            "delayed_value"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel",
+          "control_if": "AxiLiteIf(item_count)",
+          "data_if": [
+            "AxiMasterIf(input)",
+            "AxiMasterIf(output)",
+            "AxiMasterIf(stage_value)",
+            "AxiMasterIf(delayed_value)"
+          ],
+          "state_ports": [
+            "RegPort delay0",
+            "RegPort delay1",
+            "WirePort stream_valid"
+          ]
+        },
+        "components": [
+          {
+            "name": "load_stage",
+            "role": "每拍读取一个 input 元素，并写入 load_to_compute FIFO。",
+            "reads": [
+              "input[index]"
+            ],
+            "writes": [
+              "load_to_compute"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(input)",
+              "StreamOut(load_to_compute)"
+            ]
+          },
+          {
+            "name": "compute_stage",
+            "role": "每拍消费一个 packet，执行 lane 展开和两级寄存器延迟链。",
+            "reads": [
+              "load_to_compute"
+            ],
+            "writes": [
+              "compute_to_store"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "StreamIn(load_to_compute)",
+              "StreamOut(compute_to_store)",
+              "RegPort delay0",
+              "RegPort delay1"
+            ]
+          },
+          {
+            "name": "store_stage",
+            "role": "每拍写回 output、stage_value、delayed_value 三组观测结果。",
+            "reads": [
+              "compute_to_store"
+            ],
+            "writes": [
+              "output",
+              "stage_value",
+              "delayed_value"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "StreamIn(compute_to_store)",
+              "AxiMasterIf(output/stage/delay)"
+            ]
+          }
+        ],
+        "component_edges": [
+          {
+            "upstream": "load_stage",
+            "downstream": "compute_stage",
+            "description": "hls::stream load_to_compute"
+          },
+          {
+            "upstream": "compute_stage",
+            "downstream": "store_stage",
+            "description": "hls::stream compute_to_store"
+          }
+        ]
+      }
+    },
+    {
+      "name": "krnl_hls_pipeline_source",
+      "input_index": 1,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/krnl_hls_pipeline_source.xo",
+        "kernel_name": "krnl_hls_pipeline_source",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:krnl_hls_pipeline_source:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_INPUT",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "OUTPUT_STREAM",
+            "mode": "write_only",
+            "data_width": "32",
+            "port_type": "stream",
+            "base": "",
+            "range": ""
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x24"
+          }
+        ],
+        "args": [
+          {
+            "name": "input",
+            "id": "0",
+            "port": "M_AXI_GMEM_INPUT",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "output_stream",
+            "id": "1",
+            "port": "OUTPUT_STREAM",
+            "address_qualifier": "4",
+            "size": "0x0",
+            "offset": "0x0",
+            "type": "stream<hls::axis<ap_uint<32>, 0, 0, 0>, 0>&"
+          },
+          {
+            "name": "item_count",
+            "id": "2",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x1C",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "krnl_hls_pipeline_source",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_source/krnl_hls_pipeline_source/krnl_hls_pipeline_source/solution/syn/report/krnl_hls_pipeline_source_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_source/krnl_hls_pipeline_source/krnl_hls_pipeline_source/solution/syn/report/krnl_hls_pipeline_source_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "krnl_hls_pipeline_source",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "77",
+          "avg_cycles": "2124",
+          "worst_cycles": "4172",
+          "best_time": "0.257 us",
+          "avg_time": "7.079 us",
+          "worst_time": "13.905 us",
+          "interval_min": "78",
+          "interval_max": "4173"
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "0",
+          "FF": "1149",
+          "LUT": "1999",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_source/krnl_hls_pipeline_source/krnl_hls_pipeline_source/solution/.autopilot/db/krnl_hls_pipeline_source.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_source/krnl_hls_pipeline_source/krnl_hls_pipeline_source/solution/.autopilot/db/krnl_hls_pipeline_source.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "74",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_source/krnl_hls_pipeline_source/krnl_hls_pipeline_source/solution/.autopilot/db/krnl_hls_pipeline_source_Pipeline_SourceLoop.verbose.sched.rpt",
+            "pipeline_name": "krnl_hls_pipeline_source_Pipeline_SourceLoop",
+            "fsm_states": "2",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "2",
+            "loop_rows": [
+              {
+                "loop_name": "SourceLoop",
+                "latency_min": "2",
+                "latency_max": "4097",
+                "iteration_latency": "2",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "1 ~ 4096",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "krnl_hls_pipeline_source_Pipeline_SourceLoop",
+            "loop_name": "SourceLoop",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "2",
+            "trip_count": "1 ~ 4096",
+            "pipelined": "yes",
+            "pipeline_depth": "2",
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_source/krnl_hls_pipeline_source/krnl_hls_pipeline_source/solution/.autopilot/db/krnl_hls_pipeline_source_Pipeline_SourceLoop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/cfg/hls_pipeline_demo.cfg",
+        "instances": [
+          "krnl_hls_pipeline_source_1"
+        ],
+        "sp_bindings": [],
+        "bindings_by_arg": {}
+      },
+      "annotations": {
+        "role": "三 kernel AXI4-Stream 流水第一段",
+        "summary": [
+          "从 input 全局内存按 index 连续读取元素。",
+          "每拍向 output_stream 写一个 ProjectXHlsPipelineWord，并在最后一个元素设置 last。",
+          "通过 CFG 的 stream_connect 接到 krnl_hls_pipeline_compute.input_stream。"
+        ],
+        "reads": [
+          "input",
+          "item_count"
+        ],
+        "writes": [
+          "output_stream"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "Kernel",
+          "stream_out": "output_stream",
+          "memory": [
+            "input"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel",
+          "control_if": "AxiLiteIf(item_count)",
+          "data_if": [
+            "AxiMasterIf(input)",
+            "AxisOut(output_stream)"
+          ],
+          "state_ports": [
+            "RegPort source_index",
+            "WirePort axis_valid"
+          ]
+        },
+        "components": [
+          {
+            "name": "source_loop",
+            "role": "II=1 读取 input 并推入 stream。",
+            "reads": [
+              "input[index]"
+            ],
+            "writes": [
+              "output_stream"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(input)",
+              "AxisOut(output_stream)"
+            ]
+          }
+        ],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "krnl_hls_pipeline_compute",
+      "input_index": 2,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/krnl_hls_pipeline_compute.xo",
+        "kernel_name": "krnl_hls_pipeline_compute",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:krnl_hls_pipeline_compute:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_STAGE",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_DELAY",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "INPUT_STREAM",
+            "mode": "read_only",
+            "data_width": "32",
+            "port_type": "stream",
+            "base": "",
+            "range": ""
+          },
+          {
+            "name": "OUTPUT_STREAM",
+            "mode": "write_only",
+            "data_width": "32",
+            "port_type": "stream",
+            "base": "",
+            "range": ""
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x30"
+          }
+        ],
+        "args": [
+          {
+            "name": "input_stream",
+            "id": "0",
+            "port": "INPUT_STREAM",
+            "address_qualifier": "4",
+            "size": "0x0",
+            "offset": "0x0",
+            "type": "stream<hls::axis<ap_uint<32>, 0, 0, 0>, 0>&"
+          },
+          {
+            "name": "output_stream",
+            "id": "1",
+            "port": "OUTPUT_STREAM",
+            "address_qualifier": "4",
+            "size": "0x0",
+            "offset": "0x0",
+            "type": "stream<hls::axis<ap_uint<32>, 0, 0, 0>, 0>&"
+          },
+          {
+            "name": "stage_value",
+            "id": "2",
+            "port": "M_AXI_GMEM_STAGE",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "delayed_value",
+            "id": "3",
+            "port": "M_AXI_GMEM_DELAY",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "item_count",
+            "id": "4",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x28",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "krnl_hls_pipeline_compute",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/solution/syn/report/krnl_hls_pipeline_compute_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/solution/syn/report/krnl_hls_pipeline_compute_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "krnl_hls_pipeline_compute",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "76",
+          "avg_cycles": "2123",
+          "worst_cycles": "4171",
+          "best_time": "0.253 us",
+          "avg_time": "7.076 us",
+          "worst_time": "13.902 us",
+          "interval_min": "77",
+          "interval_max": "4172"
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "0",
+          "FF": "2175",
+          "LUT": "3474",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/solution/.autopilot/db/krnl_hls_pipeline_compute.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/solution/.autopilot/db/krnl_hls_pipeline_compute.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "72",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/solution/.autopilot/db/krnl_hls_pipeline_compute_Pipeline_ComputeLoop.verbose.sched.rpt",
+            "pipeline_name": "krnl_hls_pipeline_compute_Pipeline_ComputeLoop",
+            "fsm_states": "3",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "3",
+            "loop_rows": [
+              {
+                "loop_name": "ComputeLoop",
+                "latency_min": "3",
+                "latency_max": "4098",
+                "iteration_latency": "3",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "1 ~ 4096",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "krnl_hls_pipeline_compute_Pipeline_ComputeLoop",
+            "loop_name": "ComputeLoop",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "3",
+            "trip_count": "1 ~ 4096",
+            "pipelined": "yes",
+            "pipeline_depth": "3",
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/krnl_hls_pipeline_compute/solution/.autopilot/db/krnl_hls_pipeline_compute_Pipeline_ComputeLoop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/cfg/hls_pipeline_demo.cfg",
+        "instances": [
+          "krnl_hls_pipeline_compute_1"
+        ],
+        "sp_bindings": [],
+        "bindings_by_arg": {}
+      },
+      "annotations": {
+        "role": "三 kernel AXI4-Stream 流水中间计算段",
+        "summary": [
+          "从 input_stream 每拍读取一个元素，按 stream 顺序生成 index。",
+          "执行 lane 展开计算，LaneLoop 使用 UNROLL，lanes 使用 ARRAY_PARTITION complete。",
+          "两级寄存器链 delay0/delay1 生成 delayed_value，并把最终 output 写入 output_stream。"
+        ],
+        "reads": [
+          "input_stream",
+          "item_count"
+        ],
+        "writes": [
+          "output_stream",
+          "stage_value",
+          "delayed_value"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "Kernel",
+          "stream_in": "input_stream",
+          "stream_out": "output_stream",
+          "memory": [
+            "stage_value",
+            "delayed_value"
+          ],
+          "register_chain": [
+            "delay0",
+            "delay1"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel",
+          "control_if": "AxiLiteIf(item_count)",
+          "data_if": [
+            "AxisIn(input_stream)",
+            "AxisOut(output_stream)",
+            "AxiMasterIf(stage_value)",
+            "AxiMasterIf(delayed_value)"
+          ],
+          "state_ports": [
+            "RegPort delay0",
+            "RegPort delay1",
+            "RegPort compute_index"
+          ]
+        },
+        "components": [
+          {
+            "name": "compute_loop",
+            "role": "II=1 消费 stream word，计算 mixed/delayed 并推送最终结果。",
+            "reads": [
+              "input_stream",
+              "delay1",
+              "delay0"
+            ],
+            "writes": [
+              "output_stream",
+              "stage_value[index]",
+              "delayed_value[index]",
+              "delay0",
+              "delay1"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxisIn(input_stream)",
+              "AxisOut(output_stream)",
+              "RegPort delay0",
+              "RegPort delay1",
+              "AxiMasterIf(stage/delay)"
+            ]
+          }
+        ],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "krnl_hls_pipeline_sink",
+      "input_index": 3,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/krnl_hls_pipeline_sink.xo",
+        "kernel_name": "krnl_hls_pipeline_sink",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:krnl_hls_pipeline_sink:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_OUTPUT",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "INPUT_STREAM",
+            "mode": "read_only",
+            "data_width": "32",
+            "port_type": "stream",
+            "base": "",
+            "range": ""
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x24"
+          }
+        ],
+        "args": [
+          {
+            "name": "input_stream",
+            "id": "0",
+            "port": "INPUT_STREAM",
+            "address_qualifier": "4",
+            "size": "0x0",
+            "offset": "0x0",
+            "type": "stream<hls::axis<ap_uint<32>, 0, 0, 0>, 0>&"
+          },
+          {
+            "name": "output",
+            "id": "1",
+            "port": "M_AXI_GMEM_OUTPUT",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "item_count",
+            "id": "2",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x1C",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "krnl_hls_pipeline_sink",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/solution/syn/report/krnl_hls_pipeline_sink_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/solution/syn/report/krnl_hls_pipeline_sink_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "krnl_hls_pipeline_sink",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "74",
+          "avg_cycles": "2121",
+          "worst_cycles": "4169",
+          "best_time": "0.247 us",
+          "avg_time": "7.069 us",
+          "worst_time": "13.895 us",
+          "interval_min": "75",
+          "interval_max": "4170"
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "0",
+          "FF": "1144",
+          "LUT": "1955",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/solution/.autopilot/db/krnl_hls_pipeline_sink.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/solution/.autopilot/db/krnl_hls_pipeline_sink.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "72",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/solution/.autopilot/db/krnl_hls_pipeline_sink_Pipeline_SinkLoop.verbose.sched.rpt",
+            "pipeline_name": "krnl_hls_pipeline_sink_Pipeline_SinkLoop",
+            "fsm_states": "2",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "2",
+            "loop_rows": [
+              {
+                "loop_name": "SinkLoop",
+                "latency_min": "1",
+                "latency_max": "4096",
+                "iteration_latency": "2",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "1 ~ 4096",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "krnl_hls_pipeline_sink_Pipeline_SinkLoop",
+            "loop_name": "SinkLoop",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "2",
+            "trip_count": "1 ~ 4096",
+            "pipelined": "yes",
+            "pipeline_depth": "2",
+            "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/krnl_hls_pipeline_sink/solution/.autopilot/db/krnl_hls_pipeline_sink_Pipeline_SinkLoop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/cfg/hls_pipeline_demo.cfg",
+        "instances": [
+          "krnl_hls_pipeline_sink_1"
+        ],
+        "sp_bindings": [],
+        "bindings_by_arg": {}
+      },
+      "annotations": {
+        "role": "三 kernel AXI4-Stream 流水末段",
+        "summary": [
+          "从 input_stream 每拍接收 compute 生成的 output word。",
+          "把 stream payload 写回 output 全局内存。",
+          "它是三 kernel pipeline 中 host 等待完成的末端。"
+        ],
+        "reads": [
+          "input_stream",
+          "item_count"
+        ],
+        "writes": [
+          "output"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "Kernel",
+          "stream_in": "input_stream",
+          "memory": [
+            "output"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel",
+          "control_if": "AxiLiteIf(item_count)",
+          "data_if": [
+            "AxisIn(input_stream)",
+            "AxiMasterIf(output)"
+          ],
+          "state_ports": [
+            "RegPort sink_index",
+            "WirePort axis_ready"
+          ]
+        },
+        "components": [
+          {
+            "name": "sink_loop",
+            "role": "II=1 接收 stream word 并写回 output[index]。",
+            "reads": [
+              "input_stream"
+            ],
+            "writes": [
+              "output[index]"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxisIn(input_stream)",
+              "AxiMasterIf(output)"
+            ]
+          }
+        ],
+        "component_edges": []
+      }
+    }
+  ]
+}

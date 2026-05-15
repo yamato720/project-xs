@@ -1,0 +1,385 @@
+{
+  "title": "Project-XS HLS Pipeline Demo Hardware Review",
+  "subtitle": "使用 Project-X 根目录已生成的 hls_pipeline_demo hw bitstream 产物，只指定 build 目录与 CFG，自动发现 XO、HLS schedule/csynth 和 routed timing。",
+  "source_note": "这个 example 不复制 build 产物；硬件产物通过 artifacts.build_dir 自动发现，CFG 提供 kernel 实例与 AXI4-Stream 连接，HLS/Vivado 报告提供 pipeline、综合延迟、资源和实现时序。",
+  "cfg": "../../../cfg/hls_pipeline_demo.cfg",
+  "artifacts": {
+    "auto_discover": false,
+    "build_dir": "../../../build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1"
+  },
+  "output": {
+    "json": "reports/hls_pipeline_demo_hw_report.json",
+    "html": "reports/hls_pipeline_demo_hw_report.html"
+  },
+  "sequence": [
+    "krnl_hls_pipeline_demo",
+    "krnl_hls_pipeline_source",
+    "krnl_hls_pipeline_compute",
+    "krnl_hls_pipeline_sink"
+  ],
+  "sequence_descriptions": {
+    "krnl_hls_pipeline_demo": "单 XRT kernel 内部 DATAFLOW：load_stage -> compute_stage -> store_stage",
+    "krnl_hls_pipeline_source": "多 kernel 流水第一段：从 input 内存读数据并写入 AXI4-Stream",
+    "krnl_hls_pipeline_compute": "多 kernel 流水中间段：从 stream 读取、执行 lane 展开计算和两级寄存器延迟链",
+    "krnl_hls_pipeline_sink": "多 kernel 流水末段：从 stream 接收最终 output 并写回内存"
+  },
+  "dependencies": [
+    {
+      "upstream": "krnl_hls_pipeline_demo",
+      "downstream": "host",
+      "description": "单 kernel 版本一次 run 后写回 output / stage_value / delayed_value，host 读取并和 CPU golden 对照。"
+    },
+    {
+      "upstream": "krnl_hls_pipeline_source",
+      "downstream": "krnl_hls_pipeline_compute",
+      "description": "CFG stream_connect: source.output_stream -> compute.input_stream。"
+    },
+    {
+      "upstream": "krnl_hls_pipeline_compute",
+      "downstream": "krnl_hls_pipeline_sink",
+      "description": "CFG stream_connect: compute.output_stream -> sink.input_stream。"
+    },
+    {
+      "upstream": "krnl_hls_pipeline_sink",
+      "downstream": "host",
+      "description": "三 kernel stream pipeline 完成后，host 从 output / stage_value / delayed_value 读回并校验。"
+    }
+  ],
+  "host_nodes": [
+    {
+      "name": "single_kernel_runner",
+      "role": "启动单 kernel DATAFLOW 版本并等待完成",
+      "reads": [
+        "input buffer",
+        "item_count"
+      ],
+      "writes": [
+        "output",
+        "stage_value",
+        "delayed_value"
+      ],
+      "drives": [
+        "krnl_hls_pipeline_demo"
+      ],
+      "sim_mapping": [
+        "CycleSimulator transaction",
+        "AxiLiteIf(item_count)",
+        "AxiMasterIf buffers"
+      ]
+    },
+    {
+      "name": "stream_pipeline_runner",
+      "role": "按 sink -> compute -> source 的顺序启动三 kernel 流水线",
+      "reads": [
+        "input buffer",
+        "item_count"
+      ],
+      "writes": [
+        "output",
+        "stage_value",
+        "delayed_value"
+      ],
+      "drives": [
+        "krnl_hls_pipeline_source",
+        "krnl_hls_pipeline_compute",
+        "krnl_hls_pipeline_sink"
+      ],
+      "sim_mapping": [
+        "SimulationSession with three schedulable kernels",
+        "AXI4-Stream port binding"
+      ]
+    }
+  ],
+  "kernels": [
+    {
+      "name": "krnl_hls_pipeline_demo",
+      "role": "单 kernel 内部任务流水",
+      "summary": [
+        "top 函数使用 HLS DATAFLOW，把 load_stage、compute_stage、store_stage 作为三个任务流水段。",
+        "stage 间通过 hls::stream FIFO 连接，每个 stage 内部循环都以 II=1 pipeline。",
+        "compute stage 暴露 stage_value 和 delayed_value，便于对照当前组合计算值与两级寄存器延迟链。"
+      ],
+      "reads": [
+        "item_count",
+        "input"
+      ],
+      "writes": [
+        "output",
+        "stage_value",
+        "delayed_value"
+      ],
+      "xs_mapping": {
+        "kernel": "Kernel",
+        "components": [
+          "load_stage",
+          "compute_stage",
+          "store_stage"
+        ],
+        "streams": [
+          "load_to_compute",
+          "compute_to_store"
+        ],
+        "memory": [
+          "input",
+          "output",
+          "stage_value",
+          "delayed_value"
+        ]
+      },
+      "xs_sim_mapping": {
+        "kernel_class": "project_xs::sim::Kernel",
+        "control_if": "AxiLiteIf(item_count)",
+        "data_if": [
+          "AxiMasterIf(input)",
+          "AxiMasterIf(output)",
+          "AxiMasterIf(stage_value)",
+          "AxiMasterIf(delayed_value)"
+        ],
+        "state_ports": [
+          "RegPort delay0",
+          "RegPort delay1",
+          "WirePort stream_valid"
+        ]
+      },
+      "components": [
+        {
+          "name": "load_stage",
+          "role": "每拍读取一个 input 元素，并写入 load_to_compute FIFO。",
+          "reads": [
+            "input[index]"
+          ],
+          "writes": [
+            "load_to_compute"
+          ],
+          "xs_mapping": "KernelComponent",
+          "sim_ports": [
+            "AxiMasterIf(input)",
+            "StreamOut(load_to_compute)"
+          ]
+        },
+        {
+          "name": "compute_stage",
+          "role": "每拍消费一个 packet，执行 lane 展开和两级寄存器延迟链。",
+          "reads": [
+            "load_to_compute"
+          ],
+          "writes": [
+            "compute_to_store"
+          ],
+          "xs_mapping": "KernelComponent",
+          "sim_ports": [
+            "StreamIn(load_to_compute)",
+            "StreamOut(compute_to_store)",
+            "RegPort delay0",
+            "RegPort delay1"
+          ]
+        },
+        {
+          "name": "store_stage",
+          "role": "每拍写回 output、stage_value、delayed_value 三组观测结果。",
+          "reads": [
+            "compute_to_store"
+          ],
+          "writes": [
+            "output",
+            "stage_value",
+            "delayed_value"
+          ],
+          "xs_mapping": "KernelComponent",
+          "sim_ports": [
+            "StreamIn(compute_to_store)",
+            "AxiMasterIf(output/stage/delay)"
+          ]
+        }
+      ],
+      "component_edges": [
+        {
+          "upstream": "load_stage",
+          "downstream": "compute_stage",
+          "description": "hls::stream load_to_compute"
+        },
+        {
+          "upstream": "compute_stage",
+          "downstream": "store_stage",
+          "description": "hls::stream compute_to_store"
+        }
+      ]
+    },
+    {
+      "name": "krnl_hls_pipeline_source",
+      "role": "三 kernel AXI4-Stream 流水第一段",
+      "summary": [
+        "从 input 全局内存按 index 连续读取元素。",
+        "每拍向 output_stream 写一个 ProjectXHlsPipelineWord，并在最后一个元素设置 last。",
+        "通过 CFG 的 stream_connect 接到 krnl_hls_pipeline_compute.input_stream。"
+      ],
+      "reads": [
+        "input",
+        "item_count"
+      ],
+      "writes": [
+        "output_stream"
+      ],
+      "xs_mapping": {
+        "kernel": "Kernel",
+        "stream_out": "output_stream",
+        "memory": [
+          "input"
+        ]
+      },
+      "xs_sim_mapping": {
+        "kernel_class": "project_xs::sim::Kernel",
+        "control_if": "AxiLiteIf(item_count)",
+        "data_if": [
+          "AxiMasterIf(input)",
+          "AxisOut(output_stream)"
+        ],
+        "state_ports": [
+          "RegPort source_index",
+          "WirePort axis_valid"
+        ]
+      },
+      "components": [
+        {
+          "name": "source_loop",
+          "role": "II=1 读取 input 并推入 stream。",
+          "reads": [
+            "input[index]"
+          ],
+          "writes": [
+            "output_stream"
+          ],
+          "xs_mapping": "KernelComponent",
+          "sim_ports": [
+            "AxiMasterIf(input)",
+            "AxisOut(output_stream)"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "krnl_hls_pipeline_compute",
+      "role": "三 kernel AXI4-Stream 流水中间计算段",
+      "summary": [
+        "从 input_stream 每拍读取一个元素，按 stream 顺序生成 index。",
+        "执行 lane 展开计算，LaneLoop 使用 UNROLL，lanes 使用 ARRAY_PARTITION complete。",
+        "两级寄存器链 delay0/delay1 生成 delayed_value，并把最终 output 写入 output_stream。"
+      ],
+      "reads": [
+        "input_stream",
+        "item_count"
+      ],
+      "writes": [
+        "output_stream",
+        "stage_value",
+        "delayed_value"
+      ],
+      "xs_mapping": {
+        "kernel": "Kernel",
+        "stream_in": "input_stream",
+        "stream_out": "output_stream",
+        "memory": [
+          "stage_value",
+          "delayed_value"
+        ],
+        "register_chain": [
+          "delay0",
+          "delay1"
+        ]
+      },
+      "xs_sim_mapping": {
+        "kernel_class": "project_xs::sim::Kernel",
+        "control_if": "AxiLiteIf(item_count)",
+        "data_if": [
+          "AxisIn(input_stream)",
+          "AxisOut(output_stream)",
+          "AxiMasterIf(stage_value)",
+          "AxiMasterIf(delayed_value)"
+        ],
+        "state_ports": [
+          "RegPort delay0",
+          "RegPort delay1",
+          "RegPort compute_index"
+        ]
+      },
+      "components": [
+        {
+          "name": "compute_loop",
+          "role": "II=1 消费 stream word，计算 mixed/delayed 并推送最终结果。",
+          "reads": [
+            "input_stream",
+            "delay1",
+            "delay0"
+          ],
+          "writes": [
+            "output_stream",
+            "stage_value[index]",
+            "delayed_value[index]",
+            "delay0",
+            "delay1"
+          ],
+          "xs_mapping": "KernelComponent",
+          "sim_ports": [
+            "AxisIn(input_stream)",
+            "AxisOut(output_stream)",
+            "RegPort delay0",
+            "RegPort delay1",
+            "AxiMasterIf(stage/delay)"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "krnl_hls_pipeline_sink",
+      "role": "三 kernel AXI4-Stream 流水末段",
+      "summary": [
+        "从 input_stream 每拍接收 compute 生成的 output word。",
+        "把 stream payload 写回 output 全局内存。",
+        "它是三 kernel pipeline 中 host 等待完成的末端。"
+      ],
+      "reads": [
+        "input_stream",
+        "item_count"
+      ],
+      "writes": [
+        "output"
+      ],
+      "xs_mapping": {
+        "kernel": "Kernel",
+        "stream_in": "input_stream",
+        "memory": [
+          "output"
+        ]
+      },
+      "xs_sim_mapping": {
+        "kernel_class": "project_xs::sim::Kernel",
+        "control_if": "AxiLiteIf(item_count)",
+        "data_if": [
+          "AxisIn(input_stream)",
+          "AxiMasterIf(output)"
+        ],
+        "state_ports": [
+          "RegPort sink_index",
+          "WirePort axis_ready"
+        ]
+      },
+      "components": [
+        {
+          "name": "sink_loop",
+          "role": "II=1 接收 stream word 并写回 output[index]。",
+          "reads": [
+            "input_stream"
+          ],
+          "writes": [
+            "output[index]"
+          ],
+          "xs_mapping": "KernelComponent",
+          "sim_ports": [
+            "AxisIn(input_stream)",
+            "AxiMasterIf(output)"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -130,13 +130,39 @@
   <div class="page">
     <div class="mb-4">
       <div class="report-title">Project-XS XPlus HLS Minimal Review</div>
-      <div class="report-subtitle">最小化渲染样例：保留全部 XO 与 CFG，弱化注释层，只审查接口、综合与实现报告接线是否正确。</div>
+      <div class="report-subtitle">最小化渲染样例：只指定 XPlus hw build 目录与 CFG，自动发现 XO、csynth、schedule 和 routed timing。</div>
       <div class="report-subtitle">example: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls_min</div>
       <div class="report-subtitle">spec: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls_min/spec.json</div>
-      <div class="report-subtitle">cfg: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
+      <div class="report-subtitle">cfg: /home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg</div>
       
-      <div class="report-subtitle">这个 spec 只保留最少的渲染控制字段；XO、CFG、csynth 和 routed timing 都通过相对路径显式指定，并关闭自动发现。</div>
+      <div class="report-subtitle">这个 spec 只保留最少的渲染控制字段；硬件产物通过 artifacts.build_dir 自动发现，CFG 继续显式指定以解析 nk/sp 绑定。</div>
     </div>
+
+    
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">设计资源总览</div>
+          <div class="section-note">优先使用 Vitis/Vivado 已生成的 kernel_util 报告；如果 bitstream/link/implementation 尚未走到该阶段，则回退到 HLS csynth.xml 的 kernel 资源估计。</div>
+          <div class="section-note">source: 实现阶段资源，stage: Routed</div>
+          <div class="section-note">report: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/kernel_util_routed.json</div>
+          
+          <div class="table-wrap mb-3">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>scope</th><th>LUT</th><th>LUTAsMem</th><th>REG</th><th>BRAM</th><th>URAM</th><th>DSP</th></tr></thead>
+              <tbody><tr><td>total</td><td>32469 / 1160828 (2.80%)</td><td>7915 / 587064 (1.35%)</td><td>39219 / 2402824 (1.63%)</td><td>30 / 1816 (1.65%)</td><td>0 / 960 (0.00%)</td><td>52 / 9020 (0.58%)</td></tr></tbody>
+            </table>
+          </div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>kernel</th><th>CUs</th><th>LUT</th><th>LUTAsMem</th><th>REG</th><th>BRAM</th><th>URAM</th><th>DSP</th></tr></thead>
+              <tbody><tr><td>dot_kernel</td><td>1</td><td>3887 / 1160828 (0.33%)</td><td>844 / 587064 (0.14%)</td><td>4594 / 2402824 (0.19%)</td><td>3 / 1816 (0.17%)</td><td>0 / 960 (0.00%)</td><td>8 / 9020 (0.09%)</td></tr><tr><td>init_pcg_kernel</td><td>1</td><td>8972 / 1160828 (0.77%)</td><td>2225 / 587064 (0.38%)</td><td>10348 / 2402824 (0.43%)</td><td>8 / 1816 (0.44%)</td><td>0 / 960 (0.00%)</td><td>11 / 9020 (0.12%)</td></tr><tr><td>spmv_csr_kernel</td><td>1</td><td>5774 / 1160828 (0.50%)</td><td>1413 / 587064 (0.24%)</td><td>7117 / 2402824 (0.30%)</td><td>6 / 1816 (0.33%)</td><td>0 / 960 (0.00%)</td><td>11 / 9020 (0.12%)</td></tr><tr><td>update_p_kernel</td><td>1</td><td>3620 / 1160828 (0.31%)</td><td>891 / 587064 (0.15%)</td><td>4610 / 2402824 (0.19%)</td><td>3 / 1816 (0.17%)</td><td>0 / 960 (0.00%)</td><td>11 / 9020 (0.12%)</td></tr><tr><td>update_xrz_kernel</td><td>1</td><td>10216 / 1160828 (0.88%)</td><td>2542 / 587064 (0.43%)</td><td>12550 / 2402824 (0.52%)</td><td>10 / 1816 (0.55%)</td><td>0 / 960 (0.00%)</td><td>11 / 9020 (0.12%)</td></tr></tbody>
+            </table>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
 
     
     <div class="row g-4 mb-4">
@@ -168,6 +194,7 @@
               <tbody><tr><td>spmv_csr_kernel</td><td>1</td><td>spmv_csr_kernel_1</td><td>5</td></tr><tr><td>init_pcg_kernel</td><td>1</td><td>init_pcg_kernel_1</td><td>7</td></tr><tr><td>dot_kernel</td><td>1</td><td>dot_kernel_1</td><td>3</td></tr><tr><td>update_xrz_kernel</td><td>1</td><td>update_xrz_kernel_1</td><td>7</td></tr><tr><td>update_p_kernel</td><td>1</td><td>update_p_kernel_1</td><td>2</td></tr></tbody>
             </table>
           </div>
+          
         </div></div>
       </div>
     </div>
@@ -178,8 +205,23 @@
         <div class="report-card card"><div class="card-body">
           <div class="section-title">实现时序（来自 routed timing summary）</div>
           <div class="section-note">这部分来自 bitstream 对应的 routed timing summary，用来表达 implementation 阶段时序是否收敛，以及 kernel 时钟域的 WNS/WHS。</div>
-          <div class="section-note">requested: 未指定</div>
-          <div class="section-note">当前未提供。期望文件名通常为 impl_1_*timing_summary*_routed.rpt 或同类 routed timing summary，常见于 v++ link / Vivado implementation 的 reports/link/imp/ 或 impl report 目录中</div>
+          <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/link/imp/impl_1_hw_bb_locked_timing_summary_routed.rpt</div>
+          
+          
+          <div class="kv-grid mb-3">
+            <div class="kv-row"><div class="kv-key">report</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/link/imp/impl_1_hw_bb_locked_timing_summary_routed.rpt</div></div>
+            <div class="kv-row"><div class="kv-key">constraints_met</div><div class="kv-value">yes</div></div>
+            <div class="kv-row"><div class="kv-key">design_wns</div><div class="kv-value">0.003</div></div>
+            <div class="kv-row"><div class="kv-key">design_tns</div><div class="kv-value">0.000</div></div>
+            <div class="kv-row"><div class="kv-key">design_whs</div><div class="kv-value">0.009</div></div>
+            <div class="kv-row"><div class="kv-key">design_ths</div><div class="kv-value">0.000</div></div>
+          </div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>clock</th><th>period(ns)</th><th>freq(MHz)</th><th>WNS(ns)</th><th>WHS(ns)</th><th>WPWS(ns)</th></tr></thead>
+              <tbody><tr><td>clk_kernel_00_unbuffered_net</td><td>3.333</td><td>300.000</td><td>0.223</td><td>0.009</td><td>1.125</td></tr><tr><td>clk_kernel_01_unbuffered_net</td><td>2.000</td><td>500.000</td><td>0.653</td><td>0.016</td><td>0.468</td></tr></tbody>
+            </table>
+          </div>
           
         </div></div>
       </div>
@@ -192,7 +234,7 @@
         <div class="report-card card"><div class="card-body">
           <div class="section-title">Pipeline 总览（来自 HLS schedule rpt）</div>
           <div class="section-note">这部分把 kernel 顶层是否 pipeline，以及各子 pipeline / loop 的实际 II 情况拆开看。</div>
-          <div class="section-note">schedule_dir: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched</div>
+          <div class="section-note">schedule_dir: 未指定</div>
           <div class="section-note">`loop`：HLS 报告里的循环名。它通常能对应源码里的某个 loop label 或某个工具生成的内部循环；在 XS 视角里，它不自动等价于一个 `KernelComponent`，但常常可以作为你后续手工拆 component 的线索。</div>
           <div class="section-note">`pipelined`：该 loop 在 HLS 报告里是否被认定为 pipeline。`yes` 表示形成了 pipeline；`no` 表示这条 loop 没形成 pipeline，或者只在更外层 / 更内层以别的方式体现。</div>
           <div class="section-note">`II achieved`：实际综合达到的 initiation interval。数字表示隔多少拍才能再发起一轮新迭代；`1` 表示每拍都能启动一轮，`5` 表示每 5 拍才能启动一轮，`-` 表示报告没有给出可用值。</div>
@@ -218,9 +260,9 @@
             <div class="col-12 col-xl-6">
               <div class="report-card card h-100"><div class="card-body">
                 <div class="section-title">spmv_csr_kernel</div>
-                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/spmv_csr_kernel.xo</div>
-                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
-                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/spmv_csr_kernel_csynth.xml</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/spmv_csr_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/syn/report/spmv_csr_kernel_csynth.xml</div>
                 
                 
                 
@@ -239,7 +281,7 @@
                 <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
                 <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
                 <div class="kv-grid">
-                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/spmv_csr_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt</div></div>
                   <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
                   <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
                   <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
@@ -256,7 +298,7 @@
 
                 
                 <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
-                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/spmv_csr_kernel_csynth.xml</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/syn/report/spmv_csr_kernel_csynth.xml</div>
                 <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
                 <div class="kv-grid">
                   <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
@@ -325,9 +367,9 @@
             <div class="col-12 col-xl-6">
               <div class="report-card card h-100"><div class="card-body">
                 <div class="section-title">init_pcg_kernel</div>
-                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/init_pcg_kernel.xo</div>
-                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
-                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/init_pcg_kernel_csynth.xml</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/init_pcg_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/syn/report/init_pcg_kernel_csynth.xml</div>
                 
                 
                 
@@ -346,7 +388,7 @@
                 <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
                 <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
                 <div class="kv-grid">
-                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/init_pcg_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel.verbose.sched.rpt</div></div>
                   <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
                   <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
                   <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
@@ -363,7 +405,7 @@
 
                 
                 <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
-                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/init_pcg_kernel_csynth.xml</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/syn/report/init_pcg_kernel_csynth.xml</div>
                 <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
                 <div class="kv-grid">
                   <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
@@ -410,7 +452,7 @@
                 <div class="table-wrap">
                   <table class="table table-sm align-middle">
                     <thead><tr><th>port</th><th>mode</th><th>width</th><th>type</th><th>range</th></tr></thead>
-                    <tbody><tr><td>M_AXI_GMEM_B</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_AX</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_MINV</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_R</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_Z</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_P</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_METRICS</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x6C</td></tr></tbody>
+                    <tbody><tr><td>M_AXI_GMEM_B</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_AX</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_MINV</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_R</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_Z</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_P</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_METRICS</td><td>master</td><td>128</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x6C</td></tr></tbody>
                   </table>
                 </div>
 
@@ -432,9 +474,9 @@
             <div class="col-12 col-xl-6">
               <div class="report-card card h-100"><div class="card-body">
                 <div class="section-title">dot_kernel</div>
-                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/dot_kernel.xo</div>
-                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
-                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/dot_kernel_csynth.xml</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/dot_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/syn/report/dot_kernel_csynth.xml</div>
                 
                 
                 
@@ -453,7 +495,7 @@
                 <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
                 <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
                 <div class="kv-grid">
-                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/dot_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel.verbose.sched.rpt</div></div>
                   <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
                   <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
                   <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
@@ -470,7 +512,7 @@
 
                 
                 <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
-                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/dot_kernel_csynth.xml</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/syn/report/dot_kernel_csynth.xml</div>
                 <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
                 <div class="kv-grid">
                   <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
@@ -539,9 +581,9 @@
             <div class="col-12 col-xl-6">
               <div class="report-card card h-100"><div class="card-body">
                 <div class="section-title">update_xrz_kernel</div>
-                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_xrz_kernel.xo</div>
-                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
-                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_xrz_kernel_csynth.xml</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/update_xrz_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/syn/report/update_xrz_kernel_csynth.xml</div>
                 
                 
                 
@@ -560,7 +602,7 @@
                 <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
                 <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
                 <div class="kv-grid">
-                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_xrz_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel.verbose.sched.rpt</div></div>
                   <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
                   <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
                   <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
@@ -577,7 +619,7 @@
 
                 
                 <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
-                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_xrz_kernel_csynth.xml</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/syn/report/update_xrz_kernel_csynth.xml</div>
                 <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
                 <div class="kv-grid">
                   <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
@@ -624,7 +666,7 @@
                 <div class="table-wrap">
                   <table class="table table-sm align-middle">
                     <thead><tr><th>port</th><th>mode</th><th>width</th><th>type</th><th>range</th></tr></thead>
-                    <tbody><tr><td>M_AXI_GMEM_X</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_P</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_R</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_AP</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_MINV</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_Z</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_METRICS</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x78</td></tr></tbody>
+                    <tbody><tr><td>M_AXI_GMEM_X</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_P</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_R</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_AP</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_MINV</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_Z</td><td>master</td><td>64</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_METRICS</td><td>master</td><td>128</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x78</td></tr></tbody>
                   </table>
                 </div>
 
@@ -646,9 +688,9 @@
             <div class="col-12 col-xl-6">
               <div class="report-card card h-100"><div class="card-body">
                 <div class="section-title">update_p_kernel</div>
-                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/xo/update_p_kernel.xo</div>
-                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/connectivity_u55c.cfg</div>
-                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_p_kernel_csynth.xml</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/update_p_kernel.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/syn/report/update_p_kernel_csynth.xml</div>
                 
                 
                 
@@ -667,7 +709,7 @@
                 <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
                 <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
                 <div class="kv-grid">
-                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/sched/update_p_kernel.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel.verbose.sched.rpt</div></div>
                   <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
                   <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">no</div></div>
                   <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
@@ -684,7 +726,7 @@
 
                 
                 <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
-                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_hls/vivado-log/csynth/update_p_kernel_csynth.xml</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/syn/report/update_p_kernel_csynth.xml</div>
                 <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
                 <div class="kv-grid">
                   <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
