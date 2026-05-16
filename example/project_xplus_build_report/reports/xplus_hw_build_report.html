@@ -130,7 +130,7 @@
   <div class="page">
     <div class="mb-4">
       <div class="report-title">Project-XS XPlus Hardware Build Report</div>
-      <div class="report-subtitle">直接指定 Project-XPlus/build/hw，由 XS 自动发现 XO、HLS 报告、schedule 和 routed timing。</div>
+      <div class="report-subtitle">直接指定 Project-XPlus/build/hw，由 XS 自动发现 XO、HLS 报告、schedule、routed timing、power 和 Vivado analysis 报告。</div>
       <div class="report-subtitle">example: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_build_report</div>
       <div class="report-subtitle">spec: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_build_report/spec.json</div>
       <div class="report-subtitle">cfg: /home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg</div>
@@ -194,6 +194,34 @@
               <tbody><tr><td>Design implementation state</td><td>High</td><td>Design is routed</td></tr><tr><td>Clock nodes activity</td><td>High</td><td>User specified more than 95% of clocks</td></tr><tr><td>I/O nodes activity</td><td>Low</td><td>More than 75% of inputs are missing user specification</td></tr><tr><td>Internal nodes activity</td><td>Medium</td><td>User specified less than 25% of internal nodes</td></tr><tr><td>Device models</td><td>High</td><td>Device models are Production</td></tr><tr><td>Overall confidence level</td><td>Low</td><td>-</td></tr></tbody>
             </table>
           </div>
+          
+        </div></div>
+      </div>
+    </div>
+
+
+    
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">Vivado 分析报告清单</div>
+          <div class="section-note">这部分来自 XPlus 的 make vivado-analysis / launcher all analysis，用来列出额外导出的 power、utilization、timing、methodology、DRC、clock、QoR 等报告文件。XS 目前只深度解析功耗和 routed timing，其它报告先作为产物清单呈现。</div>
+          <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis</div>
+          
+          
+          <div class="kv-grid mb-3">
+            <div class="kv-row"><div class="kv-key">report_dir</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis</div></div>
+            <div class="kv-row"><div class="kv-key">manifest</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/analysis_manifest.txt</div></div>
+            <div class="kv-row"><div class="kv-key">OK count</div><div class="kv-value">15</div></div>
+            <div class="kv-row"><div class="kv-key">FAIL count</div><div class="kv-value">0</div></div>
+          </div>
+          <div class="table-wrap mb-3">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>report</th><th>file</th><th>status</th><th>size</th><th>path</th><th>reason</th></tr></thead>
+              <tbody><tr><td>manifest</td><td>analysis_manifest.txt</td><td>generated</td><td>3.3 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/analysis_manifest.txt</td><td>-</td></tr><tr><td>cdc</td><td>cdc.rpt</td><td>OK</td><td>82.4 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/cdc.rpt</td><td>-</td></tr><tr><td>clock_interaction</td><td>clock_interaction.rpt</td><td>OK</td><td>124.6 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/clock_interaction.rpt</td><td>-</td></tr><tr><td>clock_utilization</td><td>clock_utilization.rpt</td><td>OK</td><td>694.4 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/clock_utilization.rpt</td><td>-</td></tr><tr><td>control_sets</td><td>control_sets.rpt</td><td>OK</td><td>12.6 MB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/control_sets.rpt</td><td>-</td></tr><tr><td>design_analysis</td><td>design_analysis.rpt</td><td>OK</td><td>14.2 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/design_analysis.rpt</td><td>-</td></tr><tr><td>drc</td><td>drc.rpt</td><td>OK</td><td>218.1 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/drc.rpt</td><td>-</td></tr><tr><td>high_fanout</td><td>high_fanout_nets.rpt</td><td>OK</td><td>2.8 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/high_fanout_nets.rpt</td><td>-</td></tr><tr><td>methodology</td><td>methodology.rpt</td><td>OK</td><td>134.7 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/methodology.rpt</td><td>-</td></tr><tr><td>power</td><td>power.rpt</td><td>OK</td><td>67.9 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/power.rpt</td><td>-</td></tr><tr><td>qor_suggestions</td><td>qor_suggestions.rpt</td><td>OK</td><td>1.9 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/qor_suggestions.rpt</td><td>-</td></tr><tr><td>ram_utilization</td><td>ram_utilization.rpt</td><td>OK</td><td>536.0 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/ram_utilization.rpt</td><td>-</td></tr><tr><td>route_status</td><td>route_status.rpt</td><td>OK</td><td>714 B</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/route_status.rpt</td><td>-</td></tr><tr><td>timing</td><td>timing_summary.rpt</td><td>OK</td><td>32.5 MB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/timing_summary.rpt</td><td>-</td></tr><tr><td>timing</td><td>timing_summary.rpv</td><td>OK</td><td>33.4 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/timing_summary.rpv</td><td>-</td></tr><tr><td>utilization_flat</td><td>utilization.rpt</td><td>OK</td><td>31.9 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/utilization.rpt</td><td>-</td></tr><tr><td>utilization</td><td>utilization_hierarchical.rpt</td><td>OK</td><td>19.8 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/utilization_hierarchical.rpt</td><td>-</td></tr></tbody>
+            </table>
+          </div>
+          
           
         </div></div>
       </div>

@@ -582,6 +582,24 @@ def discover_build_power_report(build_dir: Path | None) -> Path | None:
     return None
 
 
+def discover_build_analysis_report_dir(build_dir: Path | None) -> Path | None:
+    if build_dir is None or not build_dir.is_dir():
+        return None
+
+    preferred = build_dir / "_x_temp" / "reports" / "analysis"
+    if preferred.is_dir():
+        return preferred.resolve()
+
+    matches = sorted(
+        path.resolve()
+        for path in build_dir.rglob("analysis_manifest.txt")
+        if path.is_file() and path.parent.is_dir()
+    )
+    if matches:
+        return matches[0].parent
+    return None
+
+
 def discover_schedule_reports(
     base_dir: Path,
     kernel_name: str,
@@ -645,6 +663,7 @@ def resolve_artifact_config(spec: dict, example_dir: Path) -> dict:
     link_timing_report = resolve_optional_path(example_dir, artifacts.get("link_timing_report"))
     resource_report = resolve_optional_path(example_dir, artifacts.get("resource_report"))
     power_report = resolve_optional_path(example_dir, artifacts.get("power_report"))
+    analysis_report_dir = resolve_optional_path(example_dir, artifacts.get("analysis_report_dir"))
     xclbin = resolve_optional_path(example_dir, artifacts.get("xclbin"))
 
     if xclbin is None and build_dir is not None:
@@ -658,6 +677,8 @@ def resolve_artifact_config(spec: dict, example_dir: Path) -> dict:
         resource_report = discover_build_resource_report(build_dir)
     if power_report is None and build_dir is not None:
         power_report = discover_build_power_report(build_dir)
+    if analysis_report_dir is None and build_dir is not None:
+        analysis_report_dir = discover_build_analysis_report_dir(build_dir)
 
     # Backward-compatible fallback to historical auto-discovery under vivado-log/.
     if auto_discover:
@@ -690,6 +711,7 @@ def resolve_artifact_config(spec: dict, example_dir: Path) -> dict:
         "link_timing_report": link_timing_report,
         "resource_report": resource_report,
         "power_report": power_report,
+        "analysis_report_dir": analysis_report_dir,
     }
 
 
@@ -1232,6 +1254,442 @@ def parse_power_report(report_path: Path | None, example_dir: Path) -> dict:
     }
 
 
+def split_pipe_row(line: str) -> list[str]:
+    if "|" not in line:
+        return []
+    return [part.strip() for part in line.strip().strip("|").split("|")]
+
+
+def parse_rule_violation_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "available": False,
+            "report_path": "",
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "total_violations": "",
+            "severity_counts": {},
+            "rules": [],
+        }
+
+    lines = report_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    total_violations = ""
+    for line in lines:
+        match = re.search(r"Violations found:\s*(\d+)", line)
+        if match:
+            total_violations = match.group(1)
+            break
+
+    rules = []
+    severity_counts: dict[str, int] = {}
+    for line in lines:
+        cols = split_pipe_row(line)
+        if len(cols) != 4 or cols[0] == "Rule" or not cols[3].isdigit():
+            continue
+        count = int(cols[3])
+        severity_counts[cols[1]] = severity_counts.get(cols[1], 0) + count
+        rules.append(
+            {
+                "rule": cols[0],
+                "severity": cols[1],
+                "description": cols[2],
+                "violations": count,
+            }
+        )
+
+    return {
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "total_violations": total_violations,
+        "severity_counts": severity_counts,
+        "rules": rules,
+    }
+
+
+def parse_route_status_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "available": False,
+            "report_path": "",
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "metrics": {},
+        }
+
+    metrics = {}
+    for line in report_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        match = re.search(r"# of (?P<name>[^.]+)\.+\s*:\s*(?P<value>\d+)\s*:", line)
+        if not match:
+            continue
+        key = re.sub(r"[^a-z0-9]+", "_", match.group("name").strip().lower()).strip("_")
+        metrics[key] = int(match.group("value"))
+
+    return {
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "metrics": metrics,
+    }
+
+
+def parse_utilization_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "available": False,
+            "report_path": "",
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "resources": [],
+        }
+
+    wanted = {
+        "CLB LUTs",
+        "CLB Registers",
+        "Block RAM Tile",
+        "URAM",
+        "DSPs",
+    }
+    seen = set()
+    resources = []
+    for line in report_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        cols = split_pipe_row(line)
+        if len(cols) < 6 or cols[0] not in wanted or cols[0] in seen:
+            continue
+        seen.add(cols[0])
+        resources.append(
+            {
+                "name": cols[0],
+                "used": cols[1],
+                "fixed": cols[2],
+                "prohibited": cols[3],
+                "available": cols[4],
+                "util_pct": cols[5],
+            }
+        )
+
+    return {
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "resources": resources,
+    }
+
+
+def parse_cdc_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "available": False,
+            "report_path": "",
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "severity_counts": {},
+            "totals": {},
+            "risk_rows": [],
+        }
+
+    severity_counts: dict[str, int] = {}
+    totals = {
+        "endpoints": 0,
+        "safe": 0,
+        "unsafe": 0,
+        "unknown": 0,
+        "no_async_reg": 0,
+    }
+    risk_rows = []
+    for line in report_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        cols = re.split(r"\s{2,}", line.strip())
+        if len(cols) < 10 or cols[0] not in {"Critical", "Warning", "Info"}:
+            continue
+        numeric = cols[-5:]
+        if not all(re.fullmatch(r"\d+", value) for value in numeric):
+            continue
+        endpoints, safe, unsafe, unknown, no_async_reg = [int(value) for value in numeric]
+        severity = cols[0]
+        severity_counts[severity] = severity_counts.get(severity, 0) + 1
+        totals["endpoints"] += endpoints
+        totals["safe"] += safe
+        totals["unsafe"] += unsafe
+        totals["unknown"] += unknown
+        totals["no_async_reg"] += no_async_reg
+        row = {
+            "severity": severity,
+            "source_clock": cols[1],
+            "destination_clock": cols[2],
+            "cdc_type": cols[3],
+            "exceptions": cols[4],
+            "endpoints": endpoints,
+            "safe": safe,
+            "unsafe": unsafe,
+            "unknown": unknown,
+            "no_async_reg": no_async_reg,
+        }
+        if severity == "Critical" or unsafe or unknown or no_async_reg:
+            risk_rows.append(row)
+
+    return {
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "severity_counts": severity_counts,
+        "totals": totals,
+        "risk_rows": risk_rows[:20],
+    }
+
+
+def parse_clock_interaction_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "available": False,
+            "report_path": "",
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "classification_counts": {},
+            "constraint_counts": {},
+        }
+
+    classification_counts: dict[str, int] = {}
+    constraint_counts: dict[str, int] = {}
+    for line in report_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        cols = re.split(r"\s{2,}", line.strip())
+        if len(cols) < 4:
+            continue
+        classification = cols[-2]
+        constraints = cols[-1]
+        if classification not in {"Clean", "Ignored", "Unsafe", "No Paths"}:
+            continue
+        classification_counts[classification] = classification_counts.get(classification, 0) + 1
+        constraint_counts[constraints] = constraint_counts.get(constraints, 0) + 1
+
+    return {
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "classification_counts": classification_counts,
+        "constraint_counts": constraint_counts,
+    }
+
+
+def parse_qor_suggestions_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "available": False,
+            "report_path": "",
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "status": "",
+            "note": "",
+        }
+
+    text = report_path.read_text(encoding="utf-8", errors="ignore")
+    if "No QoR suggestions are provided" in text:
+        status = "no_suggestions"
+        note = "Vivado assessed the routed design as meeting timing and did not emit QoR suggestions."
+    else:
+        status = "suggestions_available"
+        note = "QoR suggestions are present; inspect the report for commands/options."
+
+    return {
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "status": status,
+        "note": note,
+    }
+
+
+def parse_high_fanout_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "available": False,
+            "report_path": "",
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "top_nets": [],
+        }
+
+    rows = []
+    for line in report_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        cols = split_pipe_row(line)
+        if len(cols) != 3 or cols[0] == "Net Name" or not cols[1].isdigit():
+            continue
+        rows.append({"net": cols[0], "fanout": int(cols[1]), "driver_type": cols[2]})
+
+    rows.sort(key=lambda row: row["fanout"], reverse=True)
+    return {
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "top_nets": rows[:10],
+    }
+
+
+def parse_control_sets_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "available": False,
+            "report_path": "",
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "summary": {},
+        }
+
+    wanted = {
+        "Total control sets",
+        "Minimum number of control sets",
+        "Addition due to synthesis replication",
+        "Addition due to physical synthesis replication",
+        "Unused register locations in slices containing registers",
+    }
+    summary = {}
+    for line in report_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        cols = split_pipe_row(line)
+        if len(cols) != 2:
+            continue
+        label = re.sub(r"\s+", " ", cols[0]).strip()
+        if label in wanted:
+            key = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
+            summary[key] = cols[1]
+
+    return {
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "summary": summary,
+    }
+
+
+def parse_ram_utilization_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "available": False,
+            "report_path": "",
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "primitive_counts": {},
+        }
+
+    primitive_counts: dict[str, int] = {}
+    for line in report_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        cols = split_pipe_row(line)
+        if len(cols) < 2:
+            continue
+        primitive = cols[1]
+        if not re.match(r"^(RAMB|URAM|LUTRAM|SRL)", primitive):
+            continue
+        primitive_counts[primitive] = primitive_counts.get(primitive, 0) + 1
+
+    return {
+        "available": True,
+        "report_path": format_display_path(report_path, example_dir),
+        "requested_path": format_display_path(report_path, example_dir),
+        "primitive_counts": primitive_counts,
+    }
+
+
+def parse_vivado_analysis_summary(report_dir: Path, example_dir: Path) -> dict:
+    def report(name: str) -> Path | None:
+        candidate = report_dir / name
+        return candidate if candidate.is_file() else None
+
+    return {
+        "timing": parse_link_timing_report(report("timing_summary.rpt"), example_dir),
+        "power": parse_power_report(report("power.rpt"), example_dir),
+        "utilization": parse_utilization_report(report("utilization.rpt"), example_dir),
+        "methodology": parse_rule_violation_report(report("methodology.rpt"), example_dir),
+        "drc": parse_rule_violation_report(report("drc.rpt"), example_dir),
+        "route_status": parse_route_status_report(report("route_status.rpt"), example_dir),
+        "cdc": parse_cdc_report(report("cdc.rpt"), example_dir),
+        "clock_interaction": parse_clock_interaction_report(report("clock_interaction.rpt"), example_dir),
+        "qor_suggestions": parse_qor_suggestions_report(report("qor_suggestions.rpt"), example_dir),
+        "high_fanout": parse_high_fanout_report(report("high_fanout_nets.rpt"), example_dir),
+        "control_sets": parse_control_sets_report(report("control_sets.rpt"), example_dir),
+        "ram_utilization": parse_ram_utilization_report(report("ram_utilization.rpt"), example_dir),
+    }
+
+
+def parse_analysis_reports(report_dir: Path | None, example_dir: Path) -> dict:
+    if report_dir is None or not report_dir.is_dir():
+        return {
+            "available": False,
+            "report_dir": "",
+            "requested_path": format_display_path(report_dir, example_dir) if report_dir else "",
+            "manifest_path": "",
+            "how_to_get": "XPlus 可用 make vivado-analysis 从现有 hw build 导出；默认目录是 build/hw/_x_temp/reports/analysis。",
+            "files": [],
+            "ok": [],
+            "failed": [],
+            "summary": {},
+        }
+
+    manifest_path = report_dir / "analysis_manifest.txt"
+    ok = []
+    failed = []
+    if manifest_path.is_file():
+        for line in manifest_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = line.strip()
+            ok_match = re.match(r"^OK\s+(?P<key>\S+)", line)
+            fail_match = re.match(r"^FAIL\s+(?P<key>[^:]+):\s*(?P<reason>.*)$", line)
+            if ok_match:
+                ok.append(ok_match.group("key"))
+            elif fail_match:
+                failed.append({"key": fail_match.group("key").strip(), "reason": fail_match.group("reason").strip()})
+
+    status_by_file = {
+        "power.rpt": "power",
+        "utilization_hierarchical.rpt": "utilization",
+        "utilization.rpt": "utilization_flat",
+        "timing_summary.rpt": "timing",
+        "timing_summary.rpv": "timing",
+        "methodology.rpt": "methodology",
+        "drc.rpt": "drc",
+        "route_status.rpt": "route_status",
+        "clock_utilization.rpt": "clock_utilization",
+        "clock_interaction.rpt": "clock_interaction",
+        "cdc.rpt": "cdc",
+        "design_analysis.rpt": "design_analysis",
+        "qor_suggestions.rpt": "qor_suggestions",
+        "high_fanout_nets.rpt": "high_fanout",
+        "control_sets.rpt": "control_sets",
+        "ram_utilization.rpt": "ram_utilization",
+        "analysis_manifest.txt": "manifest",
+    }
+    failed_by_key = {item["key"]: item["reason"] for item in failed}
+
+    files = []
+    for path in sorted(report_dir.iterdir()):
+        if not path.is_file():
+            continue
+        if path.suffix not in {".rpt", ".rpv", ".txt"}:
+            continue
+        key = status_by_file.get(path.name, path.stem)
+        if key == "manifest":
+            status = "generated"
+            reason = ""
+        elif key in failed_by_key:
+            status = "FAIL"
+            reason = failed_by_key[key]
+        elif key in ok:
+            status = "OK"
+            reason = ""
+        else:
+            status = "generated"
+            reason = ""
+        files.append(
+            {
+                "name": path.name,
+                "key": key,
+                "status": status,
+                "reason": reason,
+                "size_bytes": path.stat().st_size,
+                "path": format_display_path(path, example_dir),
+            }
+        )
+
+    return {
+        "available": True,
+        "report_dir": format_display_path(report_dir, example_dir),
+        "requested_path": format_display_path(report_dir, example_dir),
+        "manifest_path": format_display_path(manifest_path, example_dir) if manifest_path.is_file() else "",
+        "how_to_get": "",
+        "files": files,
+        "ok": ok,
+        "failed": failed,
+        "summary": parse_vivado_analysis_summary(report_dir, example_dir),
+    }
+
+
 def empty_resource_summary(report_path: Path | None, example_dir: Path) -> dict:
     return {
         "source": "",
@@ -1344,6 +1802,7 @@ def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
     link_timing = parse_link_timing_report(link_timing_path, example_dir)
     resource_summary = parse_implementation_resource_report(artifacts["resource_report"], example_dir)
     power_summary = parse_power_report(artifacts["power_report"], example_dir)
+    analysis_reports = parse_analysis_reports(artifacts["analysis_report_dir"], example_dir)
 
     kernel_specs = list(spec.get("kernels", []))
     if not kernel_specs and artifacts["build_dir"] is not None:
@@ -1483,6 +1942,7 @@ def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
             "link_timing": link_timing,
             "resources": resource_summary,
             "power": power_summary,
+            "analysis_reports": analysis_reports,
             "pipeline_overview": pipeline_overview,
         },
         "kernels": kernels,
@@ -1499,6 +1959,17 @@ def render_html_page(data: dict) -> str:
         if available:
             return f"{html.escape(used)} / {html.escape(available)}"
         return html.escape(used)
+
+    def format_size_bytes(value: object) -> str:
+        try:
+            size = int(value)
+        except (TypeError, ValueError):
+            return "-"
+        if size >= 1024 * 1024:
+            return f"{size / (1024 * 1024):.1f} MB"
+        if size >= 1024:
+            return f"{size / 1024:.1f} KB"
+        return f"{size} B"
 
     sequence_rows = []
     for index, kernel_name in enumerate(data["sequence"], start=1):
@@ -1694,6 +2165,65 @@ def render_html_page(data: dict) -> str:
             </table>
           </div>
           ''' if power.get('available') else ''}
+        </div></div>
+      </div>
+    </div>
+"""
+
+    analysis = data.get("vivado", {}).get("analysis_reports", {})
+    analysis_rows = []
+    for item in analysis.get("files", []):
+        status = item.get("status", "") or "-"
+        reason = item.get("reason", "") or "-"
+        analysis_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('key', '') or '-')}</td>"
+            f"<td>{html.escape(item.get('name', '') or '-')}</td>"
+            f"<td>{html.escape(status)}</td>"
+            f"<td>{html.escape(format_size_bytes(item.get('size_bytes')))}</td>"
+            f"<td>{html.escape(item.get('path', '') or '-')}</td>"
+            f"<td>{html.escape(reason)}</td>"
+            "</tr>"
+        )
+    failed_rows = []
+    for item in analysis.get("failed", []):
+        failed_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('key', '') or '-')}</td>"
+            f"<td>{html.escape(item.get('reason', '') or '-')}</td>"
+            "</tr>"
+        )
+    analysis_section = f"""
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">Vivado 分析报告清单</div>
+          <div class="section-note">这部分来自 XPlus 的 make vivado-analysis / launcher all analysis，用来列出额外导出的 power、utilization、timing、methodology、DRC、clock、QoR 等报告文件。XS 目前只深度解析功耗和 routed timing，其它报告先作为产物清单呈现。</div>
+          <div class="section-note">requested: {html.escape(analysis.get('requested_path', '') or '未指定')}</div>
+          {'' if analysis.get('available') else f'<div class="section-note">当前未提供。{html.escape(analysis.get("how_to_get", ""))}</div>'}
+          {f'''
+          <div class="kv-grid mb-3">
+            <div class="kv-row"><div class="kv-key">report_dir</div><div class="kv-value">{html.escape(analysis.get('report_dir', '') or '未发现')}</div></div>
+            <div class="kv-row"><div class="kv-key">manifest</div><div class="kv-value">{html.escape(analysis.get('manifest_path', '') or '未发现')}</div></div>
+            <div class="kv-row"><div class="kv-key">OK count</div><div class="kv-value">{len(analysis.get('ok', []))}</div></div>
+            <div class="kv-row"><div class="kv-key">FAIL count</div><div class="kv-value">{len(analysis.get('failed', []))}</div></div>
+          </div>
+          <div class="table-wrap mb-3">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>report</th><th>file</th><th>status</th><th>size</th><th>path</th><th>reason</th></tr></thead>
+              <tbody>{''.join(analysis_rows) or '<tr><td colspan="6">无</td></tr>'}</tbody>
+            </table>
+          </div>
+          {f'''
+          <div class="sub-title">失败项</div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>report</th><th>reason</th></tr></thead>
+              <tbody>{''.join(failed_rows)}</tbody>
+            </table>
+          </div>
+          ''' if failed_rows else ''}
+          ''' if analysis.get('available') else ''}
         </div></div>
       </div>
     </div>
@@ -2200,6 +2730,8 @@ def render_html_page(data: dict) -> str:
 
     {power_section}
 
+    {analysis_section}
+
     {f'''
     <div class="row g-4 mb-4">
       <div class="col-12">
@@ -2288,6 +2820,345 @@ def render_html_page(data: dict) -> str:
 """
 
 
+def render_analysis_html_page(data: dict) -> str:
+    def esc(value: object) -> str:
+        return html.escape(str(value)) if value is not None else ""
+
+    def fmt_size(value: object) -> str:
+        try:
+            size = int(value)
+        except (TypeError, ValueError):
+            return "-"
+        if size >= 1024 * 1024:
+            return f"{size / (1024 * 1024):.1f} MB"
+        if size >= 1024:
+            return f"{size / 1024:.1f} KB"
+        return f"{size} B"
+
+    def table(headers: list[str], rows: list[str], colspan: int | None = None) -> str:
+        empty_colspan = colspan or len(headers)
+        return (
+            "<div class='table-wrap'><table class='table table-sm align-middle'>"
+            f"<thead><tr>{''.join(f'<th>{esc(header)}</th>' for header in headers)}</tr></thead>"
+            f"<tbody>{''.join(rows) or f'<tr><td colspan=\"{empty_colspan}\">无</td></tr>'}</tbody>"
+            "</table></div>"
+        )
+
+    def kv_row(key: str, value: object) -> str:
+        return f"<div class='kv-row'><div class='kv-key'>{esc(key)}</div><div class='kv-value'>{esc(value) if value not in (None, '') else '-'}</div></div>"
+
+    def severity_rows(report: dict, limit: int = 12) -> list[str]:
+        severity_rank = {"Critical Warning": 0, "Critical": 0, "Warning": 1, "Advisory": 2, "Info": 3}
+        rows = sorted(
+            report.get("rules", []),
+            key=lambda row: (severity_rank.get(row.get("severity", ""), 9), -int(row.get("violations", 0)), row.get("rule", "")),
+        )
+        return [
+            "<tr>"
+            f"<td>{esc(row.get('rule', ''))}</td>"
+            f"<td>{esc(row.get('severity', ''))}</td>"
+            f"<td>{esc(row.get('violations', ''))}</td>"
+            f"<td>{esc(row.get('description', ''))}</td>"
+            "</tr>"
+            for row in rows[:limit]
+        ]
+
+    analysis = data.get("vivado", {}).get("analysis_reports", {})
+    summary = analysis.get("summary", {})
+    timing = summary.get("timing", {})
+    design_timing = timing.get("design_summary", {})
+    power = summary.get("power", {})
+    route_status = summary.get("route_status", {})
+    methodology = summary.get("methodology", {})
+    drc = summary.get("drc", {})
+    cdc = summary.get("cdc", {})
+    clock_interaction = summary.get("clock_interaction", {})
+    qor = summary.get("qor_suggestions", {})
+    high_fanout = summary.get("high_fanout", {})
+    control_sets = summary.get("control_sets", {})
+    ram_utilization = summary.get("ram_utilization", {})
+    utilization = summary.get("utilization", {})
+    module_notes = {
+        "overview": "这一页只抽取全量 Vivado analysis 报告的关键摘要。主报告已经结构化展示的 timing、power、utilization 会在这里保留一句结论；methodology、DRC、CDC、fanout、control set 等健康检查会展开更多。",
+        "files": "列出 analysis 目录中实际生成的报告文件、生成状态和路径。这里用于确认 make vivado-analysis 是否完整跑完，以及后续需要查原始报告时从哪里打开。",
+        "methodology": "Methodology 是 Vivado 对约束、时钟、CDC、复位和实现方法的规则检查。Critical Warning 不一定表示 bitstream 失败，但通常值得优先确认是不是平台 shell 已知项，还是用户逻辑/约束引入的新问题。",
+        "drc": "DRC 是设计规则检查，偏向合法性、器件资源使用和实现细节。这里按规则聚合计数，便于先看高频 Warning/Advisory，再决定是否打开原始 drc.rpt 查具体对象。",
+        "cdc": "CDC 报告按跨时钟域路径汇总。重点看 Critical 行、unsafe、unknown 和 no_async_reg；这些值不直接等于功能错误，但表示跨域约束或同步结构需要人工确认。",
+        "fanout": "High fanout 列出扇出最高的 net，常见于 reset、ready、enable 或平台控制信号。高扇出可能增加布线压力和时序风险，但平台 shell 信号也可能天然很高。",
+        "control_sets": "Control set 是由 clock/reset/clock enable 组合形成的寄存器控制集合。数量过多会降低 slice 打包效率；这里用于判断是否存在复位/使能信号过度分裂。",
+        "route": "Route status 关注布线是否完整。最重要的是 nets_with_routing_errors 必须为 0；fully_routed_nets 与 routable_nets 接近或相等说明布线完成。",
+        "clock_interaction": "Clock interaction 汇总各时钟域之间的约束关系。Clean 表示 Vivado 认为关系清楚；Ignored/False Path/Asynchronous Groups 需要结合平台约束判断是否合理。",
+        "ram": "RAM primitives 统计 BRAM/URAM/LUTRAM 等存储原语数量。它比普通 utilization 更偏向存储结构明细，可用于判断 HLS 数组/缓存是否落到了预期资源。",
+        "power": "Power 摘要来自 report_power。没有 SAIF/VCD 活动文件时 confidence 通常偏低，因此更适合做版本间横向比较，不适合当作实测功耗。",
+        "utilization": "Utilization 摘要来自 Vivado 实现后的资源报告，和主报告中的资源总览有重叠。这里保留它是为了让 analysis 页自洽，并方便和 power/DRC 放在一起看。",
+    }
+
+    def note(key: str) -> str:
+        return f"<div class='section-note'>{esc(module_notes[key])}</div>"
+
+    if not analysis.get("available"):
+        body = f"""
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">Vivado Analysis 未发现</div>
+          <div class="section-note">{esc(analysis.get('how_to_get', ''))}</div>
+          <div class="section-note">requested: {esc(analysis.get('requested_path', '') or '未指定')}</div>
+        </div></div>
+"""
+    else:
+        route_metrics = route_status.get("metrics", {})
+        cdc_totals = cdc.get("totals", {})
+        overview_rows = [
+            ("analysis reports", f"{len(analysis.get('ok', []))} OK / {len(analysis.get('failed', []))} FAIL"),
+            ("timing", f"WNS {design_timing.get('wns_ns', '-')} ns, WHS {design_timing.get('whs_ns', '-')} ns, constraints_met={bool(timing.get('constraints_met'))}"),
+            ("route", f"routing_errors={route_metrics.get('nets_with_routing_errors', '-')} fully_routed={route_metrics.get('fully_routed_nets', '-')}"),
+            ("power", f"total={power.get('summary', {}).get('total_on_chip_w', '-')} W, dynamic={power.get('summary', {}).get('dynamic_w', '-')} W, confidence={power.get('summary', {}).get('confidence_level', '-')}"),
+            ("methodology", f"violations={methodology.get('total_violations', '-')} severity={methodology.get('severity_counts', {})}"),
+            ("DRC", f"violations={drc.get('total_violations', '-')} severity={drc.get('severity_counts', {})}"),
+            ("CDC", f"critical_rows={cdc.get('severity_counts', {}).get('Critical', 0)} unsafe={cdc_totals.get('unsafe', '-')} unknown={cdc_totals.get('unknown', '-')} no_async_reg={cdc_totals.get('no_async_reg', '-')}"),
+            ("QoR", f"{qor.get('status', '-')}: {qor.get('note', '')}"),
+        ]
+        overview_html_rows = [
+            f"<tr><td>{esc(key)}</td><td>{esc(value)}</td></tr>"
+            for key, value in overview_rows
+        ]
+
+        file_rows = [
+            "<tr>"
+            f"<td>{esc(item.get('key', ''))}</td>"
+            f"<td>{esc(item.get('status', ''))}</td>"
+            f"<td>{esc(fmt_size(item.get('size_bytes')))}</td>"
+            f"<td>{esc(item.get('path', ''))}</td>"
+            "</tr>"
+            for item in analysis.get("files", [])
+        ]
+
+        power_rows = []
+        power_summary = power.get("summary", {})
+        for field in POWER_SUMMARY_FIELDS:
+            value = power_summary.get(field["key"], "")
+            if value:
+                power_rows.append(
+                    "<tr>"
+                    f"<td>{esc(field['label'])}</td>"
+                    f"<td>{esc(value)} {esc(field.get('unit', ''))}</td>"
+                    f"<td>{esc(field.get('description', ''))}</td>"
+                    "</tr>"
+                )
+
+        utilization_rows = [
+            "<tr>"
+            f"<td>{esc(row.get('name', ''))}</td>"
+            f"<td>{esc(row.get('used', ''))}</td>"
+            f"<td>{esc(row.get('available', ''))}</td>"
+            f"<td>{esc(row.get('util_pct', ''))}</td>"
+            "</tr>"
+            for row in utilization.get("resources", [])
+        ]
+
+        cdc_rows = [
+            "<tr>"
+            f"<td>{esc(row.get('severity', ''))}</td>"
+            f"<td>{esc(row.get('source_clock', ''))}</td>"
+            f"<td>{esc(row.get('destination_clock', ''))}</td>"
+            f"<td>{esc(row.get('cdc_type', ''))}</td>"
+            f"<td>{esc(row.get('exceptions', ''))}</td>"
+            f"<td>{esc(row.get('endpoints', ''))}</td>"
+            f"<td>{esc(row.get('unsafe', ''))}</td>"
+            f"<td>{esc(row.get('unknown', ''))}</td>"
+            f"<td>{esc(row.get('no_async_reg', ''))}</td>"
+            "</tr>"
+            for row in cdc.get("risk_rows", [])[:12]
+        ]
+
+        fanout_rows = [
+            "<tr>"
+            f"<td>{esc(row.get('fanout', ''))}</td>"
+            f"<td>{esc(row.get('driver_type', ''))}</td>"
+            f"<td>{esc(row.get('net', ''))}</td>"
+            "</tr>"
+            for row in high_fanout.get("top_nets", [])
+        ]
+
+        control_summary = control_sets.get("summary", {})
+        control_rows = [
+            f"<tr><td>{esc(key)}</td><td>{esc(value)}</td></tr>"
+            for key, value in control_summary.items()
+        ]
+
+        ram_rows = [
+            f"<tr><td>{esc(key)}</td><td>{esc(value)}</td></tr>"
+            for key, value in sorted(ram_utilization.get("primitive_counts", {}).items())
+        ]
+
+        clock_class_rows = [
+            f"<tr><td>{esc(key)}</td><td>{esc(value)}</td></tr>"
+            for key, value in clock_interaction.get("classification_counts", {}).items()
+        ]
+        clock_constraint_rows = [
+            f"<tr><td>{esc(key)}</td><td>{esc(value)}</td></tr>"
+            for key, value in sorted(clock_interaction.get("constraint_counts", {}).items(), key=lambda item: (-item[1], item[0]))
+        ]
+
+        body = f"""
+        <div class="report-card card mb-4"><div class="card-body">
+          <div class="section-title">关键结论</div>
+          <div class="section-note">这里从 XPlus `build/hw/_x_temp/reports/analysis` 的全量 Vivado 报告中抽取摘要；power/timing/utilization 与主报告有重叠，methodology/DRC/CDC/QoR/fanout/control-set 更适合做健康检查。</div>
+          {note('overview')}
+          <div class="kv-grid mb-3">
+            {kv_row('report_dir', analysis.get('report_dir', ''))}
+            {kv_row('manifest', analysis.get('manifest_path', ''))}
+          </div>
+          {table(['item', 'summary'], overview_html_rows)}
+        </div></div>
+
+        <div class="report-card card mb-4"><div class="card-body">
+          <div class="section-title">文件清单</div>
+          {note('files')}
+          {table(['report', 'status', 'size', 'path'], file_rows)}
+        </div></div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Methodology 规则摘要</div>
+              {note('methodology')}
+              <div class="section-note">total: {esc(methodology.get('total_violations', '-'))}; report: {esc(methodology.get('report_path', ''))}</div>
+              {table(['rule', 'severity', 'count', 'description'], severity_rows(methodology))}
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">DRC 规则摘要</div>
+              {note('drc')}
+              <div class="section-note">total: {esc(drc.get('total_violations', '-'))}; report: {esc(drc.get('report_path', ''))}</div>
+              {table(['rule', 'severity', 'count', 'description'], severity_rows(drc))}
+            </div></div>
+          </div>
+        </div>
+
+        <div class="report-card card mb-4"><div class="card-body">
+          <div class="section-title">CDC 风险行</div>
+          {note('cdc')}
+          <div class="section-note">totals: endpoints={esc(cdc_totals.get('endpoints', '-'))}, unsafe={esc(cdc_totals.get('unsafe', '-'))}, unknown={esc(cdc_totals.get('unknown', '-'))}, no_async_reg={esc(cdc_totals.get('no_async_reg', '-'))}</div>
+          {table(['severity', 'source', 'destination', 'type', 'exceptions', 'endpoints', 'unsafe', 'unknown', 'no_async_reg'], cdc_rows)}
+        </div></div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">High Fanout Top 10</div>
+              {note('fanout')}
+              {table(['fanout', 'driver', 'net'], fanout_rows)}
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Control Sets</div>
+              {note('control_sets')}
+              {table(['metric', 'value'], control_rows)}
+            </div></div>
+          </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-xl-4">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Route Status</div>
+              {note('route')}
+              {table(['metric', 'value'], [f'<tr><td>{esc(key)}</td><td>{esc(value)}</td></tr>' for key, value in route_metrics.items()])}
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-4">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Clock Interaction</div>
+              {note('clock_interaction')}
+              <div class="sub-title">classification</div>
+              {table(['classification', 'count'], clock_class_rows)}
+              <div class="sub-title">constraints</div>
+              {table(['constraint', 'count'], clock_constraint_rows[:8])}
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-4">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">RAM Primitives</div>
+              {note('ram')}
+              {table(['primitive', 'count'], ram_rows)}
+            </div></div>
+          </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Power 摘要</div>
+              {note('power')}
+              <div class="section-note">report: {esc(power.get('report_path', ''))}</div>
+              {table(['metric', 'value', 'note'], power_rows)}
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Utilization 摘要</div>
+              {note('utilization')}
+              <div class="section-note">report: {esc(utilization.get('report_path', ''))}</div>
+              {table(['resource', 'used', 'available', 'util(%)'], utilization_rows)}
+            </div></div>
+          </div>
+        </div>
+"""
+
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{esc(data.get('title', 'Vivado Analysis'))} Analysis</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {{
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --ink: #152033;
+      --muted: #607086;
+      --line: #dbe4ef;
+    }}
+    body {{
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }}
+    .page {{ max-width: 1480px; margin: 0 auto; padding: 32px 18px 48px; }}
+    .report-title {{ font-size: clamp(2rem, 4vw, 3.8rem); font-weight: 800; letter-spacing: 0; line-height: 1.05; }}
+    .report-subtitle {{ color: var(--muted); word-break: break-all; }}
+    .report-card {{ border: 1px solid var(--line); border-radius: 8px; background: var(--card); box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06); }}
+    .section-title {{ font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; }}
+    .section-note {{ color: var(--muted); font-size: 0.88rem; margin-bottom: 12px; word-break: break-all; }}
+    .sub-title {{ font-weight: 700; margin-top: 12px; margin-bottom: 8px; }}
+    .kv-grid {{ display: grid; gap: 10px; }}
+    .kv-row {{ display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: baseline; font-size: 0.94rem; }}
+    .kv-key {{ color: var(--muted); }}
+    .kv-value {{ font-weight: 700; word-break: break-word; }}
+    .table-wrap {{ overflow-x: auto; }}
+    .table-wrap table {{ min-width: 100%; white-space: nowrap; }}
+    th {{ color: #334155; }}
+    td {{ vertical-align: top; }}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="mb-4">
+      <div class="report-title">{esc(data.get('title', 'Vivado Analysis'))}</div>
+      <div class="report-subtitle">Vivado Analysis Summary</div>
+      <div class="report-subtitle">example: {esc(data.get('example_dir', ''))}</div>
+      <div class="report-subtitle">spec: {esc(data.get('spec_path', ''))}</div>
+    </div>
+    {body}
+  </div>
+</body>
+</html>
+"""
+
+
 def main() -> int:
     args = parse_args()
     example_dir, spec_path = resolve_input_path(args.input_path)
@@ -2297,15 +3168,28 @@ def main() -> int:
     output = spec.get("output", {})
     json_out = resolve_path(example_dir, output.get("json", "reports/xo_report.json"))
     html_out = resolve_path(example_dir, output.get("html", "reports/xo_report.html"))
+    analysis_html_raw = output.get("analysis_html")
+    analysis_html_out = (
+        resolve_path(example_dir, analysis_html_raw)
+        if analysis_html_raw
+        else html_out.with_name(f"{html_out.stem}_analysis.html")
+    )
     json_out.parent.mkdir(parents=True, exist_ok=True)
     html_out.parent.mkdir(parents=True, exist_ok=True)
 
     json_out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     html_out.write_text(render_html_page(report), encoding="utf-8")
+    wrote_analysis_html = False
+    if report.get("vivado", {}).get("analysis_reports", {}).get("available"):
+        analysis_html_out.parent.mkdir(parents=True, exist_ok=True)
+        analysis_html_out.write_text(render_analysis_html_page(report), encoding="utf-8")
+        wrote_analysis_html = True
     print(f"input: {example_dir}")
     print(f"spec: {spec_path}")
     print(f"json: {json_out}")
     print(f"html: {html_out}")
+    if wrote_analysis_html:
+        print(f"analysis_html: {analysis_html_out}")
     return 0
 
 

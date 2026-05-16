@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project-XS XPlus Hardware Build Report Analysis</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --ink: #152033;
+      --muted: #607086;
+      --line: #dbe4ef;
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .page { max-width: 1480px; margin: 0 auto; padding: 32px 18px 48px; }
+    .report-title { font-size: clamp(2rem, 4vw, 3.8rem); font-weight: 800; letter-spacing: 0; line-height: 1.05; }
+    .report-subtitle { color: var(--muted); word-break: break-all; }
+    .report-card { border: 1px solid var(--line); border-radius: 8px; background: var(--card); box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06); }
+    .section-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; }
+    .section-note { color: var(--muted); font-size: 0.88rem; margin-bottom: 12px; word-break: break-all; }
+    .sub-title { font-weight: 700; margin-top: 12px; margin-bottom: 8px; }
+    .kv-grid { display: grid; gap: 10px; }
+    .kv-row { display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: baseline; font-size: 0.94rem; }
+    .kv-key { color: var(--muted); }
+    .kv-value { font-weight: 700; word-break: break-word; }
+    .table-wrap { overflow-x: auto; }
+    .table-wrap table { min-width: 100%; white-space: nowrap; }
+    th { color: #334155; }
+    td { vertical-align: top; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="mb-4">
+      <div class="report-title">Project-XS XPlus Hardware Build Report</div>
+      <div class="report-subtitle">Vivado Analysis Summary</div>
+      <div class="report-subtitle">example: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_build_report</div>
+      <div class="report-subtitle">spec: /home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_build_report/spec.json</div>
+    </div>
+    
+        <div class="report-card card mb-4"><div class="card-body">
+          <div class="section-title">关键结论</div>
+          <div class="section-note">这里从 XPlus `build/hw/_x_temp/reports/analysis` 的全量 Vivado 报告中抽取摘要；power/timing/utilization 与主报告有重叠，methodology/DRC/CDC/QoR/fanout/control-set 更适合做健康检查。</div>
+          <div class='section-note'>这一页只抽取全量 Vivado analysis 报告的关键摘要。主报告已经结构化展示的 timing、power、utilization 会在这里保留一句结论；methodology、DRC、CDC、fanout、control set 等健康检查会展开更多。</div>
+          <div class="kv-grid mb-3">
+            <div class='kv-row'><div class='kv-key'>report_dir</div><div class='kv-value'>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis</div></div>
+            <div class='kv-row'><div class='kv-key'>manifest</div><div class='kv-value'>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/analysis_manifest.txt</div></div>
+          </div>
+          <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>item</th><th>summary</th></tr></thead><tbody><tr><td>analysis reports</td><td>15 OK / 0 FAIL</td></tr><tr><td>timing</td><td>WNS 0.003 ns, WHS 0.009 ns, constraints_met=True</td></tr><tr><td>route</td><td>routing_errors=0 fully_routed=380287</td></tr><tr><td>power</td><td>total=25.970 W, dynamic=17.626 W, confidence=Low</td></tr><tr><td>methodology</td><td>violations=105 severity={&#x27;Critical Warning&#x27;: 8, &#x27;Warning&#x27;: 44, &#x27;Advisory&#x27;: 53}</td></tr><tr><td>DRC</td><td>violations=275 severity={&#x27;Warning&#x27;: 196, &#x27;Advisory&#x27;: 79}</td></tr><tr><td>CDC</td><td>critical_rows=10 unsafe=42 unknown=18 no_async_reg=5</td></tr><tr><td>QoR</td><td>no_suggestions: Vivado assessed the routed design as meeting timing and did not emit QoR suggestions.</td></tr></tbody></table></div>
+        </div></div>
+
+        <div class="report-card card mb-4"><div class="card-body">
+          <div class="section-title">文件清单</div>
+          <div class='section-note'>列出 analysis 目录中实际生成的报告文件、生成状态和路径。这里用于确认 make vivado-analysis 是否完整跑完，以及后续需要查原始报告时从哪里打开。</div>
+          <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>report</th><th>status</th><th>size</th><th>path</th></tr></thead><tbody><tr><td>manifest</td><td>generated</td><td>3.3 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/analysis_manifest.txt</td></tr><tr><td>cdc</td><td>OK</td><td>82.4 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/cdc.rpt</td></tr><tr><td>clock_interaction</td><td>OK</td><td>124.6 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/clock_interaction.rpt</td></tr><tr><td>clock_utilization</td><td>OK</td><td>694.4 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/clock_utilization.rpt</td></tr><tr><td>control_sets</td><td>OK</td><td>12.6 MB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/control_sets.rpt</td></tr><tr><td>design_analysis</td><td>OK</td><td>14.2 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/design_analysis.rpt</td></tr><tr><td>drc</td><td>OK</td><td>218.1 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/drc.rpt</td></tr><tr><td>high_fanout</td><td>OK</td><td>2.8 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/high_fanout_nets.rpt</td></tr><tr><td>methodology</td><td>OK</td><td>134.7 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/methodology.rpt</td></tr><tr><td>power</td><td>OK</td><td>67.9 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/power.rpt</td></tr><tr><td>qor_suggestions</td><td>OK</td><td>1.9 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/qor_suggestions.rpt</td></tr><tr><td>ram_utilization</td><td>OK</td><td>536.0 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/ram_utilization.rpt</td></tr><tr><td>route_status</td><td>OK</td><td>714 B</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/route_status.rpt</td></tr><tr><td>timing</td><td>OK</td><td>32.5 MB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/timing_summary.rpt</td></tr><tr><td>timing</td><td>OK</td><td>33.4 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/timing_summary.rpv</td></tr><tr><td>utilization_flat</td><td>OK</td><td>31.9 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/utilization.rpt</td></tr><tr><td>utilization</td><td>OK</td><td>19.8 KB</td><td>/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/utilization_hierarchical.rpt</td></tr></tbody></table></div>
+        </div></div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Methodology 规则摘要</div>
+              <div class='section-note'>Methodology 是 Vivado 对约束、时钟、CDC、复位和实现方法的规则检查。Critical Warning 不一定表示 bitstream 失败，但通常值得优先确认是不是平台 shell 已知项，还是用户逻辑/约束引入的新问题。</div>
+              <div class="section-note">total: 105; report: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/methodology.rpt</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>rule</th><th>severity</th><th>count</th><th>description</th></tr></thead><tbody><tr><td>TIMING-54</td><td>Critical Warning</td><td>6</td><td>Scoped false path, clock group or max delay datapath only constraint between clocks</td></tr><tr><td>TIMING-14</td><td>Critical Warning</td><td>1</td><td>LUT on the clock tree</td></tr><tr><td>TIMING-7</td><td>Critical Warning</td><td>1</td><td>No common node between related clocks</td></tr><tr><td>NTCN-1</td><td>Warning</td><td>16</td><td>CLOCK_DELAY_GROUP net not driven by global clock buffer</td></tr><tr><td>LUTAR-1</td><td>Warning</td><td>15</td><td>LUT drives async reset alert</td></tr><tr><td>TIMING-47</td><td>Warning</td><td>7</td><td>False path, asynchronous clock group or max delay datapath only constraint between synchronous clocks</td></tr><tr><td>TIMING-10</td><td>Warning</td><td>1</td><td>Missing property on synchronizer</td></tr><tr><td>TIMING-16</td><td>Warning</td><td>1</td><td>Large setup violation</td></tr><tr><td>TIMING-18</td><td>Warning</td><td>1</td><td>Missing input or output delay</td></tr><tr><td>TIMING-24</td><td>Warning</td><td>1</td><td>Overridden Max delay datapath only</td></tr><tr><td>TIMING-9</td><td>Warning</td><td>1</td><td>Unknown CDC Logic</td></tr><tr><td>XDCB-5</td><td>Warning</td><td>1</td><td>Runtime inefficient way to find pin objects</td></tr></tbody></table></div>
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">DRC 规则摘要</div>
+              <div class='section-note'>DRC 是设计规则检查，偏向合法性、器件资源使用和实现细节。这里按规则聚合计数，便于先看高频 Warning/Advisory，再决定是否打开原始 drc.rpt 查具体对象。</div>
+              <div class="section-note">total: 275; report: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/drc.rpt</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>rule</th><th>severity</th><th>count</th><th>description</th></tr></thead><tbody><tr><td>DPIP-2</td><td>Warning</td><td>60</td><td>Input pipelining</td></tr><tr><td>DPOP-3</td><td>Warning</td><td>39</td><td>PREG Output pipelining</td></tr><tr><td>PDCN-1569</td><td>Warning</td><td>27</td><td>LUT equation term check</td></tr><tr><td>REQP-1858</td><td>Warning</td><td>22</td><td>RAMB36E2_writefirst_collision_advisory</td></tr><tr><td>DPOP-4</td><td>Warning</td><td>20</td><td>MREG Output pipelining</td></tr><tr><td>NTCN-8</td><td>Warning</td><td>16</td><td>CLOCK_DELAY_GROUP net segment not driven by buffer</td></tr><tr><td>FLBO-1</td><td>Warning</td><td>4</td><td>Pblock overlap</td></tr><tr><td>LOCE-1</td><td>Warning</td><td>3</td><td>Pblock ranges contradict LOC constraints on logic assigned to the Pblock</td></tr><tr><td>REQP-1774</td><td>Warning</td><td>2</td><td>RAMB36E2_WRITE_WIDTH_A_18_doesnt_use_WEA32</td></tr><tr><td>REQP-1776</td><td>Warning</td><td>2</td><td>RAMB36E2_WRITE_WIDTH_B_18_doesnt_use_WEB72</td></tr><tr><td>RTSTAT-10</td><td>Warning</td><td>1</td><td>No routable loads</td></tr><tr><td>AVAL-155</td><td>Advisory</td><td>52</td><td>enum_AMULTSEL_BMULTSEL_enum_DREG_ADREG_0_connects_CED_CEAD_RSTD_GND</td></tr></tbody></table></div>
+            </div></div>
+          </div>
+        </div>
+
+        <div class="report-card card mb-4"><div class="card-body">
+          <div class="section-title">CDC 风险行</div>
+          <div class='section-note'>CDC 报告按跨时钟域路径汇总。重点看 Critical 行、unsafe、unknown 和 no_async_reg；这些值不直接等于功能错误，但表示跨域约束或同步结构需要人工确认。</div>
+          <div class="section-note">totals: endpoints=15006, unsafe=42, unknown=18, no_async_reg=5</div>
+          <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>severity</th><th>source</th><th>destination</th><th>type</th><th>exceptions</th><th>endpoints</th><th>unsafe</th><th>unknown</th><th>no_async_reg</th></tr></thead><tbody><tr><td>Critical</td><td>clk_out2_bd_39ab_clkwiz_level0_periph_0_1</td><td>clk_kernel_00_unbuffered_net</td><td>No Common Primary Clock</td><td>Max Delay Datapath Only</td><td>13</td><td>1</td><td>0</td><td>0</td></tr><tr><td>Critical</td><td>clk_out2_bd_39ab_clkwiz_level0_periph_0_1</td><td>clk_kernel_01_unbuffered_net</td><td>No Common Primary Clock</td><td>Max Delay Datapath Only</td><td>13</td><td>1</td><td>0</td><td>0</td></tr><tr><td>Critical</td><td>dma_ip_axi_aclk_1</td><td>clk_out2_bd_39ab_clkwiz_level0_periph_0_1</td><td>Safely Timed</td><td>Max Delay Datapath Only</td><td>93</td><td>1</td><td>0</td><td>0</td></tr><tr><td>Critical</td><td>clk_out2_bd_39ab_clkwiz_level0_periph_0_1</td><td>dma_ip_axi_aclk_1</td><td>Safely Timed</td><td>Max Delay Datapath Only</td><td>112</td><td>1</td><td>0</td><td>0</td></tr><tr><td>Critical</td><td>io_clk_pcie_00_clk_p</td><td>dma_ip_axi_aclk_1</td><td>No Common Node</td><td>None</td><td>25</td><td>2</td><td>14</td><td>0</td></tr><tr><td>Critical</td><td>clk_out2_bd_39ab_clkwiz_level0_periph_0_1</td><td>hbm_aclk</td><td>No Common Primary Clock</td><td>False Path</td><td>4</td><td>3</td><td>0</td><td>0</td></tr><tr><td>Critical</td><td>pipe_clk_1</td><td>io_clk_pcie_00_clk_p</td><td>No Common Node</td><td>Asynch Clock Groups</td><td>352</td><td>32</td><td>0</td><td>0</td></tr><tr><td>Critical</td><td>level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O</td><td>level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/INTERNAL_TCK</td><td>No Common Primary Clock</td><td>Asynch Clock Groups</td><td>3</td><td>1</td><td>0</td><td>0</td></tr><tr><td>Critical</td><td>level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O</td><td>level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q</td><td>User Ignored</td><td>Asynch Clock Groups</td><td>3</td><td>0</td><td>1</td><td>0</td></tr><tr><td>Critical</td><td>io_clk_pcie_00_clk_p</td><td>pipe_clk_1</td><td>No Common Node</td><td>Asynch Clock Groups</td><td>21</td><td>0</td><td>3</td><td>0</td></tr><tr><td>Warning</td><td>clk_kernel_00_unbuffered_net</td><td>dma_ip_axi_aclk_1</td><td>No Common Primary Clock</td><td>Max Delay Datapath Only</td><td>30</td><td>0</td><td>0</td><td>5</td></tr></tbody></table></div>
+        </div></div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">High Fanout Top 10</div>
+              <div class='section-note'>High fanout 列出扇出最高的 net，常见于 reset、ready、enable 或平台控制信号。高扇出可能增加布线压力和时序风险，但平台 shell 信号也可能天然很高。</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>fanout</th><th>driver</th><th>net</th></tr></thead><tbody><tr><td>1311</td><td>FDCE</td><td>level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_pcie_4_0_pipe_inst/pcie_4_0_init_ctrl_inst/reset_n_o_reg_rep_n_0</td></tr><tr><td>1195</td><td>FDCE</td><td>level0_i/blp/blp_i/PLP/ss_dma/inst/dma/inst/udma_wrapper/dma_top/reset_cntrlr/accelerate_timeout_ff_reg_c_1_n_0</td></tr><tr><td>1163</td><td>FDCE</td><td>level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_pcie_4_0_pipe_inst/pcie_4_0_init_ctrl_inst/D[0]</td></tr><tr><td>1157</td><td>FDRE</td><td>level0_i/ii_level0_pipe/inst/pxi_ii_core/inst/s_ip_axi_data_c2h_00/inst/w.w_pipe/S_READY</td></tr><tr><td>1148</td><td>FDCE</td><td>level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_pcie_4_0_pipe_inst/pcie_4_0_init_ctrl_inst/reset_n_o_reg_rep__3_n_0</td></tr><tr><td>1087</td><td>BUFGCE</td><td>level0_i/ulp/ulp_ucs/inst/aclk_hbm_hierarchy/clkwiz_hbm/inst/AXI_LITE_IPIF_I/I_SLAVE_ATTACHMENT/rst_reg_0</td></tr><tr><td>1087</td><td>BUFGCE</td><td>level0_i/ulp/ulp_ucs/inst/aclk_kernel_00_hierarchy/clkwiz_aclk_kernel_00/inst/AXI_LITE_IPIF_I/I_SLAVE_ATTACHMENT/rst_reg_0</td></tr><tr><td>1087</td><td>BUFGCE</td><td>level0_i/ulp/ulp_ucs/inst/aclk_kernel_01_hierarchy/clkwiz_aclk_kernel_01/inst/AXI_LITE_IPIF_I/I_SLAVE_ATTACHMENT/rst_reg_0</td></tr><tr><td>1075</td><td>FDCE</td><td>level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_pcie_4_0_pipe_inst/pcie_4_0_init_ctrl_inst/reset_n_o_reg_rep__6_n_0</td></tr><tr><td>1054</td><td>FDRE</td><td>level0_i/ii_level0_pipe/inst/pxi_ii_core/inst/s_ip_axi_data_h2c_00/inst/r.r_pipe/S_READY</td></tr></tbody></table></div>
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Control Sets</div>
+              <div class='section-note'>Control set 是由 clock/reset/clock enable 组合形成的寄存器控制集合。数量过多会降低 slice 打包效率；这里用于判断是否存在复位/使能信号过度分裂。</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>metric</th><th>value</th></tr></thead><tbody><tr><td>total_control_sets</td><td>9841</td></tr><tr><td>minimum_number_of_control_sets</td><td>7112</td></tr><tr><td>addition_due_to_synthesis_replication</td><td>674</td></tr><tr><td>addition_due_to_physical_synthesis_replication</td><td>2055</td></tr><tr><td>unused_register_locations_in_slices_containing_registers</td><td>13309</td></tr></tbody></table></div>
+            </div></div>
+          </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-xl-4">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Route Status</div>
+              <div class='section-note'>Route status 关注布线是否完整。最重要的是 nets_with_routing_errors 必须为 0；fully_routed_nets 与 routable_nets 接近或相等说明布线完成。</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>metric</th><th>value</th></tr></thead><tbody><tr><td>logical_nets</td><td>644549</td></tr><tr><td>nets_not_needing_routing</td><td>264262</td></tr><tr><td>internally_routed_nets</td><td>246546</td></tr><tr><td>nets_with_no_loads</td><td>17716</td></tr><tr><td>routable_nets</td><td>380287</td></tr><tr><td>nets_with_fixed_routing</td><td>217457</td></tr><tr><td>fully_routed_nets</td><td>380287</td></tr><tr><td>nets_with_routing_errors</td><td>0</td></tr></tbody></table></div>
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-4">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Clock Interaction</div>
+              <div class='section-note'>Clock interaction 汇总各时钟域之间的约束关系。Clean 表示 Vivado 认为关系清楚；Ignored/False Path/Asynchronous Groups 需要结合平台约束判断是否合理。</div>
+              <div class="sub-title">classification</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>classification</th><th>count</th></tr></thead><tbody><tr><td>Clean</td><td>44</td></tr><tr><td>Ignored</td><td>86</td></tr></tbody></table></div>
+              <div class="sub-title">constraints</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>constraint</th><th>count</th></tr></thead><tbody><tr><td>False Path</td><td>45</td></tr><tr><td>Timed</td><td>31</td></tr><tr><td>Asynchronous Groups</td><td>20</td></tr><tr><td>Max Delay Datapath Only</td><td>19</td></tr><tr><td>Partial False Path</td><td>13</td></tr><tr><td>Exclusive Groups</td><td>2</td></tr></tbody></table></div>
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-4">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">RAM Primitives</div>
+              <div class='section-note'>RAM primitives 统计 BRAM/URAM/LUTRAM 等存储原语数量。它比普通 utilization 更偏向存储结构明细，可用于判断 HLS 数组/缓存是否落到了预期资源。</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>primitive</th><th>count</th></tr></thead><tbody><tr><td>RAMB18E2</td><td>24</td></tr><tr><td>RAMB36E2</td><td>678</td></tr></tbody></table></div>
+            </div></div>
+          </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Power 摘要</div>
+              <div class='section-note'>Power 摘要来自 report_power。没有 SAIF/VCD 活动文件时 confidence 通常偏低，因此更适合做版本间横向比较，不适合当作实测功耗。</div>
+              <div class="section-note">report: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/power.rpt</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>metric</th><th>value</th><th>note</th></tr></thead><tbody><tr><td>total_on_chip</td><td>25.970 W</td><td>估算片上总功耗，包含 FPGA 逻辑、HBM、静态功耗等。</td></tr><tr><td>fpga</td><td>21.952 W</td><td>FPGA fabric 和片上硬 IP 的估算功耗，不含单独列出的 HBM 功耗。</td></tr><tr><td>hbm</td><td>4.018 W</td><td>HBM 子系统估算功耗。</td></tr><tr><td>design_power_budget</td><td>123.000 W</td><td>平台/器件给这个设计设定的功耗预算。</td></tr><tr><td>power_budget_margin</td><td>97.030 (MET) W</td><td>预算剩余量；MET 表示估算值仍在预算内。</td></tr><tr><td>dynamic</td><td>17.626 W</td><td>由时钟翻转、逻辑切换、互连、存储器和接口活动造成的动态功耗。</td></tr><tr><td>device_static</td><td>8.344 W</td><td>器件静态/漏电功耗，即使设计基本不切换也会存在；受工艺、电压、温度影响。</td></tr><tr><td>effective_tja</td><td>0.8 C/W</td><td>等效结到环境热阻，用于把功耗换算成温升；数值越低散热越好。</td></tr><tr><td>max_ambient</td><td>80.5 C</td><td>在当前功耗和散热假设下允许的最高环境温度估算。</td></tr><tr><td>junction_temp</td><td>74.5 C</td><td>芯片结温估算，不是功耗；通常用于判断热裕量。</td></tr><tr><td>confidence</td><td>Low </td><td>Vivado 对功耗估算输入活动数据完整性的评级；Low 表示缺少真实活动数据，数值只适合估算和横向比较。</td></tr></tbody></table></div>
+            </div></div>
+          </div>
+          <div class="col-12 col-xl-6">
+            <div class="report-card card h-100"><div class="card-body">
+              <div class="section-title">Utilization 摘要</div>
+              <div class='section-note'>Utilization 摘要来自 Vivado 实现后的资源报告，和主报告中的资源总览有重叠。这里保留它是为了让 analysis 页自洽，并方便和 power/DRC 放在一起看。</div>
+              <div class="section-note">report: /home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/utilization.rpt</div>
+              <div class='table-wrap'><table class='table table-sm align-middle'><thead><tr><th>resource</th><th>used</th><th>available</th><th>util(%)</th></tr></thead><tbody><tr><td>CLB LUTs</td><td>175317</td><td>1303680</td><td>13.45</td></tr><tr><td>CLB Registers</td><td>243755</td><td>2607360</td><td>9.35</td></tr><tr><td>Block RAM Tile</td><td>230</td><td>2016</td><td>11.41</td></tr><tr><td>URAM</td><td>0</td><td>960</td><td>0.00</td></tr><tr><td>DSPs</td><td>56</td><td>9024</td><td>0.62</td></tr></tbody></table></div>
+            </div></div>
+          </div>
+        </div>
+
+  </div>
+</body>
+</html>

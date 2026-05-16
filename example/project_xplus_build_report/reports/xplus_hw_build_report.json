@@ -1,6 +1,6 @@
 {
   "title": "Project-XS XPlus Hardware Build Report",
-  "subtitle": "直接指定 Project-XPlus/build/hw，由 XS 自动发现 XO、HLS 报告、schedule 和 routed timing。",
+  "subtitle": "直接指定 Project-XPlus/build/hw，由 XS 自动发现 XO、HLS 报告、schedule、routed timing、power 和 Vivado analysis 报告。",
   "spec_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_build_report/spec.json",
   "example_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_build_report",
   "source_note": "这个 example 不复制 XPlus 产物；spec 只指向 XPlus 硬件 build 目录和 connectivity cfg，kernel 列表由 build 目录下的顶层 XO 自动发现。",
@@ -1034,6 +1034,1472 @@
           "action": ""
         }
       ]
+    },
+    "analysis_reports": {
+      "available": true,
+      "report_dir": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis",
+      "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis",
+      "manifest_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/analysis_manifest.txt",
+      "how_to_get": "",
+      "files": [
+        {
+          "name": "analysis_manifest.txt",
+          "key": "manifest",
+          "status": "generated",
+          "reason": "",
+          "size_bytes": 3359,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/analysis_manifest.txt"
+        },
+        {
+          "name": "cdc.rpt",
+          "key": "cdc",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 84405,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/cdc.rpt"
+        },
+        {
+          "name": "clock_interaction.rpt",
+          "key": "clock_interaction",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 127573,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/clock_interaction.rpt"
+        },
+        {
+          "name": "clock_utilization.rpt",
+          "key": "clock_utilization",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 711068,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/clock_utilization.rpt"
+        },
+        {
+          "name": "control_sets.rpt",
+          "key": "control_sets",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 13195623,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/control_sets.rpt"
+        },
+        {
+          "name": "design_analysis.rpt",
+          "key": "design_analysis",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 14527,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/design_analysis.rpt"
+        },
+        {
+          "name": "drc.rpt",
+          "key": "drc",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 223359,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/drc.rpt"
+        },
+        {
+          "name": "high_fanout_nets.rpt",
+          "key": "high_fanout",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 2903,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/high_fanout_nets.rpt"
+        },
+        {
+          "name": "methodology.rpt",
+          "key": "methodology",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 137975,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/methodology.rpt"
+        },
+        {
+          "name": "power.rpt",
+          "key": "power",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 69538,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/power.rpt"
+        },
+        {
+          "name": "qor_suggestions.rpt",
+          "key": "qor_suggestions",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 1923,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/qor_suggestions.rpt"
+        },
+        {
+          "name": "ram_utilization.rpt",
+          "key": "ram_utilization",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 548878,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/ram_utilization.rpt"
+        },
+        {
+          "name": "route_status.rpt",
+          "key": "route_status",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 714,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/route_status.rpt"
+        },
+        {
+          "name": "timing_summary.rpt",
+          "key": "timing",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 34044261,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/timing_summary.rpt"
+        },
+        {
+          "name": "timing_summary.rpv",
+          "key": "timing",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 34185,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/timing_summary.rpv"
+        },
+        {
+          "name": "utilization.rpt",
+          "key": "utilization_flat",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 32678,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/utilization.rpt"
+        },
+        {
+          "name": "utilization_hierarchical.rpt",
+          "key": "utilization",
+          "status": "OK",
+          "reason": "",
+          "size_bytes": 20294,
+          "path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/utilization_hierarchical.rpt"
+        }
+      ],
+      "ok": [
+        "power",
+        "utilization",
+        "utilization_flat",
+        "timing",
+        "methodology",
+        "drc",
+        "route_status",
+        "clock_utilization",
+        "clock_interaction",
+        "cdc",
+        "design_analysis",
+        "qor_suggestions",
+        "high_fanout",
+        "control_sets",
+        "ram_utilization"
+      ],
+      "failed": [],
+      "summary": {
+        "timing": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/timing_summary.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/timing_summary.rpt",
+          "how_to_get": "",
+          "constraints_met": true,
+          "design_summary": {
+            "wns_ns": "0.003",
+            "tns_ns": "0.000",
+            "tns_failing_endpoints": "0",
+            "tns_total_endpoints": "705530",
+            "whs_ns": "0.009",
+            "ths_ns": "0.000",
+            "ths_failing_endpoints": "0",
+            "ths_total_endpoints": "702735",
+            "wpws_ns": "0.000",
+            "tpws_ns": "0.000",
+            "tpws_failing_endpoints": "0",
+            "tpws_total_endpoints": "278095"
+          },
+          "clock_summary": [
+            {
+              "name": "io_clk_freerun_00_clk_p",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "clk_kernel_00_unbuffered_net",
+              "waveform_ns": "{0.000 1.667}",
+              "period_ns": "3.333",
+              "frequency_mhz": "300.000"
+            },
+            {
+              "name": "clk_kernel_01_unbuffered_net",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "hbm_aclk",
+              "waveform_ns": "{0.000 1.111}",
+              "period_ns": "2.222",
+              "frequency_mhz": "450.000"
+            },
+            {
+              "name": "io_clk_pcie_00_clk_p",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL0CLK[0]_4",
+              "waveform_ns": "{0.000 0.100}",
+              "period_ns": "0.200",
+              "frequency_mhz": "5000.001"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL0CLK[0]_5",
+              "waveform_ns": "{0.000 0.100}",
+              "period_ns": "0.200",
+              "frequency_mhz": "5000.001"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL0CLK[0]_6",
+              "waveform_ns": "{0.000 0.100}",
+              "period_ns": "0.200",
+              "frequency_mhz": "5000.001"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL0CLK[0]_7",
+              "waveform_ns": "{0.000 0.100}",
+              "period_ns": "0.200",
+              "frequency_mhz": "5000.001"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_4",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_5",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_6",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_7",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL1CLK[0]_4",
+              "waveform_ns": "{0.000 0.100}",
+              "period_ns": "0.200",
+              "frequency_mhz": "5000.001"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[0]_4",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[1]_4",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[2]_4",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[3]_4",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL1CLK[0]_5",
+              "waveform_ns": "{0.000 0.100}",
+              "period_ns": "0.200",
+              "frequency_mhz": "5000.001"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[0]_5",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[1]_5",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[2]_5",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[3]_5",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL1CLK[0]_6",
+              "waveform_ns": "{0.000 0.100}",
+              "period_ns": "0.200",
+              "frequency_mhz": "5000.001"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[0]_6",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[1]_6",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[2]_6",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[3]_6",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL1CLK[0]_7",
+              "waveform_ns": "{0.000 0.100}",
+              "period_ns": "0.200",
+              "frequency_mhz": "5000.001"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[0]_7",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[1]_7",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[2]_7",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_TXOUTCLK[3]_7",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000"
+            },
+            {
+              "name": "dma_ip_axi_aclk_1",
+              "waveform_ns": "{0.000 2.000}",
+              "period_ns": "4.000",
+              "frequency_mhz": "250.000"
+            },
+            {
+              "name": "clk_out1_bd_39ab_clkwiz_level0_periph_0_1",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+              "waveform_ns": "{0.000 10.000}",
+              "period_ns": "20.000",
+              "frequency_mhz": "50.000"
+            },
+            {
+              "name": "clk_sck",
+              "waveform_ns": "{0.000 20.000}",
+              "period_ns": "40.000",
+              "frequency_mhz": "25.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+              "waveform_ns": "{0.000 80.000}",
+              "period_ns": "160.000",
+              "frequency_mhz": "6.250"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O",
+              "waveform_ns": "{0.000 80.000}",
+              "period_ns": "160.000",
+              "frequency_mhz": "6.250"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+              "waveform_ns": "{80.000 160.000}",
+              "period_ns": "160.000",
+              "frequency_mhz": "6.250"
+            },
+            {
+              "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+              "waveform_ns": "{0.000 80.000}",
+              "period_ns": "160.000",
+              "frequency_mhz": "6.250"
+            },
+            {
+              "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+              "waveform_ns": "{80.000 160.000}",
+              "period_ns": "160.000",
+              "frequency_mhz": "6.250"
+            },
+            {
+              "name": "mcap_clk_1",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "pipe_clk_1",
+              "waveform_ns": "{0.000 2.000}",
+              "period_ns": "4.000",
+              "frequency_mhz": "250.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_4",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_5",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_6",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_7",
+              "waveform_ns": "{0.000 5.000}",
+              "period_ns": "10.000",
+              "frequency_mhz": "100.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/INTERNAL_TCK",
+              "waveform_ns": "{0.000 25.000}",
+              "period_ns": "50.000",
+              "frequency_mhz": "20.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/Use_External.Use_BSCANID.No_Dbg_Reg_Access.BUFG_UPDATE/Using_FPGA.Native/O",
+              "waveform_ns": "{0.000 50.000}",
+              "period_ns": "100.000",
+              "frequency_mhz": "10.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[0].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[10].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[11].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[12].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[13].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[14].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[15].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[1].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[2].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[3].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[4].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[5].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[6].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[7].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[8].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[9].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+              "waveform_ns": "{0.000 4.000}",
+              "period_ns": "8.000",
+              "frequency_mhz": "125.000"
+            },
+            {
+              "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_clk_i/bufg_gt_intclk/O",
+              "waveform_ns": "{0.000 500.000}",
+              "period_ns": "1000.000",
+              "frequency_mhz": "1.000"
+            }
+          ],
+          "kernel_clock_summary": [
+            {
+              "name": "clk_kernel_00_unbuffered_net",
+              "waveform_ns": "{0.000 1.667}",
+              "period_ns": "3.333",
+              "frequency_mhz": "300.000",
+              "wns_ns": "0.223",
+              "tns_ns": "0.000",
+              "tns_failing_endpoints": "0",
+              "tns_total_endpoints": "187381",
+              "whs_ns": "0.009",
+              "ths_ns": "0.000",
+              "ths_failing_endpoints": "0",
+              "ths_total_endpoints": "187381",
+              "wpws_ns": "1.125",
+              "tpws_ns": "0.000",
+              "tpws_failing_endpoints": "0",
+              "tpws_total_endpoints": "68078"
+            },
+            {
+              "name": "clk_kernel_01_unbuffered_net",
+              "waveform_ns": "{0.000 1.000}",
+              "period_ns": "2.000",
+              "frequency_mhz": "500.000",
+              "wns_ns": "0.653",
+              "tns_ns": "0.000",
+              "tns_failing_endpoints": "0",
+              "tns_total_endpoints": "264",
+              "whs_ns": "0.016",
+              "ths_ns": "0.000",
+              "ths_failing_endpoints": "0",
+              "ths_total_endpoints": "264",
+              "wpws_ns": "0.468",
+              "tpws_ns": "0.000",
+              "tpws_failing_endpoints": "0",
+              "tpws_total_endpoints": "174"
+            }
+          ]
+        },
+        "power": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/power.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/power.rpt",
+          "how_to_get": "",
+          "summary": {
+            "total_on_chip_w": "25.970",
+            "fpga_w": "21.952",
+            "hbm_w": "4.018",
+            "budget_w": "123.000",
+            "budget_margin_w": "97.030 (MET)",
+            "dynamic_w": "17.626",
+            "device_static_w": "8.344",
+            "effective_tja_c_per_w": "0.8",
+            "max_ambient_c": "80.5",
+            "junction_temp_c": "74.5",
+            "confidence_level": "Low"
+          },
+          "summary_fields": [
+            {
+              "key": "total_on_chip_w",
+              "label": "total_on_chip",
+              "unit": "W",
+              "description": "估算片上总功耗，包含 FPGA 逻辑、HBM、静态功耗等。"
+            },
+            {
+              "key": "fpga_w",
+              "label": "fpga",
+              "unit": "W",
+              "description": "FPGA fabric 和片上硬 IP 的估算功耗，不含单独列出的 HBM 功耗。"
+            },
+            {
+              "key": "hbm_w",
+              "label": "hbm",
+              "unit": "W",
+              "description": "HBM 子系统估算功耗。"
+            },
+            {
+              "key": "budget_w",
+              "label": "design_power_budget",
+              "unit": "W",
+              "description": "平台/器件给这个设计设定的功耗预算。"
+            },
+            {
+              "key": "budget_margin_w",
+              "label": "power_budget_margin",
+              "unit": "W",
+              "description": "预算剩余量；MET 表示估算值仍在预算内。"
+            },
+            {
+              "key": "dynamic_w",
+              "label": "dynamic",
+              "unit": "W",
+              "description": "由时钟翻转、逻辑切换、互连、存储器和接口活动造成的动态功耗。"
+            },
+            {
+              "key": "device_static_w",
+              "label": "device_static",
+              "unit": "W",
+              "description": "器件静态/漏电功耗，即使设计基本不切换也会存在；受工艺、电压、温度影响。"
+            },
+            {
+              "key": "effective_tja_c_per_w",
+              "label": "effective_tja",
+              "unit": "C/W",
+              "description": "等效结到环境热阻，用于把功耗换算成温升；数值越低散热越好。"
+            },
+            {
+              "key": "max_ambient_c",
+              "label": "max_ambient",
+              "unit": "C",
+              "description": "在当前功耗和散热假设下允许的最高环境温度估算。"
+            },
+            {
+              "key": "junction_temp_c",
+              "label": "junction_temp",
+              "unit": "C",
+              "description": "芯片结温估算，不是功耗；通常用于判断热裕量。"
+            },
+            {
+              "key": "confidence_level",
+              "label": "confidence",
+              "unit": "",
+              "description": "Vivado 对功耗估算输入活动数据完整性的评级；Low 表示缺少真实活动数据，数值只适合估算和横向比较。"
+            }
+          ],
+          "components": [
+            {
+              "name": "Clocks",
+              "power_w": "2.011",
+              "used": "69",
+              "available": "---",
+              "util_pct": "---"
+            },
+            {
+              "name": "CLB Logic",
+              "power_w": "1.783",
+              "used": "491386",
+              "available": "---",
+              "util_pct": "---"
+            },
+            {
+              "name": "LUT as Distributed RAM",
+              "power_w": "0.719",
+              "used": "10864",
+              "available": "600960",
+              "util_pct": "1.81"
+            },
+            {
+              "name": "LUT as Logic",
+              "power_w": "0.656",
+              "used": "153506",
+              "available": "1303680",
+              "util_pct": "11.77"
+            },
+            {
+              "name": "LUT as Shift Register",
+              "power_w": "0.271",
+              "used": "10947",
+              "available": "600960",
+              "util_pct": "1.82"
+            },
+            {
+              "name": "Register",
+              "power_w": "0.124",
+              "used": "243751",
+              "available": "2607360",
+              "util_pct": "9.35"
+            },
+            {
+              "name": "CARRY8",
+              "power_w": "0.014",
+              "used": "2481",
+              "available": "162960",
+              "util_pct": "1.52"
+            },
+            {
+              "name": "BUFG",
+              "power_w": "<0.001",
+              "used": "3",
+              "available": "96",
+              "util_pct": "3.13"
+            },
+            {
+              "name": "Others",
+              "power_w": "<0.001",
+              "used": "11463",
+              "available": "---",
+              "util_pct": "---"
+            },
+            {
+              "name": "F7/F8 Muxes",
+              "power_w": "0.000",
+              "used": "5552",
+              "available": "1303680",
+              "util_pct": "0.43"
+            },
+            {
+              "name": "Signals",
+              "power_w": "1.795",
+              "used": "375559",
+              "available": "---",
+              "util_pct": "---"
+            },
+            {
+              "name": "Block RAM",
+              "power_w": "1.015",
+              "used": "230",
+              "available": "2016",
+              "util_pct": "11.41"
+            },
+            {
+              "name": "HBM",
+              "power_w": "5.953",
+              "used": "2",
+              "available": "2",
+              "util_pct": "100.00"
+            },
+            {
+              "name": "MMCM",
+              "power_w": "0.003",
+              "used": "0",
+              "available": "---",
+              "util_pct": "---"
+            },
+            {
+              "name": "PLL",
+              "power_w": "0.054",
+              "used": "1",
+              "available": "---",
+              "util_pct": "---"
+            },
+            {
+              "name": "DSPs",
+              "power_w": "0.070",
+              "used": "56",
+              "available": "9024",
+              "util_pct": "0.62"
+            },
+            {
+              "name": "I/O",
+              "power_w": "0.006",
+              "used": "12",
+              "available": "624",
+              "util_pct": "1.92"
+            },
+            {
+              "name": "GTY",
+              "power_w": "4.360",
+              "used": "16",
+              "available": "40",
+              "util_pct": "40.00"
+            },
+            {
+              "name": "Hard IPs",
+              "power_w": "0.538",
+              "used": "1",
+              "available": "---",
+              "util_pct": "---"
+            },
+            {
+              "name": "PCIE",
+              "power_w": "0.538",
+              "used": "1",
+              "available": "---",
+              "util_pct": "---"
+            },
+            {
+              "name": "Static Power",
+              "power_w": "8.344",
+              "used": "",
+              "available": "",
+              "util_pct": ""
+            },
+            {
+              "name": "HBM Static",
+              "power_w": "0.702",
+              "used": "",
+              "available": "",
+              "util_pct": ""
+            },
+            {
+              "name": "Device Static",
+              "power_w": "7.642",
+              "used": "",
+              "available": "",
+              "util_pct": ""
+            }
+          ],
+          "confidence": [
+            {
+              "input": "Design implementation state",
+              "confidence": "High",
+              "details": "Design is routed",
+              "action": ""
+            },
+            {
+              "input": "Clock nodes activity",
+              "confidence": "High",
+              "details": "User specified more than 95% of clocks",
+              "action": ""
+            },
+            {
+              "input": "I/O nodes activity",
+              "confidence": "Low",
+              "details": "More than 75% of inputs are missing user specification",
+              "action": "Provide missing input activity with simulation results or by editing the \"By Resource Type -> I/Os\" view"
+            },
+            {
+              "input": "Internal nodes activity",
+              "confidence": "Medium",
+              "details": "User specified less than 25% of internal nodes",
+              "action": "Provide missing internal nodes activity with simulation results or by editing the \"By Resource Type\" views"
+            },
+            {
+              "input": "Device models",
+              "confidence": "High",
+              "details": "Device models are Production",
+              "action": ""
+            },
+            {
+              "input": "Overall confidence level",
+              "confidence": "Low",
+              "details": "",
+              "action": ""
+            }
+          ]
+        },
+        "utilization": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/utilization.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/utilization.rpt",
+          "resources": [
+            {
+              "name": "CLB LUTs",
+              "used": "175317",
+              "fixed": "107889",
+              "prohibited": "0",
+              "available": "1303680",
+              "util_pct": "13.45"
+            },
+            {
+              "name": "CLB Registers",
+              "used": "243755",
+              "fixed": "136116",
+              "prohibited": "0",
+              "available": "2607360",
+              "util_pct": "9.35"
+            },
+            {
+              "name": "Block RAM Tile",
+              "used": "230",
+              "fixed": "0",
+              "prohibited": "0",
+              "available": "2016",
+              "util_pct": "11.41"
+            },
+            {
+              "name": "URAM",
+              "used": "0",
+              "fixed": "0",
+              "prohibited": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            {
+              "name": "DSPs",
+              "used": "56",
+              "fixed": "4",
+              "prohibited": "0",
+              "available": "9024",
+              "util_pct": "0.62"
+            }
+          ]
+        },
+        "methodology": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/methodology.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/methodology.rpt",
+          "total_violations": "105",
+          "severity_counts": {
+            "Critical Warning": 8,
+            "Warning": 44,
+            "Advisory": 53
+          },
+          "rules": [
+            {
+              "rule": "TIMING-7",
+              "severity": "Critical Warning",
+              "description": "No common node between related clocks",
+              "violations": 1
+            },
+            {
+              "rule": "TIMING-14",
+              "severity": "Critical Warning",
+              "description": "LUT on the clock tree",
+              "violations": 1
+            },
+            {
+              "rule": "TIMING-54",
+              "severity": "Critical Warning",
+              "description": "Scoped false path, clock group or max delay datapath only constraint between clocks",
+              "violations": 6
+            },
+            {
+              "rule": "LUTAR-1",
+              "severity": "Warning",
+              "description": "LUT drives async reset alert",
+              "violations": 15
+            },
+            {
+              "rule": "NTCN-1",
+              "severity": "Warning",
+              "description": "CLOCK_DELAY_GROUP net not driven by global clock buffer",
+              "violations": 16
+            },
+            {
+              "rule": "TIMING-9",
+              "severity": "Warning",
+              "description": "Unknown CDC Logic",
+              "violations": 1
+            },
+            {
+              "rule": "TIMING-10",
+              "severity": "Warning",
+              "description": "Missing property on synchronizer",
+              "violations": 1
+            },
+            {
+              "rule": "TIMING-16",
+              "severity": "Warning",
+              "description": "Large setup violation",
+              "violations": 1
+            },
+            {
+              "rule": "TIMING-18",
+              "severity": "Warning",
+              "description": "Missing input or output delay",
+              "violations": 1
+            },
+            {
+              "rule": "TIMING-24",
+              "severity": "Warning",
+              "description": "Overridden Max delay datapath only",
+              "violations": 1
+            },
+            {
+              "rule": "TIMING-47",
+              "severity": "Warning",
+              "description": "False path, asynchronous clock group or max delay datapath only constraint between synchronous clocks",
+              "violations": 7
+            },
+            {
+              "rule": "XDCB-5",
+              "severity": "Warning",
+              "description": "Runtime inefficient way to find pin objects",
+              "violations": 1
+            },
+            {
+              "rule": "CLKC-3",
+              "severity": "Advisory",
+              "description": "Clock Buffer has LOC and not CLOCK_REGION",
+              "violations": 30
+            },
+            {
+              "rule": "CLKC-13",
+              "severity": "Advisory",
+              "description": "PLLE4 divide could be done by BUFG_GT",
+              "violations": 1
+            },
+            {
+              "rule": "CLKC-40",
+              "severity": "Advisory",
+              "description": "Substitute PLLE4 for MMCME4 check",
+              "violations": 1
+            },
+            {
+              "rule": "CLKC-56",
+              "severity": "Advisory",
+              "description": "MMCME4 with global clock driver has no LOC",
+              "violations": 2
+            },
+            {
+              "rule": "RTGT-1",
+              "severity": "Advisory",
+              "description": "RAM retargeting possibility",
+              "violations": 17
+            },
+            {
+              "rule": "XDCB-6",
+              "severity": "Advisory",
+              "description": "Timing constraint pointing to hierarchical pins",
+              "violations": 2
+            }
+          ]
+        },
+        "drc": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/drc.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/drc.rpt",
+          "total_violations": "275",
+          "severity_counts": {
+            "Warning": 196,
+            "Advisory": 79
+          },
+          "rules": [
+            {
+              "rule": "DPIP-2",
+              "severity": "Warning",
+              "description": "Input pipelining",
+              "violations": 60
+            },
+            {
+              "rule": "DPOP-3",
+              "severity": "Warning",
+              "description": "PREG Output pipelining",
+              "violations": 39
+            },
+            {
+              "rule": "DPOP-4",
+              "severity": "Warning",
+              "description": "MREG Output pipelining",
+              "violations": 20
+            },
+            {
+              "rule": "FLBO-1",
+              "severity": "Warning",
+              "description": "Pblock overlap",
+              "violations": 4
+            },
+            {
+              "rule": "LOCE-1",
+              "severity": "Warning",
+              "description": "Pblock ranges contradict LOC constraints on logic assigned to the Pblock",
+              "violations": 3
+            },
+            {
+              "rule": "NTCN-8",
+              "severity": "Warning",
+              "description": "CLOCK_DELAY_GROUP net segment not driven by buffer",
+              "violations": 16
+            },
+            {
+              "rule": "PDCN-1569",
+              "severity": "Warning",
+              "description": "LUT equation term check",
+              "violations": 27
+            },
+            {
+              "rule": "REQP-1774",
+              "severity": "Warning",
+              "description": "RAMB36E2_WRITE_WIDTH_A_18_doesnt_use_WEA32",
+              "violations": 2
+            },
+            {
+              "rule": "REQP-1776",
+              "severity": "Warning",
+              "description": "RAMB36E2_WRITE_WIDTH_B_18_doesnt_use_WEB72",
+              "violations": 2
+            },
+            {
+              "rule": "REQP-1858",
+              "severity": "Warning",
+              "description": "RAMB36E2_writefirst_collision_advisory",
+              "violations": 22
+            },
+            {
+              "rule": "RTSTAT-10",
+              "severity": "Warning",
+              "description": "No routable loads",
+              "violations": 1
+            },
+            {
+              "rule": "AVAL-155",
+              "severity": "Advisory",
+              "description": "enum_AMULTSEL_BMULTSEL_enum_DREG_ADREG_0_connects_CED_CEAD_RSTD_GND",
+              "violations": 52
+            },
+            {
+              "rule": "AVAL-156",
+              "severity": "Advisory",
+              "description": "enum_USE_MULT_NONE__enum_DREG_ADREG_0_connects_CED_CEAD_RSTD_GND",
+              "violations": 22
+            },
+            {
+              "rule": "HDPRA-51",
+              "severity": "Advisory",
+              "description": "Narrow Edge with Location Constraints",
+              "violations": 1
+            },
+            {
+              "rule": "HDPRA-53",
+              "severity": "Advisory",
+              "description": "Edge with Location Constraints",
+              "violations": 1
+            },
+            {
+              "rule": "HDPRA-55",
+              "severity": "Advisory",
+              "description": "Narrow Gap with Location Constraints",
+              "violations": 1
+            },
+            {
+              "rule": "HDPRA-57",
+              "severity": "Advisory",
+              "description": "Gap with Location Constraints",
+              "violations": 2
+            }
+          ]
+        },
+        "route_status": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/route_status.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/route_status.rpt",
+          "metrics": {
+            "logical_nets": 644549,
+            "nets_not_needing_routing": 264262,
+            "internally_routed_nets": 246546,
+            "nets_with_no_loads": 17716,
+            "routable_nets": 380287,
+            "nets_with_fixed_routing": 217457,
+            "fully_routed_nets": 380287,
+            "nets_with_routing_errors": 0
+          }
+        },
+        "cdc": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/cdc.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/cdc.rpt",
+          "severity_counts": {
+            "Critical": 10,
+            "Warning": 30,
+            "Info": 48
+          },
+          "totals": {
+            "endpoints": 15006,
+            "safe": 14946,
+            "unsafe": 42,
+            "unknown": 18,
+            "no_async_reg": 5
+          },
+          "risk_rows": [
+            {
+              "severity": "Critical",
+              "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+              "destination_clock": "clk_kernel_00_unbuffered_net",
+              "cdc_type": "No Common Primary Clock",
+              "exceptions": "Max Delay Datapath Only",
+              "endpoints": 13,
+              "safe": 12,
+              "unsafe": 1,
+              "unknown": 0,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Critical",
+              "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+              "destination_clock": "clk_kernel_01_unbuffered_net",
+              "cdc_type": "No Common Primary Clock",
+              "exceptions": "Max Delay Datapath Only",
+              "endpoints": 13,
+              "safe": 12,
+              "unsafe": 1,
+              "unknown": 0,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Critical",
+              "source_clock": "dma_ip_axi_aclk_1",
+              "destination_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+              "cdc_type": "Safely Timed",
+              "exceptions": "Max Delay Datapath Only",
+              "endpoints": 93,
+              "safe": 92,
+              "unsafe": 1,
+              "unknown": 0,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Critical",
+              "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+              "destination_clock": "dma_ip_axi_aclk_1",
+              "cdc_type": "Safely Timed",
+              "exceptions": "Max Delay Datapath Only",
+              "endpoints": 112,
+              "safe": 111,
+              "unsafe": 1,
+              "unknown": 0,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Critical",
+              "source_clock": "io_clk_pcie_00_clk_p",
+              "destination_clock": "dma_ip_axi_aclk_1",
+              "cdc_type": "No Common Node",
+              "exceptions": "None",
+              "endpoints": 25,
+              "safe": 9,
+              "unsafe": 2,
+              "unknown": 14,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Critical",
+              "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+              "destination_clock": "hbm_aclk",
+              "cdc_type": "No Common Primary Clock",
+              "exceptions": "False Path",
+              "endpoints": 4,
+              "safe": 1,
+              "unsafe": 3,
+              "unknown": 0,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Critical",
+              "source_clock": "pipe_clk_1",
+              "destination_clock": "io_clk_pcie_00_clk_p",
+              "cdc_type": "No Common Node",
+              "exceptions": "Asynch Clock Groups",
+              "endpoints": 352,
+              "safe": 320,
+              "unsafe": 32,
+              "unknown": 0,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Critical",
+              "source_clock": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O",
+              "destination_clock": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/INTERNAL_TCK",
+              "cdc_type": "No Common Primary Clock",
+              "exceptions": "Asynch Clock Groups",
+              "endpoints": 3,
+              "safe": 2,
+              "unsafe": 1,
+              "unknown": 0,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Critical",
+              "source_clock": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O",
+              "destination_clock": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+              "cdc_type": "User Ignored",
+              "exceptions": "Asynch Clock Groups",
+              "endpoints": 3,
+              "safe": 2,
+              "unsafe": 0,
+              "unknown": 1,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Critical",
+              "source_clock": "io_clk_pcie_00_clk_p",
+              "destination_clock": "pipe_clk_1",
+              "cdc_type": "No Common Node",
+              "exceptions": "Asynch Clock Groups",
+              "endpoints": 21,
+              "safe": 18,
+              "unsafe": 0,
+              "unknown": 3,
+              "no_async_reg": 0
+            },
+            {
+              "severity": "Warning",
+              "source_clock": "clk_kernel_00_unbuffered_net",
+              "destination_clock": "dma_ip_axi_aclk_1",
+              "cdc_type": "No Common Primary Clock",
+              "exceptions": "Max Delay Datapath Only",
+              "endpoints": 30,
+              "safe": 30,
+              "unsafe": 0,
+              "unknown": 0,
+              "no_async_reg": 5
+            }
+          ]
+        },
+        "clock_interaction": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/clock_interaction.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/clock_interaction.rpt",
+          "classification_counts": {
+            "Clean": 44,
+            "Ignored": 86
+          },
+          "constraint_counts": {
+            "Timed": 31,
+            "Partial False Path": 13,
+            "Max Delay Datapath Only": 19,
+            "False Path": 45,
+            "Asynchronous Groups": 20,
+            "Exclusive Groups": 2
+          }
+        },
+        "qor_suggestions": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/qor_suggestions.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/qor_suggestions.rpt",
+          "status": "no_suggestions",
+          "note": "Vivado assessed the routed design as meeting timing and did not emit QoR suggestions."
+        },
+        "high_fanout": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/high_fanout_nets.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/high_fanout_nets.rpt",
+          "top_nets": [
+            {
+              "net": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_pcie_4_0_pipe_inst/pcie_4_0_init_ctrl_inst/reset_n_o_reg_rep_n_0",
+              "fanout": 1311,
+              "driver_type": "FDCE"
+            },
+            {
+              "net": "level0_i/blp/blp_i/PLP/ss_dma/inst/dma/inst/udma_wrapper/dma_top/reset_cntrlr/accelerate_timeout_ff_reg_c_1_n_0",
+              "fanout": 1195,
+              "driver_type": "FDCE"
+            },
+            {
+              "net": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_pcie_4_0_pipe_inst/pcie_4_0_init_ctrl_inst/D[0]",
+              "fanout": 1163,
+              "driver_type": "FDCE"
+            },
+            {
+              "net": "level0_i/ii_level0_pipe/inst/pxi_ii_core/inst/s_ip_axi_data_c2h_00/inst/w.w_pipe/S_READY",
+              "fanout": 1157,
+              "driver_type": "FDRE"
+            },
+            {
+              "net": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_pcie_4_0_pipe_inst/pcie_4_0_init_ctrl_inst/reset_n_o_reg_rep__3_n_0",
+              "fanout": 1148,
+              "driver_type": "FDCE"
+            },
+            {
+              "net": "level0_i/ulp/ulp_ucs/inst/aclk_hbm_hierarchy/clkwiz_hbm/inst/AXI_LITE_IPIF_I/I_SLAVE_ATTACHMENT/rst_reg_0",
+              "fanout": 1087,
+              "driver_type": "BUFGCE"
+            },
+            {
+              "net": "level0_i/ulp/ulp_ucs/inst/aclk_kernel_00_hierarchy/clkwiz_aclk_kernel_00/inst/AXI_LITE_IPIF_I/I_SLAVE_ATTACHMENT/rst_reg_0",
+              "fanout": 1087,
+              "driver_type": "BUFGCE"
+            },
+            {
+              "net": "level0_i/ulp/ulp_ucs/inst/aclk_kernel_01_hierarchy/clkwiz_aclk_kernel_01/inst/AXI_LITE_IPIF_I/I_SLAVE_ATTACHMENT/rst_reg_0",
+              "fanout": 1087,
+              "driver_type": "BUFGCE"
+            },
+            {
+              "net": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_pcie_4_0_pipe_inst/pcie_4_0_init_ctrl_inst/reset_n_o_reg_rep__6_n_0",
+              "fanout": 1075,
+              "driver_type": "FDCE"
+            },
+            {
+              "net": "level0_i/ii_level0_pipe/inst/pxi_ii_core/inst/s_ip_axi_data_h2c_00/inst/r.r_pipe/S_READY",
+              "fanout": 1054,
+              "driver_type": "FDRE"
+            }
+          ]
+        },
+        "control_sets": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/control_sets.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/control_sets.rpt",
+          "summary": {
+            "total_control_sets": "9841",
+            "minimum_number_of_control_sets": "7112",
+            "addition_due_to_synthesis_replication": "674",
+            "addition_due_to_physical_synthesis_replication": "2055",
+            "unused_register_locations_in_slices_containing_registers": "13309"
+          }
+        },
+        "ram_utilization": {
+          "available": true,
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/ram_utilization.rpt",
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/analysis/ram_utilization.rpt",
+          "primitive_counts": {
+            "RAMB36E2": 678,
+            "RAMB18E2": 24
+          }
+        }
+      }
     },
     "pipeline_overview": [
       {

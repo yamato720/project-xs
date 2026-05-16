@@ -13,12 +13,14 @@
   },
   "sequence": [
     "krnl_hls_pipeline_demo",
+    "krnl_hls_top_pipeline_demo",
     "krnl_hls_pipeline_source",
     "krnl_hls_pipeline_compute",
     "krnl_hls_pipeline_sink"
   ],
   "sequence_descriptions": {
     "krnl_hls_pipeline_demo": "单 XRT kernel 内部 DATAFLOW：load_stage -> compute_stage -> store_stage",
+    "krnl_hls_top_pipeline_demo": "单 XRT kernel 顶层函数级 PIPELINE：固定 4 元素 micro-batch",
     "krnl_hls_pipeline_source": "多 kernel 流水第一段：从 input 内存读数据并写入 AXI4-Stream",
     "krnl_hls_pipeline_compute": "多 kernel 流水中间段：从 stream 读取、执行 lane 展开计算和两级寄存器延迟链",
     "krnl_hls_pipeline_sink": "多 kernel 流水末段：从 stream 接收最终 output 并写回内存"
@@ -28,6 +30,11 @@
       "upstream": "krnl_hls_pipeline_demo",
       "downstream": "host",
       "description": "单 kernel 版本一次 run 后写回 output / stage_value / delayed_value，host 读取并和 CPU golden 对照。"
+    },
+    {
+      "upstream": "krnl_hls_top_pipeline_demo",
+      "downstream": "host",
+      "description": "顶层函数 PIPELINE 版本处理固定 4 元素 micro-batch，报告用于确认 top_pipelined=yes。"
     },
     {
       "upstream": "krnl_hls_pipeline_source",
@@ -87,6 +94,26 @@
       "sim_mapping": [
         "SimulationSession with three schedulable kernels",
         "AXI4-Stream port binding"
+      ]
+    },
+    {
+      "name": "top_pipeline_runner",
+      "role": "启动顶层函数级 PIPELINE 版本并等待完成",
+      "reads": [
+        "fixed 4-item input buffer"
+      ],
+      "writes": [
+        "output",
+        "stage_value",
+        "delayed_value"
+      ],
+      "drives": [
+        "krnl_hls_top_pipeline_demo"
+      ],
+      "sim_mapping": [
+        "CycleSimulator transaction",
+        "AxiMasterIf buffers",
+        "top schedule Pipeline=1"
       ]
     }
   ],
@@ -202,6 +229,70 @@
           "upstream": "compute_stage",
           "downstream": "store_stage",
           "description": "hls::stream compute_to_store"
+        }
+      ]
+    },
+    {
+      "name": "krnl_hls_top_pipeline_demo",
+      "role": "顶层函数级流水",
+      "summary": [
+        "top 函数体直接使用 HLS PIPELINE II=1，目标是让顶层 schedule 的 Pipeline 计数为 1。",
+        "固定处理 4 个 input 元素，内部小循环完全 UNROLL，避免 pipeline 只落到子 loop 报告。",
+        "输出 stage_value / delayed_value / output，与其它 demo 使用同一 CPU golden 公式校验。"
+      ],
+      "reads": [
+        "input[0..3]"
+      ],
+      "writes": [
+        "output[0..3]",
+        "stage_value[0..3]",
+        "delayed_value[0..3]"
+      ],
+      "xs_mapping": {
+        "kernel": "Kernel",
+        "pipeline_scope": "top function",
+        "memory": [
+          "input",
+          "output",
+          "stage_value",
+          "delayed_value"
+        ],
+        "unrolled_arrays": [
+          "mixed",
+          "lanes"
+        ]
+      },
+      "xs_sim_mapping": {
+        "kernel_class": "project_xs::sim::Kernel",
+        "control_if": "AxiLiteIf(start/done)",
+        "data_if": [
+          "AxiMasterIf(input)",
+          "AxiMasterIf(output)",
+          "AxiMasterIf(stage_value)",
+          "AxiMasterIf(delayed_value)"
+        ],
+        "state_ports": [
+          "FunctionPipelineStage top",
+          "WirePort pipeline_valid"
+        ]
+      },
+      "components": [
+        {
+          "name": "top_function_pipeline",
+          "role": "函数级 II=1 pipeline 覆盖固定 4 元素 micro-batch 的读、算、写。",
+          "reads": [
+            "input[0..3]"
+          ],
+          "writes": [
+            "output[0..3]",
+            "stage_value[0..3]",
+            "delayed_value[0..3]"
+          ],
+          "xs_mapping": "KernelComponent",
+          "sim_ports": [
+            "AxiMasterIf(input/output/stage/delay)",
+            "PipelineControl(top)"
+          ]
         }
       ]
     },

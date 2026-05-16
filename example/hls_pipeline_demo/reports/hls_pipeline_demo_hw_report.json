@@ -6,12 +6,14 @@
   "source_note": "这个 example 不复制 build 产物；硬件产物通过 artifacts.build_dir 自动发现，CFG 提供 kernel 实例与 AXI4-Stream 连接，HLS/Vivado 报告提供 pipeline、综合延迟、资源和实现时序。",
   "sequence": [
     "krnl_hls_pipeline_demo",
+    "krnl_hls_top_pipeline_demo",
     "krnl_hls_pipeline_source",
     "krnl_hls_pipeline_compute",
     "krnl_hls_pipeline_sink"
   ],
   "sequence_descriptions": {
     "krnl_hls_pipeline_demo": "单 XRT kernel 内部 DATAFLOW：load_stage -> compute_stage -> store_stage",
+    "krnl_hls_top_pipeline_demo": "单 XRT kernel 顶层函数级 PIPELINE：固定 4 元素 micro-batch",
     "krnl_hls_pipeline_source": "多 kernel 流水第一段：从 input 内存读数据并写入 AXI4-Stream",
     "krnl_hls_pipeline_compute": "多 kernel 流水中间段：从 stream 读取、执行 lane 展开计算和两级寄存器延迟链",
     "krnl_hls_pipeline_sink": "多 kernel 流水末段：从 stream 接收最终 output 并写回内存"
@@ -21,6 +23,11 @@
       "upstream": "krnl_hls_pipeline_demo",
       "downstream": "host",
       "description": "单 kernel 版本一次 run 后写回 output / stage_value / delayed_value，host 读取并和 CPU golden 对照。"
+    },
+    {
+      "upstream": "krnl_hls_top_pipeline_demo",
+      "downstream": "host",
+      "description": "顶层函数 PIPELINE 版本处理固定 4 元素 micro-batch，报告用于确认 top_pipelined=yes。"
     },
     {
       "upstream": "krnl_hls_pipeline_source",
@@ -81,6 +88,26 @@
         "SimulationSession with three schedulable kernels",
         "AXI4-Stream port binding"
       ]
+    },
+    {
+      "name": "top_pipeline_runner",
+      "role": "启动顶层函数级 PIPELINE 版本并等待完成",
+      "reads": [
+        "fixed 4-item input buffer"
+      ],
+      "writes": [
+        "output",
+        "stage_value",
+        "delayed_value"
+      ],
+      "drives": [
+        "krnl_hls_top_pipeline_demo"
+      ],
+      "sim_mapping": [
+        "CycleSimulator transaction",
+        "AxiMasterIf buffers",
+        "top schedule Pipeline=1"
+      ]
     }
   ],
   "connectivity": {
@@ -91,6 +118,14 @@
         "count": "1",
         "instances": [
           "krnl_hls_pipeline_demo_1"
+        ],
+        "binding_count": 0
+      },
+      {
+        "kernel_name": "krnl_hls_top_pipeline_demo",
+        "count": "1",
+        "instances": [
+          "krnl_hls_top_pipeline_demo_1"
         ],
         "binding_count": 0
       },
@@ -158,15 +193,15 @@
         "wns_ns": "0.003",
         "tns_ns": "0.000",
         "tns_failing_endpoints": "0",
-        "tns_total_endpoints": "506719",
+        "tns_total_endpoints": "550371",
         "whs_ns": "0.009",
         "ths_ns": "0.000",
         "ths_failing_endpoints": "0",
-        "ths_total_endpoints": "504528",
+        "ths_total_endpoints": "547964",
         "wpws_ns": "0.000",
         "tpws_ns": "0.000",
         "tpws_failing_endpoints": "0",
-        "tpws_total_endpoints": "207621"
+        "tpws_total_endpoints": "223090"
       },
       "clock_summary": [
         {
@@ -578,29 +613,29 @@
           "waveform_ns": "{0.000 1.667}",
           "period_ns": "3.333",
           "frequency_mhz": "300.000",
-          "wns_ns": "0.425",
+          "wns_ns": "0.434",
           "tns_ns": "0.000",
           "tns_failing_endpoints": "0",
-          "tns_total_endpoints": "63514",
+          "tns_total_endpoints": "93370",
           "whs_ns": "0.010",
           "ths_ns": "0.000",
           "ths_failing_endpoints": "0",
-          "ths_total_endpoints": "63514",
+          "ths_total_endpoints": "93370",
           "wpws_ns": "1.125",
           "tpws_ns": "0.000",
           "tpws_failing_endpoints": "0",
-          "tpws_total_endpoints": "21986"
+          "tpws_total_endpoints": "32311"
         },
         {
           "name": "clk_kernel_01_unbuffered_net",
           "waveform_ns": "{0.000 1.000}",
           "period_ns": "2.000",
           "frequency_mhz": "500.000",
-          "wns_ns": "0.762",
+          "wns_ns": "0.785",
           "tns_ns": "0.000",
           "tns_failing_endpoints": "0",
           "tns_total_endpoints": "264",
-          "whs_ns": "0.019",
+          "whs_ns": "0.039",
           "ths_ns": "0.000",
           "ths_failing_endpoints": "0",
           "ths_total_endpoints": "264",
@@ -620,24 +655,24 @@
       "how_to_get": "",
       "total": {
         "LUT": {
-          "used": "9192",
-          "available": "1176646",
-          "util_pct": "0.78"
+          "used": "13444",
+          "available": "1173167",
+          "util_pct": "1.15"
         },
         "LUTAsMem": {
-          "used": "2507",
-          "available": "591130",
-          "util_pct": "0.42"
+          "used": "4101",
+          "available": "590235",
+          "util_pct": "0.69"
         },
         "REG": {
-          "used": "11020",
-          "available": "2431253",
-          "util_pct": "0.45"
+          "used": "15833",
+          "available": "2424220",
+          "util_pct": "0.65"
         },
         "BRAM": {
-          "used": "3",
+          "used": "11",
           "available": "1818",
-          "util_pct": "0.17"
+          "util_pct": "0.61"
         },
         "URAM": {
           "used": "0",
@@ -656,18 +691,18 @@
           "compute_unit_count": "1",
           "cells": {
             "LUT": {
-              "used": "2432",
-              "available": "1176646",
+              "used": "2433",
+              "available": "1173167",
               "util_pct": "0.21"
             },
             "LUTAsMem": {
               "used": "668",
-              "available": "591130",
+              "available": "590235",
               "util_pct": "0.11"
             },
             "REG": {
-              "used": "2803",
-              "available": "2431253",
+              "used": "2807",
+              "available": "2424220",
               "util_pct": "0.12"
             },
             "BRAM": {
@@ -692,18 +727,18 @@
           "compute_unit_count": "1",
           "cells": {
             "LUT": {
-              "used": "4403",
-              "available": "1176646",
-              "util_pct": "0.37"
+              "used": "4400",
+              "available": "1173167",
+              "util_pct": "0.38"
             },
             "LUTAsMem": {
               "used": "1225",
-              "available": "591130",
+              "available": "590235",
               "util_pct": "0.21"
             },
             "REG": {
-              "used": "5496",
-              "available": "2431253",
+              "used": "5495",
+              "available": "2424220",
               "util_pct": "0.23"
             },
             "BRAM": {
@@ -729,17 +764,17 @@
           "cells": {
             "LUT": {
               "used": "1247",
-              "available": "1176646",
+              "available": "1173167",
               "util_pct": "0.11"
             },
             "LUTAsMem": {
               "used": "334",
-              "available": "591130",
+              "available": "590235",
               "util_pct": "0.06"
             },
             "REG": {
-              "used": "1462",
-              "available": "2431253",
+              "used": "1471",
+              "available": "2424220",
               "util_pct": "0.06"
             },
             "BRAM": {
@@ -765,17 +800,17 @@
           "cells": {
             "LUT": {
               "used": "1110",
-              "available": "1176646",
+              "available": "1173167",
               "util_pct": "0.09"
             },
             "LUTAsMem": {
               "used": "280",
-              "available": "591130",
+              "available": "590235",
               "util_pct": "0.05"
             },
             "REG": {
-              "used": "1259",
-              "available": "2431253",
+              "used": "1267",
+              "available": "2424220",
               "util_pct": "0.05"
             },
             "BRAM": {
@@ -794,6 +829,330 @@
               "util_pct": "0.00"
             }
           }
+        },
+        {
+          "name": "krnl_hls_top_pipeline_demo",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "4254",
+              "available": "1173167",
+              "util_pct": "0.36"
+            },
+            "LUTAsMem": {
+              "used": "1594",
+              "available": "590235",
+              "util_pct": "0.27"
+            },
+            "REG": {
+              "used": "4793",
+              "available": "2424220",
+              "util_pct": "0.20"
+            },
+            "BRAM": {
+              "used": "8",
+              "available": "1818",
+              "util_pct": "0.44"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "0",
+              "available": "9020",
+              "util_pct": "0.00"
+            }
+          }
+        }
+      ]
+    },
+    "power": {
+      "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/hw_bb_locked_power_routed.rpt",
+      "available": true,
+      "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/hw_bb_locked_power_routed.rpt",
+      "how_to_get": "",
+      "summary": {
+        "total_on_chip_w": "18.406",
+        "fpga_w": "17.100",
+        "hbm_w": "1.305",
+        "budget_w": "123.000",
+        "budget_margin_w": "104.594 (MET)",
+        "dynamic_w": "11.108",
+        "device_static_w": "7.297",
+        "effective_tja_c_per_w": "0.8",
+        "max_ambient_c": "86.2",
+        "junction_temp_c": "68.8",
+        "confidence_level": "Low"
+      },
+      "summary_fields": [
+        {
+          "key": "total_on_chip_w",
+          "label": "total_on_chip",
+          "unit": "W",
+          "description": "估算片上总功耗，包含 FPGA 逻辑、HBM、静态功耗等。"
+        },
+        {
+          "key": "fpga_w",
+          "label": "fpga",
+          "unit": "W",
+          "description": "FPGA fabric 和片上硬 IP 的估算功耗，不含单独列出的 HBM 功耗。"
+        },
+        {
+          "key": "hbm_w",
+          "label": "hbm",
+          "unit": "W",
+          "description": "HBM 子系统估算功耗。"
+        },
+        {
+          "key": "budget_w",
+          "label": "design_power_budget",
+          "unit": "W",
+          "description": "平台/器件给这个设计设定的功耗预算。"
+        },
+        {
+          "key": "budget_margin_w",
+          "label": "power_budget_margin",
+          "unit": "W",
+          "description": "预算剩余量；MET 表示估算值仍在预算内。"
+        },
+        {
+          "key": "dynamic_w",
+          "label": "dynamic",
+          "unit": "W",
+          "description": "由时钟翻转、逻辑切换、互连、存储器和接口活动造成的动态功耗。"
+        },
+        {
+          "key": "device_static_w",
+          "label": "device_static",
+          "unit": "W",
+          "description": "器件静态/漏电功耗，即使设计基本不切换也会存在；受工艺、电压、温度影响。"
+        },
+        {
+          "key": "effective_tja_c_per_w",
+          "label": "effective_tja",
+          "unit": "C/W",
+          "description": "等效结到环境热阻，用于把功耗换算成温升；数值越低散热越好。"
+        },
+        {
+          "key": "max_ambient_c",
+          "label": "max_ambient",
+          "unit": "C",
+          "description": "在当前功耗和散热假设下允许的最高环境温度估算。"
+        },
+        {
+          "key": "junction_temp_c",
+          "label": "junction_temp",
+          "unit": "C",
+          "description": "芯片结温估算，不是功耗；通常用于判断热裕量。"
+        },
+        {
+          "key": "confidence_level",
+          "label": "confidence",
+          "unit": "",
+          "description": "Vivado 对功耗估算输入活动数据完整性的评级；Low 表示缺少真实活动数据，数值只适合估算和横向比较。"
+        }
+      ],
+      "components": [
+        {
+          "name": "Clocks",
+          "power_w": "1.671",
+          "used": "69",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "CLB Logic",
+          "power_w": "1.041",
+          "used": "399668",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "LUT as Logic",
+          "power_w": "0.411",
+          "used": "129128",
+          "available": "1303680",
+          "util_pct": "9.90"
+        },
+        {
+          "name": "LUT as Distributed RAM",
+          "power_w": "0.391",
+          "used": "7946",
+          "available": "600960",
+          "util_pct": "1.32"
+        },
+        {
+          "name": "LUT as Shift Register",
+          "power_w": "0.142",
+          "used": "6880",
+          "available": "600960",
+          "util_pct": "1.14"
+        },
+        {
+          "name": "Register",
+          "power_w": "0.089",
+          "used": "198969",
+          "available": "2607360",
+          "util_pct": "7.63"
+        },
+        {
+          "name": "CARRY8",
+          "power_w": "0.008",
+          "used": "1645",
+          "available": "162960",
+          "util_pct": "1.01"
+        },
+        {
+          "name": "Others",
+          "power_w": "<0.001",
+          "used": "8582",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "F7/F8 Muxes",
+          "power_w": "0.000",
+          "used": "4190",
+          "available": "1303680",
+          "util_pct": "0.32"
+        },
+        {
+          "name": "BUFG",
+          "power_w": "0.000",
+          "used": "3",
+          "available": "96",
+          "util_pct": "3.13"
+        },
+        {
+          "name": "Signals",
+          "power_w": "1.310",
+          "used": "305349",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "Block RAM",
+          "power_w": "0.859",
+          "used": "210",
+          "available": "2016",
+          "util_pct": "10.42"
+        },
+        {
+          "name": "HBM",
+          "power_w": "1.257",
+          "used": "1",
+          "available": "2",
+          "util_pct": "50.00"
+        },
+        {
+          "name": "MMCM",
+          "power_w": "0.003",
+          "used": "0",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "PLL",
+          "power_w": "0.054",
+          "used": "1",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "DSPs",
+          "power_w": "<0.001",
+          "used": "4",
+          "available": "9024",
+          "util_pct": "0.04"
+        },
+        {
+          "name": "I/O",
+          "power_w": "0.006",
+          "used": "12",
+          "available": "624",
+          "util_pct": "1.92"
+        },
+        {
+          "name": "GTY",
+          "power_w": "4.360",
+          "used": "16",
+          "available": "40",
+          "util_pct": "40.00"
+        },
+        {
+          "name": "Hard IPs",
+          "power_w": "0.538",
+          "used": "1",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "PCIE",
+          "power_w": "0.538",
+          "used": "1",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "Static Power",
+          "power_w": "7.297",
+          "used": "",
+          "available": "",
+          "util_pct": ""
+        },
+        {
+          "name": "HBM Static",
+          "power_w": "0.649",
+          "used": "",
+          "available": "",
+          "util_pct": ""
+        },
+        {
+          "name": "Device Static",
+          "power_w": "6.649",
+          "used": "",
+          "available": "",
+          "util_pct": ""
+        }
+      ],
+      "confidence": [
+        {
+          "input": "Design implementation state",
+          "confidence": "High",
+          "details": "Design is routed",
+          "action": ""
+        },
+        {
+          "input": "Clock nodes activity",
+          "confidence": "High",
+          "details": "User specified more than 95% of clocks",
+          "action": ""
+        },
+        {
+          "input": "I/O nodes activity",
+          "confidence": "Low",
+          "details": "More than 75% of inputs are missing user specification",
+          "action": "Provide missing input activity with simulation results or by editing the \"By Resource Type -> I/Os\" view"
+        },
+        {
+          "input": "Internal nodes activity",
+          "confidence": "Medium",
+          "details": "User specified less than 25% of internal nodes",
+          "action": "Provide missing internal nodes activity with simulation results or by editing the \"By Resource Type\" views"
+        },
+        {
+          "input": "Device models",
+          "confidence": "High",
+          "details": "Device models are Production",
+          "action": ""
+        },
+        {
+          "input": "Overall confidence level",
+          "confidence": "Low",
+          "details": "",
+          "action": ""
         }
       ]
     },
@@ -1257,8 +1616,235 @@
       }
     },
     {
-      "name": "krnl_hls_pipeline_source",
+      "name": "krnl_hls_top_pipeline_demo",
       "input_index": 1,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/krnl_hls_top_pipeline_demo.xo",
+        "kernel_name": "krnl_hls_top_pipeline_demo",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:krnl_hls_top_pipeline_demo:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_INPUT",
+            "mode": "master",
+            "data_width": "128",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_OUTPUT",
+            "mode": "master",
+            "data_width": "128",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_STAGE",
+            "mode": "master",
+            "data_width": "128",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_DELAY",
+            "mode": "master",
+            "data_width": "128",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x40"
+          }
+        ],
+        "args": [
+          {
+            "name": "input",
+            "id": "0",
+            "port": "M_AXI_GMEM_INPUT",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "output",
+            "id": "1",
+            "port": "M_AXI_GMEM_OUTPUT",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "stage_value",
+            "id": "2",
+            "port": "M_AXI_GMEM_STAGE",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "delayed_value",
+            "id": "3",
+            "port": "M_AXI_GMEM_DELAY",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          }
+        ],
+        "xo_meta": {
+          "dir": "krnl_hls_top_pipeline_demo",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/solution/syn/report/krnl_hls_top_pipeline_demo_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/solution/syn/report/krnl_hls_top_pipeline_demo_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "krnl_hls_top_pipeline_demo",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "yes",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "142",
+          "avg_cycles": "142",
+          "worst_cycles": "142",
+          "best_time": "0.473 us",
+          "avg_time": "0.473 us",
+          "worst_time": "0.473 us",
+          "interval_min": "1",
+          "interval_max": "1"
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "0",
+          "FF": "7186",
+          "LUT": "11629",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/solution/.autopilot/db/krnl_hls_top_pipeline_demo.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/solution/.autopilot/db/krnl_hls_top_pipeline_demo.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "1",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "143",
+          "top_loop_rows": []
+        },
+        "children": [],
+        "overview_rows": []
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/cfg/hls_pipeline_demo.cfg",
+        "instances": [
+          "krnl_hls_top_pipeline_demo_1"
+        ],
+        "sp_bindings": [],
+        "bindings_by_arg": {}
+      },
+      "annotations": {
+        "role": "顶层函数级流水",
+        "summary": [
+          "top 函数体直接使用 HLS PIPELINE II=1，目标是让顶层 schedule 的 Pipeline 计数为 1。",
+          "固定处理 4 个 input 元素，内部小循环完全 UNROLL，避免 pipeline 只落到子 loop 报告。",
+          "输出 stage_value / delayed_value / output，与其它 demo 使用同一 CPU golden 公式校验。"
+        ],
+        "reads": [
+          "input[0..3]"
+        ],
+        "writes": [
+          "output[0..3]",
+          "stage_value[0..3]",
+          "delayed_value[0..3]"
+        ],
+        "hbm_mapping": [],
+        "xs_mapping": {
+          "kernel": "Kernel",
+          "pipeline_scope": "top function",
+          "memory": [
+            "input",
+            "output",
+            "stage_value",
+            "delayed_value"
+          ],
+          "unrolled_arrays": [
+            "mixed",
+            "lanes"
+          ]
+        },
+        "xs_sim_mapping": {
+          "kernel_class": "project_xs::sim::Kernel",
+          "control_if": "AxiLiteIf(start/done)",
+          "data_if": [
+            "AxiMasterIf(input)",
+            "AxiMasterIf(output)",
+            "AxiMasterIf(stage_value)",
+            "AxiMasterIf(delayed_value)"
+          ],
+          "state_ports": [
+            "FunctionPipelineStage top",
+            "WirePort pipeline_valid"
+          ]
+        },
+        "components": [
+          {
+            "name": "top_function_pipeline",
+            "role": "函数级 II=1 pipeline 覆盖固定 4 元素 micro-batch 的读、算、写。",
+            "reads": [
+              "input[0..3]"
+            ],
+            "writes": [
+              "output[0..3]",
+              "stage_value[0..3]",
+              "delayed_value[0..3]"
+            ],
+            "xs_mapping": "KernelComponent",
+            "sim_ports": [
+              "AxiMasterIf(input/output/stage/delay)",
+              "PipelineControl(top)"
+            ]
+          }
+        ],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "krnl_hls_pipeline_source",
+      "input_index": 2,
       "xo": {
         "xo_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/krnl_hls_pipeline_source.xo",
         "kernel_name": "krnl_hls_pipeline_source",
@@ -1482,7 +2068,7 @@
     },
     {
       "name": "krnl_hls_pipeline_compute",
-      "input_index": 2,
+      "input_index": 3,
       "xo": {
         "xo_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/krnl_hls_pipeline_compute.xo",
         "kernel_name": "krnl_hls_pipeline_compute",
@@ -1760,7 +2346,7 @@
     },
     {
       "name": "krnl_hls_pipeline_sink",
-      "input_index": 3,
+      "input_index": 4,
       "xo": {
         "xo_path": "/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/krnl_hls_pipeline_sink.xo",
         "kernel_name": "krnl_hls_pipeline_sink",

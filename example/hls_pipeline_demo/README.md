@@ -16,6 +16,7 @@ cfg/hls_pipeline_demo.cfg
 build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/
   hls_pipeline_demo.xclbin
   krnl_hls_pipeline_demo.xo
+  krnl_hls_top_pipeline_demo.xo
   krnl_hls_pipeline_source.xo
   krnl_hls_pipeline_compute.xo
   krnl_hls_pipeline_sink.xo

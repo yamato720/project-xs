@@ -150,15 +150,51 @@
           <div class="table-wrap mb-3">
             <table class="table table-sm align-middle">
               <thead><tr><th>scope</th><th>LUT</th><th>LUTAsMem</th><th>REG</th><th>BRAM</th><th>URAM</th><th>DSP</th></tr></thead>
-              <tbody><tr><td>total</td><td>9192 / 1176646 (0.78%)</td><td>2507 / 591130 (0.42%)</td><td>11020 / 2431253 (0.45%)</td><td>3 / 1818 (0.17%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr></tbody>
+              <tbody><tr><td>total</td><td>13444 / 1173167 (1.15%)</td><td>4101 / 590235 (0.69%)</td><td>15833 / 2424220 (0.65%)</td><td>11 / 1818 (0.61%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr></tbody>
             </table>
           </div>
           <div class="table-wrap">
             <table class="table table-sm align-middle">
               <thead><tr><th>kernel</th><th>CUs</th><th>LUT</th><th>LUTAsMem</th><th>REG</th><th>BRAM</th><th>URAM</th><th>DSP</th></tr></thead>
-              <tbody><tr><td>krnl_hls_pipeline_compute</td><td>1</td><td>2432 / 1176646 (0.21%)</td><td>668 / 591130 (0.11%)</td><td>2803 / 2431253 (0.12%)</td><td>1 / 1818 (0.06%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr><tr><td>krnl_hls_pipeline_demo</td><td>1</td><td>4403 / 1176646 (0.37%)</td><td>1225 / 591130 (0.21%)</td><td>5496 / 2431253 (0.23%)</td><td>2 / 1818 (0.11%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr><tr><td>krnl_hls_pipeline_sink</td><td>1</td><td>1247 / 1176646 (0.11%)</td><td>334 / 591130 (0.06%)</td><td>1462 / 2431253 (0.06%)</td><td>0 / 1818 (0.00%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr><tr><td>krnl_hls_pipeline_source</td><td>1</td><td>1110 / 1176646 (0.09%)</td><td>280 / 591130 (0.05%)</td><td>1259 / 2431253 (0.05%)</td><td>0 / 1818 (0.00%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr></tbody>
+              <tbody><tr><td>krnl_hls_pipeline_compute</td><td>1</td><td>2433 / 1173167 (0.21%)</td><td>668 / 590235 (0.11%)</td><td>2807 / 2424220 (0.12%)</td><td>1 / 1818 (0.06%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr><tr><td>krnl_hls_pipeline_demo</td><td>1</td><td>4400 / 1173167 (0.38%)</td><td>1225 / 590235 (0.21%)</td><td>5495 / 2424220 (0.23%)</td><td>2 / 1818 (0.11%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr><tr><td>krnl_hls_pipeline_sink</td><td>1</td><td>1247 / 1173167 (0.11%)</td><td>334 / 590235 (0.06%)</td><td>1471 / 2424220 (0.06%)</td><td>0 / 1818 (0.00%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr><tr><td>krnl_hls_pipeline_source</td><td>1</td><td>1110 / 1173167 (0.09%)</td><td>280 / 590235 (0.05%)</td><td>1267 / 2424220 (0.05%)</td><td>0 / 1818 (0.00%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr><tr><td>krnl_hls_top_pipeline_demo</td><td>1</td><td>4254 / 1173167 (0.36%)</td><td>1594 / 590235 (0.27%)</td><td>4793 / 2424220 (0.20%)</td><td>8 / 1818 (0.44%)</td><td>0 / 960 (0.00%)</td><td>0 / 9020 (0.00%)</td></tr></tbody>
             </table>
           </div>
+        </div></div>
+      </div>
+    </div>
+
+
+    
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">实现功耗（来自 routed power report）</div>
+          <div class="section-note">这部分来自 Vivado report_power。没有真实 SAIF/VCD 活动文件时，它主要适合做估算和横向比较。</div>
+          <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/hw_bb_locked_power_routed.rpt</div>
+          
+          
+          <div class="kv-grid mb-3">
+            <div class="kv-row"><div class="kv-key">report</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/hw_bb_locked_power_routed.rpt</div></div>
+          </div>
+          <div class="table-wrap mb-3">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>metric</th><th>value</th><th>说明</th></tr></thead>
+              <tbody><tr><td>total_on_chip</td><td>18.406 W</td><td>估算片上总功耗，包含 FPGA 逻辑、HBM、静态功耗等。</td></tr><tr><td>fpga</td><td>17.100 W</td><td>FPGA fabric 和片上硬 IP 的估算功耗，不含单独列出的 HBM 功耗。</td></tr><tr><td>hbm</td><td>1.305 W</td><td>HBM 子系统估算功耗。</td></tr><tr><td>design_power_budget</td><td>123.000 W</td><td>平台/器件给这个设计设定的功耗预算。</td></tr><tr><td>power_budget_margin</td><td>104.594 W (MET)</td><td>预算剩余量；MET 表示估算值仍在预算内。</td></tr><tr><td>dynamic</td><td>11.108 W</td><td>由时钟翻转、逻辑切换、互连、存储器和接口活动造成的动态功耗。</td></tr><tr><td>device_static</td><td>7.297 W</td><td>器件静态/漏电功耗，即使设计基本不切换也会存在；受工艺、电压、温度影响。</td></tr><tr><td>effective_tja</td><td>0.8 C/W</td><td>等效结到环境热阻，用于把功耗换算成温升；数值越低散热越好。</td></tr><tr><td>max_ambient</td><td>86.2 C</td><td>在当前功耗和散热假设下允许的最高环境温度估算。</td></tr><tr><td>junction_temp</td><td>68.8 C</td><td>芯片结温估算，不是功耗；通常用于判断热裕量。</td></tr><tr><td>confidence</td><td>Low</td><td>Vivado 对功耗估算输入活动数据完整性的评级；Low 表示缺少真实活动数据，数值只适合估算和横向比较。</td></tr></tbody>
+            </table>
+          </div>
+          <div class="table-wrap mb-3">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>component</th><th>power(W)</th><th>used</th><th>available</th><th>util(%)</th></tr></thead>
+              <tbody><tr><td>Clocks</td><td>1.671</td><td>69</td><td>---</td><td>---</td></tr><tr><td>CLB Logic</td><td>1.041</td><td>399668</td><td>---</td><td>---</td></tr><tr><td>Signals</td><td>1.310</td><td>305349</td><td>---</td><td>---</td></tr><tr><td>Block RAM</td><td>0.859</td><td>210</td><td>2016</td><td>10.42</td></tr><tr><td>HBM</td><td>1.257</td><td>1</td><td>2</td><td>50.00</td></tr><tr><td>DSPs</td><td>&lt;0.001</td><td>4</td><td>9024</td><td>0.04</td></tr><tr><td>GTY</td><td>4.360</td><td>16</td><td>40</td><td>40.00</td></tr><tr><td>Hard IPs</td><td>0.538</td><td>1</td><td>---</td><td>---</td></tr><tr><td>Static Power</td><td>7.297</td><td>-</td><td>-</td><td>-</td></tr></tbody>
+            </table>
+          </div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>input data</th><th>confidence</th><th>details</th></tr></thead>
+              <tbody><tr><td>Design implementation state</td><td>High</td><td>Design is routed</td></tr><tr><td>Clock nodes activity</td><td>High</td><td>User specified more than 95% of clocks</td></tr><tr><td>I/O nodes activity</td><td>Low</td><td>More than 75% of inputs are missing user specification</td></tr><tr><td>Internal nodes activity</td><td>Medium</td><td>User specified less than 25% of internal nodes</td></tr><tr><td>Device models</td><td>High</td><td>Device models are Production</td></tr><tr><td>Overall confidence level</td><td>Low</td><td>-</td></tr></tbody>
+            </table>
+          </div>
+          
         </div></div>
       </div>
     </div>
@@ -173,7 +209,7 @@
           <div class="table-wrap">
             <table class="table table-sm align-middle">
               <thead><tr><th>#</th><th>kernel</th><th>说明</th></tr></thead>
-              <tbody><tr><td>1</td><td>krnl_hls_pipeline_demo</td><td>单 XRT kernel 内部 DATAFLOW：load_stage -&gt; compute_stage -&gt; store_stage</td></tr><tr><td>2</td><td>krnl_hls_pipeline_source</td><td>多 kernel 流水第一段：从 input 内存读数据并写入 AXI4-Stream</td></tr><tr><td>3</td><td>krnl_hls_pipeline_compute</td><td>多 kernel 流水中间段：从 stream 读取、执行 lane 展开计算和两级寄存器延迟链</td></tr><tr><td>4</td><td>krnl_hls_pipeline_sink</td><td>多 kernel 流水末段：从 stream 接收最终 output 并写回内存</td></tr></tbody>
+              <tbody><tr><td>1</td><td>krnl_hls_pipeline_demo</td><td>单 XRT kernel 内部 DATAFLOW：load_stage -&gt; compute_stage -&gt; store_stage</td></tr><tr><td>2</td><td>krnl_hls_top_pipeline_demo</td><td>单 XRT kernel 顶层函数级 PIPELINE：固定 4 元素 micro-batch</td></tr><tr><td>3</td><td>krnl_hls_pipeline_source</td><td>多 kernel 流水第一段：从 input 内存读数据并写入 AXI4-Stream</td></tr><tr><td>4</td><td>krnl_hls_pipeline_compute</td><td>多 kernel 流水中间段：从 stream 读取、执行 lane 展开计算和两级寄存器延迟链</td></tr><tr><td>5</td><td>krnl_hls_pipeline_sink</td><td>多 kernel 流水末段：从 stream 接收最终 output 并写回内存</td></tr></tbody>
             </table>
           </div>
         </div></div>
@@ -190,7 +226,7 @@
           <div class="table-wrap">
             <table class="table table-sm align-middle">
               <thead><tr><th>node</th><th>role</th><th>reads</th><th>writes</th><th>drives</th><th>Sim mapping</th></tr></thead>
-              <tbody><tr><td>single_kernel_runner</td><td>启动单 kernel DATAFLOW 版本并等待完成</td><td>input buffer, item_count</td><td>output, stage_value, delayed_value</td><td>krnl_hls_pipeline_demo</td><td>CycleSimulator transaction, AxiLiteIf(item_count), AxiMasterIf buffers</td></tr><tr><td>stream_pipeline_runner</td><td>按 sink -&gt; compute -&gt; source 的顺序启动三 kernel 流水线</td><td>input buffer, item_count</td><td>output, stage_value, delayed_value</td><td>krnl_hls_pipeline_source, krnl_hls_pipeline_compute, krnl_hls_pipeline_sink</td><td>SimulationSession with three schedulable kernels, AXI4-Stream port binding</td></tr></tbody>
+              <tbody><tr><td>single_kernel_runner</td><td>启动单 kernel DATAFLOW 版本并等待完成</td><td>input buffer, item_count</td><td>output, stage_value, delayed_value</td><td>krnl_hls_pipeline_demo</td><td>CycleSimulator transaction, AxiLiteIf(item_count), AxiMasterIf buffers</td></tr><tr><td>stream_pipeline_runner</td><td>按 sink -&gt; compute -&gt; source 的顺序启动三 kernel 流水线</td><td>input buffer, item_count</td><td>output, stage_value, delayed_value</td><td>krnl_hls_pipeline_source, krnl_hls_pipeline_compute, krnl_hls_pipeline_sink</td><td>SimulationSession with three schedulable kernels, AXI4-Stream port binding</td></tr><tr><td>top_pipeline_runner</td><td>启动顶层函数级 PIPELINE 版本并等待完成</td><td>fixed 4-item input buffer</td><td>output, stage_value, delayed_value</td><td>krnl_hls_top_pipeline_demo</td><td>CycleSimulator transaction, AxiMasterIf buffers, top schedule Pipeline=1</td></tr></tbody>
             </table>
           </div>
         </div></div>
@@ -206,7 +242,7 @@
           <div class="table-wrap">
             <table class="table table-sm align-middle">
               <thead><tr><th>kernel</th><th>count</th><th>instances</th><th>sp bindings</th></tr></thead>
-              <tbody><tr><td>krnl_hls_pipeline_demo</td><td>1</td><td>krnl_hls_pipeline_demo_1</td><td>0</td></tr><tr><td>krnl_hls_pipeline_source</td><td>1</td><td>krnl_hls_pipeline_source_1</td><td>0</td></tr><tr><td>krnl_hls_pipeline_compute</td><td>1</td><td>krnl_hls_pipeline_compute_1</td><td>0</td></tr><tr><td>krnl_hls_pipeline_sink</td><td>1</td><td>krnl_hls_pipeline_sink_1</td><td>0</td></tr></tbody>
+              <tbody><tr><td>krnl_hls_pipeline_demo</td><td>1</td><td>krnl_hls_pipeline_demo_1</td><td>0</td></tr><tr><td>krnl_hls_top_pipeline_demo</td><td>1</td><td>krnl_hls_top_pipeline_demo_1</td><td>0</td></tr><tr><td>krnl_hls_pipeline_source</td><td>1</td><td>krnl_hls_pipeline_source_1</td><td>0</td></tr><tr><td>krnl_hls_pipeline_compute</td><td>1</td><td>krnl_hls_pipeline_compute_1</td><td>0</td></tr><tr><td>krnl_hls_pipeline_sink</td><td>1</td><td>krnl_hls_pipeline_sink_1</td><td>0</td></tr></tbody>
             </table>
           </div>
           
@@ -242,7 +278,7 @@
           <div class="table-wrap">
             <table class="table table-sm align-middle">
               <thead><tr><th>clock</th><th>period(ns)</th><th>freq(MHz)</th><th>WNS(ns)</th><th>WHS(ns)</th><th>WPWS(ns)</th></tr></thead>
-              <tbody><tr><td>clk_kernel_00_unbuffered_net</td><td>3.333</td><td>300.000</td><td>0.425</td><td>0.010</td><td>1.125</td></tr><tr><td>clk_kernel_01_unbuffered_net</td><td>2.000</td><td>500.000</td><td>0.762</td><td>0.019</td><td>0.468</td></tr></tbody>
+              <tbody><tr><td>clk_kernel_00_unbuffered_net</td><td>3.333</td><td>300.000</td><td>0.434</td><td>0.010</td><td>1.125</td></tr><tr><td>clk_kernel_01_unbuffered_net</td><td>2.000</td><td>500.000</td><td>0.785</td><td>0.039</td><td>0.468</td></tr></tbody>
             </table>
           </div>
           
@@ -285,7 +321,7 @@
           <div class="table-wrap">
             <table class="table table-sm align-middle">
               <thead><tr><th>upstream</th><th>downstream</th><th>说明</th></tr></thead>
-              <tbody><tr><td>krnl_hls_pipeline_demo</td><td>host</td><td>单 kernel 版本一次 run 后写回 output / stage_value / delayed_value，host 读取并和 CPU golden 对照。</td></tr><tr><td>krnl_hls_pipeline_source</td><td>krnl_hls_pipeline_compute</td><td>CFG stream_connect: source.output_stream -&gt; compute.input_stream。</td></tr><tr><td>krnl_hls_pipeline_compute</td><td>krnl_hls_pipeline_sink</td><td>CFG stream_connect: compute.output_stream -&gt; sink.input_stream。</td></tr><tr><td>krnl_hls_pipeline_sink</td><td>host</td><td>三 kernel stream pipeline 完成后，host 从 output / stage_value / delayed_value 读回并校验。</td></tr></tbody>
+              <tbody><tr><td>krnl_hls_pipeline_demo</td><td>host</td><td>单 kernel 版本一次 run 后写回 output / stage_value / delayed_value，host 读取并和 CPU golden 对照。</td></tr><tr><td>krnl_hls_top_pipeline_demo</td><td>host</td><td>顶层函数 PIPELINE 版本处理固定 4 元素 micro-batch，报告用于确认 top_pipelined=yes。</td></tr><tr><td>krnl_hls_pipeline_source</td><td>krnl_hls_pipeline_compute</td><td>CFG stream_connect: source.output_stream -&gt; compute.input_stream。</td></tr><tr><td>krnl_hls_pipeline_compute</td><td>krnl_hls_pipeline_sink</td><td>CFG stream_connect: compute.output_stream -&gt; sink.input_stream。</td></tr><tr><td>krnl_hls_pipeline_sink</td><td>host</td><td>三 kernel stream pipeline 完成后，host 从 output / stage_value / delayed_value 读回并校验。</td></tr></tbody>
             </table>
           </div>
         </div></div>
@@ -399,6 +435,113 @@
                 <div class="sub-title">贴合 XS 模拟器的映射（来自 spec JSON）</div><div class="muted">建议 Kernel 类：project_xs::sim::Kernel</div><div class="muted">建议 Control 接口：AxiLiteIf(item_count)</div><div class="sub-title">建议 Data Interface</div><ul><li>AxiMasterIf(input)</li><li>AxiMasterIf(output)</li><li>AxiMasterIf(stage_value)</li><li>AxiMasterIf(delayed_value)</li></ul><div class="sub-title">建议 State Ports</div><ul><li>RegPort delay0</li><li>RegPort delay1</li><li>WirePort stream_valid</li></ul>
                 <div class="sub-title">内部 Component 草图（来自 spec JSON）</div><div class="table-wrap"><table class="table table-sm align-middle"><thead><tr><th>component</th><th>role</th><th>reads</th><th>writes</th><th>XS mapping</th><th>Sim ports</th></tr></thead><tbody><tr><td>load_stage</td><td>每拍读取一个 input 元素，并写入 load_to_compute FIFO。</td><td>input[index]</td><td>load_to_compute</td><td>KernelComponent</td><td>AxiMasterIf(input), StreamOut(load_to_compute)</td></tr><tr><td>compute_stage</td><td>每拍消费一个 packet，执行 lane 展开和两级寄存器延迟链。</td><td>load_to_compute</td><td>compute_to_store</td><td>KernelComponent</td><td>StreamIn(load_to_compute), StreamOut(compute_to_store), RegPort delay0, RegPort delay1</td></tr><tr><td>store_stage</td><td>每拍写回 output、stage_value、delayed_value 三组观测结果。</td><td>compute_to_store</td><td>output, stage_value, delayed_value</td><td>KernelComponent</td><td>StreamIn(compute_to_store), AxiMasterIf(output/stage/delay)</td></tr></tbody></table></div>
                 <div class="sub-title">内部 Component 依赖（来自 spec JSON）</div><div class="table-wrap"><table class="table table-sm align-middle"><thead><tr><th>upstream</th><th>downstream</th><th>说明</th></tr></thead><tbody><tr><td>load_stage</td><td>compute_stage</td><td>hls::stream load_to_compute</td></tr><tr><td>compute_stage</td><td>store_stage</td><td>hls::stream compute_to_store</td></tr></tbody></table></div>
+              </div></div>
+            </div>
+            
+            <div class="col-12 col-xl-6">
+              <div class="report-card card h-100"><div class="card-body">
+                <div class="section-title">krnl_hls_top_pipeline_demo</div>
+                <div class="section-note">XO: /home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/krnl_hls_top_pipeline_demo.xo</div>
+                <div class="section-note">CFG: /home/pyx/ProjectFS/Project-X/cfg/hls_pipeline_demo.cfg</div>
+                <div class="section-note">CSYNTH: /home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/solution/syn/report/krnl_hls_top_pipeline_demo_csynth.xml</div>
+                <div class="sub-title">角色定位（来自 spec JSON）</div><div class="muted">顶层函数级流水</div>
+                <div class="sub-title">功能摘要（来自 spec JSON）</div><ul><li>top 函数体直接使用 HLS PIPELINE II=1，目标是让顶层 schedule 的 Pipeline 计数为 1。</li><li>固定处理 4 个 input 元素，内部小循环完全 UNROLL，避免 pipeline 只落到子 loop 报告。</li><li>输出 stage_value / delayed_value / output，与其它 demo 使用同一 CPU golden 公式校验。</li></ul>
+                <div class="sub-title">逻辑读集合（来自 spec JSON）</div><div class="pill-wrap"><span class='pill alt'>input[0..3]</span></div>
+                <div class="sub-title">逻辑写集合（来自 spec JSON）</div><div class="pill-wrap"><span class='pill warn'>output[0..3]</span><span class='pill warn'>stage_value[0..3]</span><span class='pill warn'>delayed_value[0..3]</span></div>
+
+                <div class="sub-title">Kernel 元数据（来自 XO）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">kernel_name</div><div class="kv-value">krnl_hls_top_pipeline_demo</div></div>
+                  <div class="kv-row"><div class="kv-key">language</div><div class="kv-value">c</div></div>
+                  <div class="kv-row"><div class="kv-key">vlnv</div><div class="kv-value">xilinx.com:hls:krnl_hls_top_pipeline_demo:1.0</div></div>
+                  <div class="kv-row"><div class="kv-key">control_protocol</div><div class="kv-value">ap_ctrl_chain</div></div>
+                  <div class="kv-row"><div class="kv-key">cfg_instances</div><div class="kv-value">krnl_hls_top_pipeline_demo_1</div></div>
+                </div>
+
+                
+                <div class="sub-title">Pipeline 细节（来自 HLS schedule rpt）</div>
+                <div class="section-note">这里的 top-level 字段只描述 kernel 顶层摘要；下面的 pipeline / loop 表才是内部 pipeline 优化是否真正形成、II 是否达标的直接依据。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">top_schedule</div><div class="kv-value">/home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/solution/.autopilot/db/krnl_hls_top_pipeline_demo.verbose.sched.rpt</div></div>
+                  <div class="kv-row"><div class="kv-key">top_is_top_model</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">top_pipelined</div><div class="kv-value">yes</div></div>
+                  <div class="kv-row"><div class="kv-key">top_dataflow</div><div class="kv-value">no</div></div>
+                  <div class="kv-row"><div class="kv-key">top_fsm_states</div><div class="kv-value">143</div></div>
+                </div>
+                
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>pipeline report</th><th>loop</th><th>pipelined</th><th>II achieved</th><th>II target</th><th>depth</th><th>iter latency</th></tr></thead>
+                    <tbody><tr><td colspan="7">无</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                
+                <div class="sub-title">综合时序与延迟（来自 csynth.xml）</div>
+                <div class="section-note">requested: /home/pyx/ProjectFS/Project-X/build/hls_pipeline_demo/hw/xilinx_u55c_gen3x16_xdma_3_202210_1/_x_temp/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/krnl_hls_top_pipeline_demo/solution/syn/report/krnl_hls_top_pipeline_demo_csynth.xml</div>
+                <div class="section-note">这里的 `pipeline_type` 是 csynth 对 top-level kernel 的摘要；内部 loop / 子 pipeline 是否真的 pipeline，以及 II 是否达标，请以上面的 `Pipeline 细节` 为准。</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">target_clock</div><div class="kv-value">3.33 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">target_freq</div><div class="kv-value">300.300 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_clock</div><div class="kv-value">2.433 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">estimated_freq</div><div class="kv-value">411.015 MHz</div></div>
+                  <div class="kv-row"><div class="kv-key">clock_uncertainty</div><div class="kv-value">0.90 ns</div></div>
+                  <div class="kv-row"><div class="kv-key">pipeline_type</div><div class="kv-value">yes</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best)</div><div class="kv-value">142</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst)</div><div class="kv-value">142</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(best time)</div><div class="kv-value">0.473 us</div></div>
+                  <div class="kv-row"><div class="kv-key">latency(worst time)</div><div class="kv-value">0.473 us</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(min)</div><div class="kv-value">1</div></div>
+                  <div class="kv-row"><div class="kv-key">interval(max)</div><div class="kv-value">1</div></div>
+                </div>
+
+                <div class="sub-title">资源估计（来自 csynth.xml）</div>
+                <div class="kv-grid">
+                  <div class="kv-row"><div class="kv-key">BRAM_18K</div><div class="kv-value">0</div></div>
+                  <div class="kv-row"><div class="kv-key">DSP</div><div class="kv-value">0</div></div>
+                  <div class="kv-row"><div class="kv-key">FF</div><div class="kv-value">7186</div></div>
+                  <div class="kv-row"><div class="kv-key">LUT</div><div class="kv-value">11629</div></div>
+                  <div class="kv-row"><div class="kv-key">URAM</div><div class="kv-value">0</div></div>
+                </div>
+
+                <div class="sub-title">Loop 延迟（来自 csynth.xml）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>loop</th><th>latency(cycles)</th><th>latency(abs)</th><th>iter latency</th><th>trip count</th><th>slack(ns)</th></tr></thead>
+                    <tbody><tr><td colspan="6">无</td></tr></tbody>
+                  </table>
+                </div>
+
+
+                <div class="sub-title">Arguments（来自 XO + CFG + spec JSON）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>arg</th><th>type</th><th>port</th><th>aq</th><th>offset</th><th>HBM(CFG)</th></tr></thead>
+                    <tbody><tr><td>input</td><td>void*</td><td>M_AXI_GMEM_INPUT</td><td>1</td><td>0x10</td><td>-</td></tr><tr><td>output</td><td>void*</td><td>M_AXI_GMEM_OUTPUT</td><td>1</td><td>0x1C</td><td>-</td></tr><tr><td>stage_value</td><td>void*</td><td>M_AXI_GMEM_STAGE</td><td>1</td><td>0x28</td><td>-</td></tr><tr><td>delayed_value</td><td>void*</td><td>M_AXI_GMEM_DELAY</td><td>1</td><td>0x34</td><td>-</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">Ports（来自 XO）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>port</th><th>mode</th><th>width</th><th>type</th><th>range</th></tr></thead>
+                    <tbody><tr><td>M_AXI_GMEM_INPUT</td><td>master</td><td>128</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_OUTPUT</td><td>master</td><td>128</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_STAGE</td><td>master</td><td>128</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>M_AXI_GMEM_DELAY</td><td>master</td><td>128</td><td>addressable</td><td>0xFFFFFFFF</td></tr><tr><td>S_AXI_CONTROL</td><td>slave</td><td>32</td><td>addressable</td><td>0x40</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">实例与端口绑定（来自 CFG）</div>
+                <div class="table-wrap">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>instance</th><th>arg</th><th>target</th></tr></thead>
+                    <tbody><tr><td colspan="3">无</td></tr></tbody>
+                  </table>
+                </div>
+
+                <div class="sub-title">映射到 XS 抽象（来自 spec JSON）</div><div class="muted">建议抽象层级：Kernel</div><div class="muted">建议 memory 关注点：input, output, stage_value, delayed_value</div><ul><li>无</li></ul>
+                <div class="sub-title">贴合 XS 模拟器的映射（来自 spec JSON）</div><div class="muted">建议 Kernel 类：project_xs::sim::Kernel</div><div class="muted">建议 Control 接口：AxiLiteIf(start/done)</div><div class="sub-title">建议 Data Interface</div><ul><li>AxiMasterIf(input)</li><li>AxiMasterIf(output)</li><li>AxiMasterIf(stage_value)</li><li>AxiMasterIf(delayed_value)</li></ul><div class="sub-title">建议 State Ports</div><ul><li>FunctionPipelineStage top</li><li>WirePort pipeline_valid</li></ul>
+                <div class="sub-title">内部 Component 草图（来自 spec JSON）</div><div class="table-wrap"><table class="table table-sm align-middle"><thead><tr><th>component</th><th>role</th><th>reads</th><th>writes</th><th>XS mapping</th><th>Sim ports</th></tr></thead><tbody><tr><td>top_function_pipeline</td><td>函数级 II=1 pipeline 覆盖固定 4 元素 micro-batch 的读、算、写。</td><td>input[0..3]</td><td>output[0..3], stage_value[0..3], delayed_value[0..3]</td><td>KernelComponent</td><td>AxiMasterIf(input/output/stage/delay), PipelineControl(top)</td></tr></tbody></table></div>
+                
               </div></div>
             </div>
             

@@ -1,6 +1,6 @@
 {
   "title": "Project-XS XPlus Hardware Build Report",
-  "subtitle": "直接指定 Project-XPlus/build/hw，由 XS 自动发现 XO、HLS 报告、schedule 和 routed timing。",
+  "subtitle": "直接指定 Project-XPlus/build/hw，由 XS 自动发现 XO、HLS 报告、schedule、routed timing、power 和 Vivado analysis 报告。",
   "source_note": "这个 example 不复制 XPlus 产物；spec 只指向 XPlus 硬件 build 目录和 connectivity cfg，kernel 列表由 build 目录下的顶层 XO 自动发现。",
   "cfg": "../../../Project-XPlus/cfg/connectivity_u55c.cfg",
   "artifacts": {
@@ -9,6 +9,7 @@
   },
   "output": {
     "json": "reports/xplus_hw_build_report.json",
-    "html": "reports/xplus_hw_build_report.html"
+    "html": "reports/xplus_hw_build_report.html",
+    "analysis_html": "reports/xplus_hw_analysis_report.html"
   }
 }
