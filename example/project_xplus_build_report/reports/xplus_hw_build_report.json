@@ -1,0 +1,2681 @@
+{
+  "title": "Project-XS XPlus Hardware Build Report",
+  "subtitle": "直接指定 Project-XPlus/build/hw，由 XS 自动发现 XO、HLS 报告、schedule 和 routed timing。",
+  "spec_path": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_build_report/spec.json",
+  "example_dir": "/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_build_report",
+  "source_note": "这个 example 不复制 XPlus 产物；spec 只指向 XPlus 硬件 build 目录和 connectivity cfg，kernel 列表由 build 目录下的顶层 XO 自动发现。",
+  "sequence": [],
+  "sequence_descriptions": {},
+  "dependencies": [],
+  "host_nodes": [],
+  "connectivity": {
+    "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
+    "kernels": [
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "count": "1",
+        "instances": [
+          "spmv_csr_kernel_1"
+        ],
+        "binding_count": 5
+      },
+      {
+        "kernel_name": "init_pcg_kernel",
+        "count": "1",
+        "instances": [
+          "init_pcg_kernel_1"
+        ],
+        "binding_count": 7
+      },
+      {
+        "kernel_name": "dot_kernel",
+        "count": "1",
+        "instances": [
+          "dot_kernel_1"
+        ],
+        "binding_count": 3
+      },
+      {
+        "kernel_name": "update_xrz_kernel",
+        "count": "1",
+        "instances": [
+          "update_xrz_kernel_1"
+        ],
+        "binding_count": 7
+      },
+      {
+        "kernel_name": "update_p_kernel",
+        "count": "1",
+        "instances": [
+          "update_p_kernel_1"
+        ],
+        "binding_count": 2
+      }
+    ],
+    "stream_connections": []
+  },
+  "vivado": {
+    "auto_discover": false,
+    "build_dir": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw",
+    "xclbin": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/cgsolver_jacobi_pcg.xclbin",
+    "vivado_log_dir": "",
+    "csynth_dir": "",
+    "schedule_dir": "",
+    "link_dir": "",
+    "link_timing": {
+      "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/link/imp/impl_1_hw_bb_locked_timing_summary_routed.rpt",
+      "available": true,
+      "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/link/imp/impl_1_hw_bb_locked_timing_summary_routed.rpt",
+      "how_to_get": "",
+      "constraints_met": true,
+      "design_summary": {
+        "wns_ns": "0.003",
+        "tns_ns": "0.000",
+        "tns_failing_endpoints": "0",
+        "tns_total_endpoints": "705530",
+        "whs_ns": "0.009",
+        "ths_ns": "0.000",
+        "ths_failing_endpoints": "0",
+        "ths_total_endpoints": "702735",
+        "wpws_ns": "0.000",
+        "tpws_ns": "0.000",
+        "tpws_failing_endpoints": "0",
+        "tpws_total_endpoints": "278095"
+      },
+      "clock_summary": [
+        {
+          "name": "io_clk_freerun_00_clk_p",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "clk_kernel_00_unbuffered_net",
+          "waveform_ns": "{0.000 1.667}",
+          "period_ns": "3.333",
+          "frequency_mhz": "300.000"
+        },
+        {
+          "name": "clk_kernel_01_unbuffered_net",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "hbm_aclk",
+          "waveform_ns": "{0.000 1.111}",
+          "period_ns": "2.222",
+          "frequency_mhz": "450.000"
+        },
+        {
+          "name": "io_clk_pcie_00_clk_p",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_4",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_5",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_6",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0CLK[0]_7",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_4",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_5",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_6",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL0REFCLK[0]_7",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_4",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_4",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_5",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_5",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_6",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_6",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1CLK[0]_7",
+          "waveform_ns": "{0.000 0.100}",
+          "period_ns": "0.200",
+          "frequency_mhz": "5000.001"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[0]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[1]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[2]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_TXOUTCLK[3]_7",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000"
+        },
+        {
+          "name": "dma_ip_axi_aclk_1",
+          "waveform_ns": "{0.000 2.000}",
+          "period_ns": "4.000",
+          "frequency_mhz": "250.000"
+        },
+        {
+          "name": "clk_out1_bd_39ab_clkwiz_level0_periph_0_1",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+          "waveform_ns": "{0.000 10.000}",
+          "period_ns": "20.000",
+          "frequency_mhz": "50.000"
+        },
+        {
+          "name": "clk_sck",
+          "waveform_ns": "{0.000 20.000}",
+          "period_ns": "40.000",
+          "frequency_mhz": "25.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+          "waveform_ns": "{80.000 160.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/axi_jtag/inst/u_jtag_proc/tck_i_reg/Q",
+          "waveform_ns": "{0.000 80.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "level0_i/ulp/ulp_cmp/inst/user_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/U_TAP/UPDATEDR_O_reg/Q",
+          "waveform_ns": "{80.000 160.000}",
+          "period_ns": "160.000",
+          "frequency_mhz": "6.250"
+        },
+        {
+          "name": "mcap_clk_1",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "pipe_clk_1",
+          "waveform_ns": "{0.000 2.000}",
+          "period_ns": "4.000",
+          "frequency_mhz": "250.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_4",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_5",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_6",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "GTYE4_CHANNEL_QPLL1REFCLK[0]_7",
+          "waveform_ns": "{0.000 5.000}",
+          "period_ns": "10.000",
+          "frequency_mhz": "100.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/INTERNAL_TCK",
+          "waveform_ns": "{0.000 25.000}",
+          "period_ns": "50.000",
+          "frequency_mhz": "20.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/Use_External.Use_BSCANID.No_Dbg_Reg_Access.BUFG_UPDATE/Using_FPGA.Native/O",
+          "waveform_ns": "{0.000 50.000}",
+          "period_ns": "100.000",
+          "frequency_mhz": "10.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[0].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[10].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[11].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[12].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[13].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[14].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[15].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[1].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[2].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[3].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[4].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[5].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[6].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[7].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[8].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/gt_wizard.gtwizard_top_i/bd_39ab_pcie_0_gt_i/inst/gen_gtwizard_gtye4_top.bd_39ab_pcie_0_gt_gtwizard_gtye4_inst/gen_gtwizard_gtye4.gen_cpll_cal_gtye4.gen_cpll_cal_inst[9].gen_inst_cpll_cal.gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_inst/gtwizard_ultrascale_v1_7_10_gtye4_cpll_cal_tx_i/bufg_gt_txoutclkmon_inst/O",
+          "waveform_ns": "{0.000 4.000}",
+          "period_ns": "8.000",
+          "frequency_mhz": "125.000"
+        },
+        {
+          "name": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_clk_i/bufg_gt_intclk/O",
+          "waveform_ns": "{0.000 500.000}",
+          "period_ns": "1000.000",
+          "frequency_mhz": "1.000"
+        }
+      ],
+      "kernel_clock_summary": [
+        {
+          "name": "clk_kernel_00_unbuffered_net",
+          "waveform_ns": "{0.000 1.667}",
+          "period_ns": "3.333",
+          "frequency_mhz": "300.000",
+          "wns_ns": "0.223",
+          "tns_ns": "0.000",
+          "tns_failing_endpoints": "0",
+          "tns_total_endpoints": "187381",
+          "whs_ns": "0.009",
+          "ths_ns": "0.000",
+          "ths_failing_endpoints": "0",
+          "ths_total_endpoints": "187381",
+          "wpws_ns": "1.125",
+          "tpws_ns": "0.000",
+          "tpws_failing_endpoints": "0",
+          "tpws_total_endpoints": "68078"
+        },
+        {
+          "name": "clk_kernel_01_unbuffered_net",
+          "waveform_ns": "{0.000 1.000}",
+          "period_ns": "2.000",
+          "frequency_mhz": "500.000",
+          "wns_ns": "0.653",
+          "tns_ns": "0.000",
+          "tns_failing_endpoints": "0",
+          "tns_total_endpoints": "264",
+          "whs_ns": "0.016",
+          "ths_ns": "0.000",
+          "ths_failing_endpoints": "0",
+          "ths_total_endpoints": "264",
+          "wpws_ns": "0.468",
+          "tpws_ns": "0.000",
+          "tpws_failing_endpoints": "0",
+          "tpws_total_endpoints": "174"
+        }
+      ]
+    },
+    "resources": {
+      "source": "implementation",
+      "stage": "Routed",
+      "available": true,
+      "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/kernel_util_routed.json",
+      "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/link/vivado/vpl/prj/prj.runs/impl_1/kernel_util_routed.json",
+      "how_to_get": "",
+      "total": {
+        "LUT": {
+          "used": "32469",
+          "available": "1160828",
+          "util_pct": "2.80"
+        },
+        "LUTAsMem": {
+          "used": "7915",
+          "available": "587064",
+          "util_pct": "1.35"
+        },
+        "REG": {
+          "used": "39219",
+          "available": "2402824",
+          "util_pct": "1.63"
+        },
+        "BRAM": {
+          "used": "30",
+          "available": "1816",
+          "util_pct": "1.65"
+        },
+        "URAM": {
+          "used": "0",
+          "available": "960",
+          "util_pct": "0.00"
+        },
+        "DSP": {
+          "used": "52",
+          "available": "9020",
+          "util_pct": "0.58"
+        }
+      },
+      "kernels": [
+        {
+          "name": "dot_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "3887",
+              "available": "1160828",
+              "util_pct": "0.33"
+            },
+            "LUTAsMem": {
+              "used": "844",
+              "available": "587064",
+              "util_pct": "0.14"
+            },
+            "REG": {
+              "used": "4594",
+              "available": "2402824",
+              "util_pct": "0.19"
+            },
+            "BRAM": {
+              "used": "3",
+              "available": "1816",
+              "util_pct": "0.17"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "8",
+              "available": "9020",
+              "util_pct": "0.09"
+            }
+          }
+        },
+        {
+          "name": "init_pcg_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "8972",
+              "available": "1160828",
+              "util_pct": "0.77"
+            },
+            "LUTAsMem": {
+              "used": "2225",
+              "available": "587064",
+              "util_pct": "0.38"
+            },
+            "REG": {
+              "used": "10348",
+              "available": "2402824",
+              "util_pct": "0.43"
+            },
+            "BRAM": {
+              "used": "8",
+              "available": "1816",
+              "util_pct": "0.44"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "11",
+              "available": "9020",
+              "util_pct": "0.12"
+            }
+          }
+        },
+        {
+          "name": "spmv_csr_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "5774",
+              "available": "1160828",
+              "util_pct": "0.50"
+            },
+            "LUTAsMem": {
+              "used": "1413",
+              "available": "587064",
+              "util_pct": "0.24"
+            },
+            "REG": {
+              "used": "7117",
+              "available": "2402824",
+              "util_pct": "0.30"
+            },
+            "BRAM": {
+              "used": "6",
+              "available": "1816",
+              "util_pct": "0.33"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "11",
+              "available": "9020",
+              "util_pct": "0.12"
+            }
+          }
+        },
+        {
+          "name": "update_p_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "3620",
+              "available": "1160828",
+              "util_pct": "0.31"
+            },
+            "LUTAsMem": {
+              "used": "891",
+              "available": "587064",
+              "util_pct": "0.15"
+            },
+            "REG": {
+              "used": "4610",
+              "available": "2402824",
+              "util_pct": "0.19"
+            },
+            "BRAM": {
+              "used": "3",
+              "available": "1816",
+              "util_pct": "0.17"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "11",
+              "available": "9020",
+              "util_pct": "0.12"
+            }
+          }
+        },
+        {
+          "name": "update_xrz_kernel",
+          "compute_unit_count": "1",
+          "cells": {
+            "LUT": {
+              "used": "10216",
+              "available": "1160828",
+              "util_pct": "0.88"
+            },
+            "LUTAsMem": {
+              "used": "2542",
+              "available": "587064",
+              "util_pct": "0.43"
+            },
+            "REG": {
+              "used": "12550",
+              "available": "2402824",
+              "util_pct": "0.52"
+            },
+            "BRAM": {
+              "used": "10",
+              "available": "1816",
+              "util_pct": "0.55"
+            },
+            "URAM": {
+              "used": "0",
+              "available": "960",
+              "util_pct": "0.00"
+            },
+            "DSP": {
+              "used": "11",
+              "available": "9020",
+              "util_pct": "0.12"
+            }
+          }
+        }
+      ]
+    },
+    "power": {
+      "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/link/imp/impl_1_hw_bb_locked_power_routed.rpt",
+      "available": true,
+      "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/reports/link/imp/impl_1_hw_bb_locked_power_routed.rpt",
+      "how_to_get": "",
+      "summary": {
+        "total_on_chip_w": "25.970",
+        "fpga_w": "21.952",
+        "hbm_w": "4.018",
+        "budget_w": "123.000",
+        "budget_margin_w": "97.030 (MET)",
+        "dynamic_w": "17.626",
+        "device_static_w": "8.344",
+        "effective_tja_c_per_w": "0.8",
+        "max_ambient_c": "80.5",
+        "junction_temp_c": "74.5",
+        "confidence_level": "Low"
+      },
+      "summary_fields": [
+        {
+          "key": "total_on_chip_w",
+          "label": "total_on_chip",
+          "unit": "W",
+          "description": "估算片上总功耗，包含 FPGA 逻辑、HBM、静态功耗等。"
+        },
+        {
+          "key": "fpga_w",
+          "label": "fpga",
+          "unit": "W",
+          "description": "FPGA fabric 和片上硬 IP 的估算功耗，不含单独列出的 HBM 功耗。"
+        },
+        {
+          "key": "hbm_w",
+          "label": "hbm",
+          "unit": "W",
+          "description": "HBM 子系统估算功耗。"
+        },
+        {
+          "key": "budget_w",
+          "label": "design_power_budget",
+          "unit": "W",
+          "description": "平台/器件给这个设计设定的功耗预算。"
+        },
+        {
+          "key": "budget_margin_w",
+          "label": "power_budget_margin",
+          "unit": "W",
+          "description": "预算剩余量；MET 表示估算值仍在预算内。"
+        },
+        {
+          "key": "dynamic_w",
+          "label": "dynamic",
+          "unit": "W",
+          "description": "由时钟翻转、逻辑切换、互连、存储器和接口活动造成的动态功耗。"
+        },
+        {
+          "key": "device_static_w",
+          "label": "device_static",
+          "unit": "W",
+          "description": "器件静态/漏电功耗，即使设计基本不切换也会存在；受工艺、电压、温度影响。"
+        },
+        {
+          "key": "effective_tja_c_per_w",
+          "label": "effective_tja",
+          "unit": "C/W",
+          "description": "等效结到环境热阻，用于把功耗换算成温升；数值越低散热越好。"
+        },
+        {
+          "key": "max_ambient_c",
+          "label": "max_ambient",
+          "unit": "C",
+          "description": "在当前功耗和散热假设下允许的最高环境温度估算。"
+        },
+        {
+          "key": "junction_temp_c",
+          "label": "junction_temp",
+          "unit": "C",
+          "description": "芯片结温估算，不是功耗；通常用于判断热裕量。"
+        },
+        {
+          "key": "confidence_level",
+          "label": "confidence",
+          "unit": "",
+          "description": "Vivado 对功耗估算输入活动数据完整性的评级；Low 表示缺少真实活动数据，数值只适合估算和横向比较。"
+        }
+      ],
+      "components": [
+        {
+          "name": "Clocks",
+          "power_w": "2.011",
+          "used": "69",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "CLB Logic",
+          "power_w": "1.783",
+          "used": "491386",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "LUT as Distributed RAM",
+          "power_w": "0.719",
+          "used": "10864",
+          "available": "600960",
+          "util_pct": "1.81"
+        },
+        {
+          "name": "LUT as Logic",
+          "power_w": "0.656",
+          "used": "153506",
+          "available": "1303680",
+          "util_pct": "11.77"
+        },
+        {
+          "name": "LUT as Shift Register",
+          "power_w": "0.271",
+          "used": "10947",
+          "available": "600960",
+          "util_pct": "1.82"
+        },
+        {
+          "name": "Register",
+          "power_w": "0.124",
+          "used": "243751",
+          "available": "2607360",
+          "util_pct": "9.35"
+        },
+        {
+          "name": "CARRY8",
+          "power_w": "0.014",
+          "used": "2481",
+          "available": "162960",
+          "util_pct": "1.52"
+        },
+        {
+          "name": "BUFG",
+          "power_w": "<0.001",
+          "used": "3",
+          "available": "96",
+          "util_pct": "3.13"
+        },
+        {
+          "name": "Others",
+          "power_w": "<0.001",
+          "used": "11463",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "F7/F8 Muxes",
+          "power_w": "0.000",
+          "used": "5552",
+          "available": "1303680",
+          "util_pct": "0.43"
+        },
+        {
+          "name": "Signals",
+          "power_w": "1.795",
+          "used": "375559",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "Block RAM",
+          "power_w": "1.015",
+          "used": "230",
+          "available": "2016",
+          "util_pct": "11.41"
+        },
+        {
+          "name": "HBM",
+          "power_w": "5.953",
+          "used": "2",
+          "available": "2",
+          "util_pct": "100.00"
+        },
+        {
+          "name": "MMCM",
+          "power_w": "0.003",
+          "used": "0",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "PLL",
+          "power_w": "0.054",
+          "used": "1",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "DSPs",
+          "power_w": "0.070",
+          "used": "56",
+          "available": "9024",
+          "util_pct": "0.62"
+        },
+        {
+          "name": "I/O",
+          "power_w": "0.006",
+          "used": "12",
+          "available": "624",
+          "util_pct": "1.92"
+        },
+        {
+          "name": "GTY",
+          "power_w": "4.360",
+          "used": "16",
+          "available": "40",
+          "util_pct": "40.00"
+        },
+        {
+          "name": "Hard IPs",
+          "power_w": "0.538",
+          "used": "1",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "PCIE",
+          "power_w": "0.538",
+          "used": "1",
+          "available": "---",
+          "util_pct": "---"
+        },
+        {
+          "name": "Static Power",
+          "power_w": "8.344",
+          "used": "",
+          "available": "",
+          "util_pct": ""
+        },
+        {
+          "name": "HBM Static",
+          "power_w": "0.702",
+          "used": "",
+          "available": "",
+          "util_pct": ""
+        },
+        {
+          "name": "Device Static",
+          "power_w": "7.642",
+          "used": "",
+          "available": "",
+          "util_pct": ""
+        }
+      ],
+      "confidence": [
+        {
+          "input": "Design implementation state",
+          "confidence": "High",
+          "details": "Design is routed",
+          "action": ""
+        },
+        {
+          "input": "Clock nodes activity",
+          "confidence": "High",
+          "details": "User specified more than 95% of clocks",
+          "action": ""
+        },
+        {
+          "input": "I/O nodes activity",
+          "confidence": "Low",
+          "details": "More than 75% of inputs are missing user specification",
+          "action": "Provide missing input activity with simulation results or by editing the \"By Resource Type -> I/Os\" view"
+        },
+        {
+          "input": "Internal nodes activity",
+          "confidence": "Medium",
+          "details": "User specified less than 25% of internal nodes",
+          "action": "Provide missing internal nodes activity with simulation results or by editing the \"By Resource Type\" views"
+        },
+        {
+          "input": "Device models",
+          "confidence": "High",
+          "details": "Device models are Production",
+          "action": ""
+        },
+        {
+          "input": "Overall confidence level",
+          "confidence": "Low",
+          "details": "",
+          "action": ""
+        }
+      ]
+    },
+    "pipeline_overview": [
+      {
+        "kernel_name": "dot_kernel",
+        "kernel_pipeline": "dot_kernel_Pipeline_dot_loop",
+        "loop_name": "dot_loop",
+        "ii_achieved": "5",
+        "ii_target": "1",
+        "iteration_latency": "16",
+        "trip_count": "1 ~ ?",
+        "pipelined": "yes",
+        "pipeline_depth": "16",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "init_pcg_kernel",
+        "kernel_pipeline": "init_pcg_kernel_Pipeline_init_loop",
+        "loop_name": "init_loop",
+        "ii_achieved": "5",
+        "ii_target": "1",
+        "iteration_latency": "32",
+        "trip_count": "1 ~ ?",
+        "pipelined": "yes",
+        "pipeline_depth": "32",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "kernel_pipeline": "spmv_csr_kernel_Pipeline_load_x",
+        "loop_name": "load_x",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "3",
+        "trip_count": "1 ~ 1024",
+        "pipelined": "yes",
+        "pipeline_depth": "3",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "kernel_pipeline": "top-level-loop",
+        "loop_name": "spmv_rows",
+        "ii_achieved": "-",
+        "ii_target": "-",
+        "iteration_latency": "?",
+        "trip_count": "1 ~ ?",
+        "pipelined": "no",
+        "pipeline_depth": "",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "spmv_csr_kernel",
+        "kernel_pipeline": "top-level-loop",
+        "loop_name": "VITIS_LOOP_54_1",
+        "ii_achieved": "-",
+        "ii_target": "-",
+        "iteration_latency": "20",
+        "trip_count": "?",
+        "pipelined": "no",
+        "pipeline_depth": "",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "update_p_kernel",
+        "kernel_pipeline": "update_p_kernel_Pipeline_update_p_loop",
+        "loop_name": "update_p_loop",
+        "ii_achieved": "1",
+        "ii_target": "1",
+        "iteration_latency": "157",
+        "trip_count": "?",
+        "pipelined": "yes",
+        "pipeline_depth": "157",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
+      },
+      {
+        "kernel_name": "update_xrz_kernel",
+        "kernel_pipeline": "update_xrz_kernel_Pipeline_update_loop",
+        "loop_name": "update_loop",
+        "ii_achieved": "5",
+        "ii_target": "1",
+        "iteration_latency": "150",
+        "trip_count": "1 ~ ?",
+        "pipelined": "yes",
+        "pipeline_depth": "150",
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
+      }
+    ]
+  },
+  "kernels": [
+    {
+      "name": "dot_kernel",
+      "input_index": 0,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/dot_kernel.xo",
+        "kernel_name": "dot_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:dot_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_A",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_B",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_OUT",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x3C"
+          }
+        ],
+        "args": [
+          {
+            "name": "a",
+            "id": "0",
+            "port": "M_AXI_GMEM_A",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "b",
+            "id": "1",
+            "port": "M_AXI_GMEM_B",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "out",
+            "id": "2",
+            "port": "M_AXI_GMEM_OUT",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "n",
+            "id": "3",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x34",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "dot_kernel",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/syn/report/dot_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/syn/report/dot_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "dot_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "1",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "3.333 ns",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "2",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "8",
+          "FF": "4936",
+          "LUT": "7521",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "143",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt",
+            "pipeline_name": "dot_kernel_Pipeline_dot_loop",
+            "fsm_states": "16",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "5",
+            "individual_depth": "16",
+            "loop_rows": [
+              {
+                "loop_name": "dot_loop",
+                "latency_min": "15",
+                "latency_max": "?",
+                "iteration_latency": "16",
+                "ii_achieved": "5",
+                "ii_target": "1",
+                "trip_count": "1 ~ ?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "dot_kernel_Pipeline_dot_loop",
+            "loop_name": "dot_loop",
+            "ii_achieved": "5",
+            "ii_target": "1",
+            "iteration_latency": "16",
+            "trip_count": "1 ~ ?",
+            "pipelined": "yes",
+            "pipeline_depth": "16",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/dot_kernel/dot_kernel/dot_kernel/solution/.autopilot/db/dot_kernel_Pipeline_dot_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
+        "instances": [
+          "dot_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "dot_kernel_1",
+            "arg": "a",
+            "target": "HBM[6]",
+            "raw": "dot_kernel_1.a:HBM[6]",
+            "kernel_name": "dot_kernel"
+          },
+          {
+            "instance": "dot_kernel_1",
+            "arg": "b",
+            "target": "HBM[7]",
+            "raw": "dot_kernel_1.b:HBM[7]",
+            "kernel_name": "dot_kernel"
+          },
+          {
+            "instance": "dot_kernel_1",
+            "arg": "out",
+            "target": "HBM[9]",
+            "raw": "dot_kernel_1.out:HBM[9]",
+            "kernel_name": "dot_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "a": [
+            {
+              "instance": "dot_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "b": [
+            {
+              "instance": "dot_kernel_1",
+              "target": "HBM[7]"
+            }
+          ],
+          "out": [
+            {
+              "instance": "dot_kernel_1",
+              "target": "HBM[9]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "init_pcg_kernel",
+      "input_index": 1,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/init_pcg_kernel.xo",
+        "kernel_name": "init_pcg_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:init_pcg_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_B",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_AX",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_MINV",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_R",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_Z",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_P",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_METRICS",
+            "mode": "master",
+            "data_width": "128",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x6C"
+          }
+        ],
+        "args": [
+          {
+            "name": "b",
+            "id": "0",
+            "port": "M_AXI_GMEM_B",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "ax",
+            "id": "1",
+            "port": "M_AXI_GMEM_AX",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "m_inv",
+            "id": "2",
+            "port": "M_AXI_GMEM_MINV",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "r",
+            "id": "3",
+            "port": "M_AXI_GMEM_R",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          },
+          {
+            "name": "z",
+            "id": "4",
+            "port": "M_AXI_GMEM_Z",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x40",
+            "type": "void*"
+          },
+          {
+            "name": "p",
+            "id": "5",
+            "port": "M_AXI_GMEM_P",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x4C",
+            "type": "void*"
+          },
+          {
+            "name": "metrics",
+            "id": "6",
+            "port": "M_AXI_GMEM_METRICS",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x58",
+            "type": "void*"
+          },
+          {
+            "name": "n",
+            "id": "7",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x64",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "init_pcg_kernel",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/syn/report/init_pcg_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/syn/report/init_pcg_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "init_pcg_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "1",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "3.333 ns",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "2",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "11",
+          "FF": "11204",
+          "LUT": "17306",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "210",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt",
+            "pipeline_name": "init_pcg_kernel_Pipeline_init_loop",
+            "fsm_states": "32",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "5",
+            "individual_depth": "32",
+            "loop_rows": [
+              {
+                "loop_name": "init_loop",
+                "latency_min": "31",
+                "latency_max": "?",
+                "iteration_latency": "32",
+                "ii_achieved": "5",
+                "ii_target": "1",
+                "trip_count": "1 ~ ?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "init_pcg_kernel_Pipeline_init_loop",
+            "loop_name": "init_loop",
+            "ii_achieved": "5",
+            "ii_target": "1",
+            "iteration_latency": "32",
+            "trip_count": "1 ~ ?",
+            "pipelined": "yes",
+            "pipeline_depth": "32",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/init_pcg_kernel/init_pcg_kernel/init_pcg_kernel/solution/.autopilot/db/init_pcg_kernel_Pipeline_init_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
+        "instances": [
+          "init_pcg_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "b",
+            "target": "HBM[2]",
+            "raw": "init_pcg_kernel_1.b:HBM[2]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "ax",
+            "target": "HBM[7]",
+            "raw": "init_pcg_kernel_1.ax:HBM[7]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "m_inv",
+            "target": "HBM[8]",
+            "raw": "init_pcg_kernel_1.m_inv:HBM[8]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "r",
+            "target": "HBM[4]",
+            "raw": "init_pcg_kernel_1.r:HBM[4]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "z",
+            "target": "HBM[5]",
+            "raw": "init_pcg_kernel_1.z:HBM[5]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "p",
+            "target": "HBM[6]",
+            "raw": "init_pcg_kernel_1.p:HBM[6]",
+            "kernel_name": "init_pcg_kernel"
+          },
+          {
+            "instance": "init_pcg_kernel_1",
+            "arg": "metrics",
+            "target": "HBM[9]",
+            "raw": "init_pcg_kernel_1.metrics:HBM[9]",
+            "kernel_name": "init_pcg_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "b": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[2]"
+            }
+          ],
+          "ax": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[7]"
+            }
+          ],
+          "m_inv": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[8]"
+            }
+          ],
+          "r": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[4]"
+            }
+          ],
+          "z": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[5]"
+            }
+          ],
+          "p": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "metrics": [
+            {
+              "instance": "init_pcg_kernel_1",
+              "target": "HBM[9]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "spmv_csr_kernel",
+      "input_index": 2,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/spmv_csr_kernel.xo",
+        "kernel_name": "spmv_csr_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:spmv_csr_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_ROW",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_COL",
+            "mode": "master",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_VAL",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_X",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_Y",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x54"
+          }
+        ],
+        "args": [
+          {
+            "name": "row_ptr",
+            "id": "0",
+            "port": "M_AXI_GMEM_ROW",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "col_idx",
+            "id": "1",
+            "port": "M_AXI_GMEM_COL",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "values",
+            "id": "2",
+            "port": "M_AXI_GMEM_VAL",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "x",
+            "id": "3",
+            "port": "M_AXI_GMEM_X",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          },
+          {
+            "name": "y",
+            "id": "4",
+            "port": "M_AXI_GMEM_Y",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x40",
+            "type": "void*"
+          },
+          {
+            "name": "n",
+            "id": "5",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x4C",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "spmv_csr_kernel",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/syn/report/spmv_csr_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/syn/report/spmv_csr_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "spmv_csr_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "4",
+          "DSP": "11",
+          "FF": "7583",
+          "LUT": "11253",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": [
+          {
+            "name": "spmv_rows",
+            "path": "spmv_rows",
+            "slack_ns": "2.43",
+            "trip_count": "",
+            "latency_cycles": "",
+            "latency_abs": "",
+            "iteration_latency": "",
+            "pipeline_ii": "",
+            "pipeline_depth": ""
+          },
+          {
+            "name": "VITIS_LOOP_54_1",
+            "path": "spmv_rows/VITIS_LOOP_54_1",
+            "slack_ns": "2.43",
+            "trip_count": "",
+            "latency_cycles": "",
+            "latency_abs": "",
+            "iteration_latency": "20",
+            "pipeline_ii": "",
+            "pipeline_depth": ""
+          }
+        ]
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "306",
+          "top_loop_rows": [
+            {
+              "loop_name": "spmv_rows",
+              "latency_min": "?",
+              "latency_max": "?",
+              "iteration_latency": "?",
+              "ii_achieved": "-",
+              "ii_target": "-",
+              "trip_count": "1 ~ ?",
+              "pipelined": "no"
+            },
+            {
+              "loop_name": "VITIS_LOOP_54_1",
+              "latency_min": "?",
+              "latency_max": "?",
+              "iteration_latency": "20",
+              "ii_achieved": "-",
+              "ii_target": "-",
+              "trip_count": "?",
+              "pipelined": "no"
+            }
+          ]
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt",
+            "pipeline_name": "spmv_csr_kernel_Pipeline_load_x",
+            "fsm_states": "3",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "3",
+            "loop_rows": [
+              {
+                "loop_name": "load_x",
+                "latency_min": "2",
+                "latency_max": "1025",
+                "iteration_latency": "3",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "1 ~ 1024",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "spmv_csr_kernel_Pipeline_load_x",
+            "loop_name": "load_x",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "3",
+            "trip_count": "1 ~ 1024",
+            "pipelined": "yes",
+            "pipeline_depth": "3",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel_Pipeline_load_x.verbose.sched.rpt"
+          },
+          {
+            "kernel_pipeline": "top-level-loop",
+            "loop_name": "spmv_rows",
+            "ii_achieved": "-",
+            "ii_target": "-",
+            "iteration_latency": "?",
+            "trip_count": "1 ~ ?",
+            "pipelined": "no",
+            "pipeline_depth": "",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt"
+          },
+          {
+            "kernel_pipeline": "top-level-loop",
+            "loop_name": "VITIS_LOOP_54_1",
+            "ii_achieved": "-",
+            "ii_target": "-",
+            "iteration_latency": "20",
+            "trip_count": "?",
+            "pipelined": "no",
+            "pipeline_depth": "",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/spmv_csr_kernel/spmv_csr_kernel/spmv_csr_kernel/solution/.autopilot/db/spmv_csr_kernel.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
+        "instances": [
+          "spmv_csr_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "row_ptr",
+            "target": "HBM[0]",
+            "raw": "spmv_csr_kernel_1.row_ptr:HBM[0]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "col_idx",
+            "target": "HBM[0]",
+            "raw": "spmv_csr_kernel_1.col_idx:HBM[0]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "values",
+            "target": "HBM[1]",
+            "raw": "spmv_csr_kernel_1.values:HBM[1]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "x",
+            "target": "HBM[6]",
+            "raw": "spmv_csr_kernel_1.x:HBM[6]",
+            "kernel_name": "spmv_csr_kernel"
+          },
+          {
+            "instance": "spmv_csr_kernel_1",
+            "arg": "y",
+            "target": "HBM[7]",
+            "raw": "spmv_csr_kernel_1.y:HBM[7]",
+            "kernel_name": "spmv_csr_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "row_ptr": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[0]"
+            }
+          ],
+          "col_idx": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[0]"
+            }
+          ],
+          "values": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[1]"
+            }
+          ],
+          "x": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "y": [
+            {
+              "instance": "spmv_csr_kernel_1",
+              "target": "HBM[7]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "update_p_kernel",
+      "input_index": 3,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/update_p_kernel.xo",
+        "kernel_name": "update_p_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:update_p_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_Z",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_P",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x3C"
+          }
+        ],
+        "args": [
+          {
+            "name": "z",
+            "id": "0",
+            "port": "M_AXI_GMEM_Z",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "p",
+            "id": "1",
+            "port": "M_AXI_GMEM_P",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "beta",
+            "id": "2",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "double"
+          },
+          {
+            "name": "n",
+            "id": "3",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x34",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "update_p_kernel",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/syn/report/update_p_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/syn/report/update_p_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "update_p_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.433",
+        "estimated_clock_mhz": "411.015",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "11",
+          "FF": "4437",
+          "LUT": "5439",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "73",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt",
+            "pipeline_name": "update_p_kernel_Pipeline_update_p_loop",
+            "fsm_states": "157",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "1",
+            "individual_depth": "157",
+            "loop_rows": [
+              {
+                "loop_name": "update_p_loop",
+                "latency_min": "?",
+                "latency_max": "?",
+                "iteration_latency": "157",
+                "ii_achieved": "1",
+                "ii_target": "1",
+                "trip_count": "?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "update_p_kernel_Pipeline_update_p_loop",
+            "loop_name": "update_p_loop",
+            "ii_achieved": "1",
+            "ii_target": "1",
+            "iteration_latency": "157",
+            "trip_count": "?",
+            "pipelined": "yes",
+            "pipeline_depth": "157",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_p_kernel/update_p_kernel/update_p_kernel/solution/.autopilot/db/update_p_kernel_Pipeline_update_p_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
+        "instances": [
+          "update_p_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "update_p_kernel_1",
+            "arg": "z",
+            "target": "HBM[5]",
+            "raw": "update_p_kernel_1.z:HBM[5]",
+            "kernel_name": "update_p_kernel"
+          },
+          {
+            "instance": "update_p_kernel_1",
+            "arg": "p",
+            "target": "HBM[6]",
+            "raw": "update_p_kernel_1.p:HBM[6]",
+            "kernel_name": "update_p_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "z": [
+            {
+              "instance": "update_p_kernel_1",
+              "target": "HBM[5]"
+            }
+          ],
+          "p": [
+            {
+              "instance": "update_p_kernel_1",
+              "target": "HBM[6]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    },
+    {
+      "name": "update_xrz_kernel",
+      "input_index": 4,
+      "xo": {
+        "xo_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/update_xrz_kernel.xo",
+        "kernel_name": "update_xrz_kernel",
+        "language": "c",
+        "vlnv": "xilinx.com:hls:update_xrz_kernel:1.0",
+        "hw_control_protocol": "ap_ctrl_chain",
+        "interrupt": "true",
+        "ports": [
+          {
+            "name": "M_AXI_GMEM_X",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_P",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_R",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_AP",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_MINV",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_Z",
+            "mode": "master",
+            "data_width": "64",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "M_AXI_GMEM_METRICS",
+            "mode": "master",
+            "data_width": "128",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0xFFFFFFFF"
+          },
+          {
+            "name": "S_AXI_CONTROL",
+            "mode": "slave",
+            "data_width": "32",
+            "port_type": "addressable",
+            "base": "0x0",
+            "range": "0x78"
+          }
+        ],
+        "args": [
+          {
+            "name": "x",
+            "id": "0",
+            "port": "M_AXI_GMEM_X",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x10",
+            "type": "void*"
+          },
+          {
+            "name": "p",
+            "id": "1",
+            "port": "M_AXI_GMEM_P",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x1C",
+            "type": "void*"
+          },
+          {
+            "name": "r",
+            "id": "2",
+            "port": "M_AXI_GMEM_R",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x28",
+            "type": "void*"
+          },
+          {
+            "name": "ap",
+            "id": "3",
+            "port": "M_AXI_GMEM_AP",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x34",
+            "type": "void*"
+          },
+          {
+            "name": "m_inv",
+            "id": "4",
+            "port": "M_AXI_GMEM_MINV",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x40",
+            "type": "void*"
+          },
+          {
+            "name": "z",
+            "id": "5",
+            "port": "M_AXI_GMEM_Z",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x4C",
+            "type": "void*"
+          },
+          {
+            "name": "metrics",
+            "id": "6",
+            "port": "M_AXI_GMEM_METRICS",
+            "address_qualifier": "1",
+            "size": "0x8",
+            "offset": "0x58",
+            "type": "void*"
+          },
+          {
+            "name": "alpha",
+            "id": "7",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x8",
+            "offset": "0x64",
+            "type": "double"
+          },
+          {
+            "name": "n",
+            "id": "8",
+            "port": "S_AXI_CONTROL",
+            "address_qualifier": "0",
+            "size": "0x4",
+            "offset": "0x70",
+            "type": "unsigned int"
+          }
+        ],
+        "xo_meta": {
+          "dir": "update_xrz_kernel",
+          "supported_flows": [
+            "CPU_EMU",
+            "HW_EMU",
+            "SYSTEM"
+          ]
+        }
+      },
+      "hls": {
+        "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/syn/report/update_xrz_kernel_csynth.xml",
+        "available": true,
+        "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/syn/report/update_xrz_kernel_csynth.xml",
+        "how_to_get": "",
+        "kernel_name": "update_xrz_kernel",
+        "target_clock_ns": "3.33",
+        "target_clock_mhz": "300.300",
+        "clock_uncertainty_ns": "0.90",
+        "estimated_clock_ns": "2.614",
+        "estimated_clock_mhz": "382.555",
+        "pipeline_type": "no",
+        "overall_latency": {
+          "unit": "clock cycles",
+          "best_cycles": "1",
+          "avg_cycles": "",
+          "worst_cycles": "",
+          "best_time": "3.333 ns",
+          "avg_time": "",
+          "worst_time": "",
+          "interval_min": "2",
+          "interval_max": ""
+        },
+        "resources": {
+          "BRAM_18K": "0",
+          "DSP": "11",
+          "FF": "12152",
+          "LUT": "17717",
+          "URAM": "0"
+        },
+        "available_resources": {
+          "BRAM_18K": "4032",
+          "DSP": "9024",
+          "FF": "2607360",
+          "LUT": "1303680",
+          "URAM": "960"
+        },
+        "loop_latency": []
+      },
+      "pipeline": {
+        "top": {
+          "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel.verbose.sched.rpt",
+          "available": true,
+          "requested_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel.verbose.sched.rpt",
+          "how_to_get": "",
+          "is_top_model": "1",
+          "pipeline_count": "0",
+          "dataflow_pipeline_count": "0",
+          "fsm_states": "210",
+          "top_loop_rows": []
+        },
+        "children": [
+          {
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt",
+            "pipeline_name": "update_xrz_kernel_Pipeline_update_loop",
+            "fsm_states": "150",
+            "pipeline_count": "1",
+            "dataflow_pipeline_count": "0",
+            "individual_ii": "5",
+            "individual_depth": "150",
+            "loop_rows": [
+              {
+                "loop_name": "update_loop",
+                "latency_min": "149",
+                "latency_max": "?",
+                "iteration_latency": "150",
+                "ii_achieved": "5",
+                "ii_target": "1",
+                "trip_count": "1 ~ ?",
+                "pipelined": "yes"
+              }
+            ]
+          }
+        ],
+        "overview_rows": [
+          {
+            "kernel_pipeline": "update_xrz_kernel_Pipeline_update_loop",
+            "loop_name": "update_loop",
+            "ii_achieved": "5",
+            "ii_target": "1",
+            "iteration_latency": "150",
+            "trip_count": "1 ~ ?",
+            "pipelined": "yes",
+            "pipeline_depth": "150",
+            "report_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/build/hw/_x_temp/update_xrz_kernel/update_xrz_kernel/update_xrz_kernel/solution/.autopilot/db/update_xrz_kernel_Pipeline_update_loop.verbose.sched.rpt"
+          }
+        ]
+      },
+      "cfg": {
+        "cfg_path": "/home/pyx/ProjectFS/Project-X/Project-XPlus/cfg/connectivity_u55c.cfg",
+        "instances": [
+          "update_xrz_kernel_1"
+        ],
+        "sp_bindings": [
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "x",
+            "target": "HBM[3]",
+            "raw": "update_xrz_kernel_1.x:HBM[3]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "p",
+            "target": "HBM[6]",
+            "raw": "update_xrz_kernel_1.p:HBM[6]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "r",
+            "target": "HBM[4]",
+            "raw": "update_xrz_kernel_1.r:HBM[4]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "ap",
+            "target": "HBM[7]",
+            "raw": "update_xrz_kernel_1.ap:HBM[7]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "m_inv",
+            "target": "HBM[8]",
+            "raw": "update_xrz_kernel_1.m_inv:HBM[8]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "z",
+            "target": "HBM[5]",
+            "raw": "update_xrz_kernel_1.z:HBM[5]",
+            "kernel_name": "update_xrz_kernel"
+          },
+          {
+            "instance": "update_xrz_kernel_1",
+            "arg": "metrics",
+            "target": "HBM[9]",
+            "raw": "update_xrz_kernel_1.metrics:HBM[9]",
+            "kernel_name": "update_xrz_kernel"
+          }
+        ],
+        "bindings_by_arg": {
+          "x": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[3]"
+            }
+          ],
+          "p": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[6]"
+            }
+          ],
+          "r": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[4]"
+            }
+          ],
+          "ap": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[7]"
+            }
+          ],
+          "m_inv": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[8]"
+            }
+          ],
+          "z": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[5]"
+            }
+          ],
+          "metrics": [
+            {
+              "instance": "update_xrz_kernel_1",
+              "target": "HBM[9]"
+            }
+          ]
+        }
+      },
+      "annotations": {
+        "role": "",
+        "summary": [],
+        "reads": [],
+        "writes": [],
+        "hbm_mapping": [],
+        "xs_mapping": {},
+        "xs_sim_mapping": {},
+        "components": [],
+        "component_edges": []
+      }
+    }
+  ]
+}

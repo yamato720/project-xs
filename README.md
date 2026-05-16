@@ -110,6 +110,14 @@ example/project_xplus_hls/reports/xo_report.html
 这个报告站在 `XS` 的角度，把示例 kernel 的职责、顶层接口、参数端口、HBM 映射和组件关系整理成静态页面，方便做结构核对。
 其中 `.xo` 提供 kernel/arg/port 元数据，`.cfg` 额外提供 kernel 实例名和 `sp -> HBM` 绑定信息；spec 中这些路径默认都按 example 目录解析，也兼容绝对路径。
 
+如果要直接从 `Project-XPlus/build/hw` 生成硬件 build report，可以用：
+
+```bash
+make render-xplus-build-report
+```
+
+这个入口读取 [example/project_xplus_build_report/spec.json](/home/pyx/ProjectFS/Project-X/Project-XS/example/project_xplus_build_report/spec.json)，不会复制 XPlus 的 build 产物，也不需要在 spec 里显式列出 kernel 名；脚本会扫描 build 目录顶层 `.xo` 并读取 XO 内部元数据。输出在 `example/project_xplus_build_report/reports/`。
+
 ## CG 数据格式
 
 当前 `CG` 数据集保持为拆分的 CSR 形式，最小输入包括：

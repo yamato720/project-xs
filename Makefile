@@ -44,7 +44,7 @@ $(foreach goal,$(TEST_GOALS),$(eval .PHONY: $(goal)))
 $(foreach goal,$(TEST_GOALS),$(eval $(goal): ; @:))
 endif
 
-.PHONY: all build generate run run-cycle-sim render-xplus-hls-example test test-clean test-all test-all-clean clean
+.PHONY: all build generate run run-cycle-sim render-xplus-hls-example render-xplus-build-report test test-clean test-all test-all-clean clean
 
 all: run
 
@@ -147,6 +147,9 @@ run-cycle-sim:
 
 render-xplus-hls-example:
 	$(PYTHON) $(XPLUS_HLS_EXAMPLE_SCRIPT) $(ROOT_DIR)/example/project_xplus_hls
+
+render-xplus-build-report:
+	$(PYTHON) $(XPLUS_HLS_EXAMPLE_SCRIPT) $(ROOT_DIR)/example/project_xplus_build_report
 
 clean:
 	rm -rf $(BUILD_DIR)

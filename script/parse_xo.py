@@ -14,6 +14,74 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_EXAMPLE_DIR = ROOT / "example" / "project_xplus_hls"
 RESOURCE_KEYS = ["LUT", "LUTAsMem", "REG", "BRAM", "URAM", "DSP"]
+POWER_SUMMARY_FIELDS = [
+    {
+        "key": "total_on_chip_w",
+        "label": "total_on_chip",
+        "unit": "W",
+        "description": "估算片上总功耗，包含 FPGA 逻辑、HBM、静态功耗等。",
+    },
+    {
+        "key": "fpga_w",
+        "label": "fpga",
+        "unit": "W",
+        "description": "FPGA fabric 和片上硬 IP 的估算功耗，不含单独列出的 HBM 功耗。",
+    },
+    {
+        "key": "hbm_w",
+        "label": "hbm",
+        "unit": "W",
+        "description": "HBM 子系统估算功耗。",
+    },
+    {
+        "key": "budget_w",
+        "label": "design_power_budget",
+        "unit": "W",
+        "description": "平台/器件给这个设计设定的功耗预算。",
+    },
+    {
+        "key": "budget_margin_w",
+        "label": "power_budget_margin",
+        "unit": "W",
+        "description": "预算剩余量；MET 表示估算值仍在预算内。",
+    },
+    {
+        "key": "dynamic_w",
+        "label": "dynamic",
+        "unit": "W",
+        "description": "由时钟翻转、逻辑切换、互连、存储器和接口活动造成的动态功耗。",
+    },
+    {
+        "key": "device_static_w",
+        "label": "device_static",
+        "unit": "W",
+        "description": "器件静态/漏电功耗，即使设计基本不切换也会存在；受工艺、电压、温度影响。",
+    },
+    {
+        "key": "effective_tja_c_per_w",
+        "label": "effective_tja",
+        "unit": "C/W",
+        "description": "等效结到环境热阻，用于把功耗换算成温升；数值越低散热越好。",
+    },
+    {
+        "key": "max_ambient_c",
+        "label": "max_ambient",
+        "unit": "C",
+        "description": "在当前功耗和散热假设下允许的最高环境温度估算。",
+    },
+    {
+        "key": "junction_temp_c",
+        "label": "junction_temp",
+        "unit": "C",
+        "description": "芯片结温估算，不是功耗；通常用于判断热裕量。",
+    },
+    {
+        "key": "confidence_level",
+        "label": "confidence",
+        "unit": "",
+        "description": "Vivado 对功耗估算输入活动数据完整性的评级；Low 表示缺少真实活动数据，数值只适合估算和横向比较。",
+    },
+]
 
 
 def read_spec(path: Path) -> dict:
@@ -484,6 +552,36 @@ def discover_build_resource_report(build_dir: Path | None) -> Path | None:
     return None
 
 
+def discover_build_power_report(build_dir: Path | None) -> Path | None:
+    if build_dir is None or not build_dir.is_dir():
+        return None
+
+    preferred = [
+        build_dir / "_x_temp" / "reports" / "link" / "imp" / "impl_1_hw_bb_locked_power_routed.rpt",
+        build_dir
+        / "_x_temp"
+        / "link"
+        / "vivado"
+        / "vpl"
+        / "prj"
+        / "prj.runs"
+        / "impl_1"
+        / "hw_bb_locked_power_routed.rpt",
+        build_dir / "_x_temp" / "reports" / "analysis" / "power.rpt",
+    ]
+    for candidate in preferred:
+        if candidate.is_file():
+            return candidate.resolve()
+
+    routed = sorted(path.resolve() for path in build_dir.rglob("*power*routed.rpt") if path.is_file())
+    if routed:
+        return routed[0]
+    power = sorted(path.resolve() for path in build_dir.rglob("power.rpt") if path.is_file())
+    if power:
+        return power[0]
+    return None
+
+
 def discover_schedule_reports(
     base_dir: Path,
     kernel_name: str,
@@ -546,6 +644,7 @@ def resolve_artifact_config(spec: dict, example_dir: Path) -> dict:
     link_dir = resolve_optional_path(example_dir, artifacts.get("link_dir"))
     link_timing_report = resolve_optional_path(example_dir, artifacts.get("link_timing_report"))
     resource_report = resolve_optional_path(example_dir, artifacts.get("resource_report"))
+    power_report = resolve_optional_path(example_dir, artifacts.get("power_report"))
     xclbin = resolve_optional_path(example_dir, artifacts.get("xclbin"))
 
     if xclbin is None and build_dir is not None:
@@ -557,6 +656,8 @@ def resolve_artifact_config(spec: dict, example_dir: Path) -> dict:
         link_timing_report = discover_build_link_timing_report(build_dir)
     if resource_report is None and build_dir is not None:
         resource_report = discover_build_resource_report(build_dir)
+    if power_report is None and build_dir is not None:
+        power_report = discover_build_power_report(build_dir)
 
     # Backward-compatible fallback to historical auto-discovery under vivado-log/.
     if auto_discover:
@@ -588,6 +689,7 @@ def resolve_artifact_config(spec: dict, example_dir: Path) -> dict:
         "link_dir": link_dir,
         "link_timing_report": link_timing_report,
         "resource_report": resource_report,
+        "power_report": power_report,
     }
 
 
@@ -1013,6 +1115,123 @@ def parse_link_timing_report(report_path: Path | None, example_dir: Path) -> dic
     }
 
 
+def parse_power_report(report_path: Path | None, example_dir: Path) -> dict:
+    if report_path is None or not report_path.is_file():
+        return {
+            "report_path": "",
+            "available": False,
+            "requested_path": format_display_path(report_path, example_dir) if report_path else "",
+            "how_to_get": "期望 Vivado/Vitis routed power report，例如 impl_1_hw_bb_locked_power_routed.rpt；可由 v++ link 报告配置或 XPlus 的 make vivado-power-report 生成。",
+            "summary": {},
+            "components": [],
+            "confidence": [],
+        }
+
+    lines = report_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+
+    def is_section_header(index: int, title: str) -> bool:
+        if lines[index].strip() != title:
+            return False
+        if index + 1 >= len(lines):
+            return False
+        underline = lines[index + 1].strip()
+        return bool(underline) and set(underline) == {"-"}
+
+    wanted_summary = {
+        "Total On-Chip Power (W)": "total_on_chip_w",
+        "FPGA Power (W)": "fpga_w",
+        "HBM Power (W)": "hbm_w",
+        "Design Power Budget (W)": "budget_w",
+        "Power Budget Margin (W)": "budget_margin_w",
+        "Dynamic (W)": "dynamic_w",
+        "Device Static (W)": "device_static_w",
+        "Effective TJA (C/W)": "effective_tja_c_per_w",
+        "Max Ambient (C)": "max_ambient_c",
+        "Junction Temperature (C)": "junction_temp_c",
+        "Confidence Level": "confidence_level",
+    }
+    summary = {}
+    table_row = re.compile(r"^\|\s*(?P<key>[^|]+?)\s*\|\s*(?P<value>[^|]+?)\s*\|")
+    for line in lines:
+        match = table_row.match(line)
+        if not match:
+            continue
+        key = re.sub(r"\s+", " ", match.group("key").strip())
+        key = key.lstrip()
+        normalized_key = re.sub(r"^\s+", "", key)
+        if normalized_key in wanted_summary:
+            summary[wanted_summary[normalized_key]] = match.group("value").strip()
+
+    components = []
+    in_components = False
+    component_row = re.compile(
+        r"^\|\s*(?P<name>[^|]+?)\s*\|\s*(?P<power>[^|]+?)\s*\|\s*(?P<used>[^|]*?)\s*\|\s*(?P<available>[^|]*?)\s*\|\s*(?P<util>[^|]*?)\s*\|"
+    )
+    for index, line in enumerate(lines):
+        if is_section_header(index, "1.1 On-Chip Components"):
+            in_components = True
+            continue
+        if in_components and is_section_header(index, "1.2 Power Supply Summary"):
+            break
+        if not in_components:
+            continue
+        match = component_row.match(line)
+        if not match:
+            continue
+        name = re.sub(r"\s+", " ", match.group("name").strip())
+        if not name or name in {"On-Chip", "Total"} or set(name) <= {"-", "+"}:
+            continue
+        components.append(
+            {
+                "name": name,
+                "power_w": match.group("power").strip(),
+                "used": match.group("used").strip(),
+                "available": match.group("available").strip(),
+                "util_pct": match.group("util").strip(),
+            }
+        )
+
+    confidence = []
+    in_confidence = False
+    confidence_row = re.compile(
+        r"^\|\s*(?P<input>[^|]+?)\s*\|\s*(?P<confidence>[^|]+?)\s*\|\s*(?P<details>[^|]*?)\s*\|\s*(?P<action>[^|]*?)\s*\|"
+    )
+    for index, line in enumerate(lines):
+        if is_section_header(index, "1.3 Confidence Level"):
+            in_confidence = True
+            continue
+        if in_confidence and is_section_header(index, "2. Settings"):
+            break
+        if not in_confidence:
+            continue
+        match = confidence_row.match(line)
+        if not match:
+            continue
+        user_input = re.sub(r"\s+", " ", match.group("input").strip())
+        level = re.sub(r"\s+", " ", match.group("confidence").strip())
+        if not user_input or user_input == "User Input Data" or set(user_input) <= {"-", "+"}:
+            continue
+        confidence.append(
+            {
+                "input": user_input,
+                "confidence": level,
+                "details": re.sub(r"\s+", " ", match.group("details").strip()),
+                "action": re.sub(r"\s+", " ", match.group("action").strip()),
+            }
+        )
+
+    return {
+        "report_path": format_display_path(report_path, example_dir),
+        "available": True,
+        "requested_path": format_display_path(report_path, example_dir),
+        "how_to_get": "",
+        "summary": summary,
+        "summary_fields": POWER_SUMMARY_FIELDS,
+        "components": components,
+        "confidence": confidence,
+    }
+
+
 def empty_resource_summary(report_path: Path | None, example_dir: Path) -> dict:
     return {
         "source": "",
@@ -1124,6 +1343,7 @@ def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
     link_timing_path = artifacts["link_timing_report"]
     link_timing = parse_link_timing_report(link_timing_path, example_dir)
     resource_summary = parse_implementation_resource_report(artifacts["resource_report"], example_dir)
+    power_summary = parse_power_report(artifacts["power_report"], example_dir)
 
     kernel_specs = list(spec.get("kernels", []))
     if not kernel_specs and artifacts["build_dir"] is not None:
@@ -1262,6 +1482,7 @@ def build_report(spec: dict, spec_path: Path, example_dir: Path) -> dict:
             else "",
             "link_timing": link_timing,
             "resources": resource_summary,
+            "power": power_summary,
             "pipeline_overview": pipeline_overview,
         },
         "kernels": kernels,
@@ -1383,6 +1604,96 @@ def render_html_page(data: dict) -> str:
               <tbody>{''.join(resource_kernel_rows) or '<tr><td colspan="8">无</td></tr>'}</tbody>
             </table>
           </div>
+        </div></div>
+      </div>
+    </div>
+"""
+
+    power = data.get("vivado", {}).get("power", {})
+    power_summary = power.get("summary", {})
+
+    def format_power_summary_value(value: str, unit: str) -> str:
+        if not value:
+            return "-"
+        if not unit:
+            return value
+        status_match = re.match(r"^(?P<number>-?\d+(?:\.\d+)?)\s*(?P<status>\([^)]*\))$", value)
+        if status_match:
+            return f"{status_match.group('number')} {unit} {status_match.group('status')}"
+        return f"{value} {unit}"
+
+    power_summary_rows = []
+    for field in power.get("summary_fields", POWER_SUMMARY_FIELDS):
+        value = power_summary.get(field["key"], "")
+        if not value:
+            continue
+        unit = field.get("unit", "")
+        display_value = format_power_summary_value(value, unit)
+        power_summary_rows.append(
+            "<tr>"
+            f"<td>{html.escape(field.get('label', field['key']))}</td>"
+            f"<td>{html.escape(display_value)}</td>"
+            f"<td>{html.escape(field.get('description', ''))}</td>"
+            "</tr>"
+        )
+    power_components = [
+        component
+        for component in power.get("components", [])
+        if component.get("name") in {"Clocks", "CLB Logic", "Signals", "Block RAM", "HBM", "DSPs", "GTY", "Hard IPs", "Static Power"}
+    ]
+    if not power_components:
+        power_components = power.get("components", [])[:12]
+    power_component_rows = []
+    for component in power_components:
+        power_component_rows.append(
+            "<tr>"
+            f"<td>{html.escape(component.get('name', ''))}</td>"
+            f"<td>{html.escape(component.get('power_w', '') or '-')}</td>"
+            f"<td>{html.escape(component.get('used', '') or '-')}</td>"
+            f"<td>{html.escape(component.get('available', '') or '-')}</td>"
+            f"<td>{html.escape(component.get('util_pct', '') or '-')}</td>"
+            "</tr>"
+        )
+    confidence_rows = []
+    for row in power.get("confidence", []):
+        confidence_rows.append(
+            "<tr>"
+            f"<td>{html.escape(row.get('input', ''))}</td>"
+            f"<td>{html.escape(row.get('confidence', '') or '-')}</td>"
+            f"<td>{html.escape(row.get('details', '') or '-')}</td>"
+            "</tr>"
+        )
+    power_section = f"""
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="report-card card"><div class="card-body">
+          <div class="section-title">实现功耗（来自 routed power report）</div>
+          <div class="section-note">这部分来自 Vivado report_power。没有真实 SAIF/VCD 活动文件时，它主要适合做估算和横向比较。</div>
+          <div class="section-note">requested: {html.escape(power.get('requested_path', '') or '未指定')}</div>
+          {'' if power.get('available') else f'<div class="section-note">当前未提供。{html.escape(power.get("how_to_get", ""))}</div>'}
+          {f'''
+          <div class="kv-grid mb-3">
+            <div class="kv-row"><div class="kv-key">report</div><div class="kv-value">{html.escape(power.get('report_path', '') or '未发现')}</div></div>
+          </div>
+          <div class="table-wrap mb-3">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>metric</th><th>value</th><th>说明</th></tr></thead>
+              <tbody>{''.join(power_summary_rows) or '<tr><td colspan="3">无</td></tr>'}</tbody>
+            </table>
+          </div>
+          <div class="table-wrap mb-3">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>component</th><th>power(W)</th><th>used</th><th>available</th><th>util(%)</th></tr></thead>
+              <tbody>{''.join(power_component_rows) or '<tr><td colspan="5">无</td></tr>'}</tbody>
+            </table>
+          </div>
+          <div class="table-wrap">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>input data</th><th>confidence</th><th>details</th></tr></thead>
+              <tbody>{''.join(confidence_rows) or '<tr><td colspan="3">无</td></tr>'}</tbody>
+            </table>
+          </div>
+          ''' if power.get('available') else ''}
         </div></div>
       </div>
     </div>
@@ -1886,6 +2197,8 @@ def render_html_page(data: dict) -> str:
     </div>
 
     {resource_overview_section}
+
+    {power_section}
 
     {f'''
     <div class="row g-4 mb-4">
